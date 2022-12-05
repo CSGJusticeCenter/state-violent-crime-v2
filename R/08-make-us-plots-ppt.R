@@ -6,12 +6,15 @@ library(ragg)
 library(csgjcr)
 library(ggrepel)
 
-viol_crime_by_off_state <- read_rds("data/viol_crime_by_off_state.rds")
-viol_crime_by_state <- read_rds("data/viol_crime_by_state.rds")
-viol_crime_by_off_us <- read_rds("data/viol_crime_by_off_us.rds")
-viol_crime_us <- read_rds("data/viol_crime_us.rds")
-us_prison <- read_rds("data/us_prison.rds")
-viol_prison_state <- read_rds("data/viol_prison_state.rds")
+# path to data folder on sharepoint
+sp_path <- csg_sp_pat
+
+viol_crime_by_off_state <- read_rds(file.path(sp_path, "viol_crime_by_off_state.rds"))
+viol_crime_by_state <- read_rds(file.path(sp_path, "viol_crime_by_state.rds"))
+viol_crime_by_off_us <- read_rds(file.path(sp_path, "viol_crime_by_off_us.rds"))
+viol_crime_us <- read_rds(file.path(sp_path, "viol_crime_us.rds"))
+us_prison <- read_rds(file.path(sp_path, "us_prison.rds"))
+viol_prison_state <- read_rds(file.path(sp_path, "viol_prison_state.rds"))
 
 t <- theme_minimal(base_family = "Tahoma") +
   theme(

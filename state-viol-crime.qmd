@@ -24,36 +24,39 @@ library(reactable)
 
 source("R/utils.R")
 
+# path to data folder on sharepoint
+sp_path <- csg_sp_path("ad_hoc_requests/state_violent_crime_marshall/data")
+
 state_name <- csg_state_convert(params$state, from = "abbr", "name")
 state_name_text <- if_else(params$state == "DC", "the District of Columbia", state_name)
 
 # read in crime data
-viol_crime_us <- read_rds("data/viol_crime_us.rds")
-viol_crime_by_off_us <- read_rds("data/viol_crime_by_off_us.rds")
+viol_crime_us <- read_rds(file.path(sp_path, "viol_crime_us.rds"))
+viol_crime_by_off_us <- read_rds(file.path(sp_path, "viol_crime_by_off_us.rds"))
 
-viol_crime_by_state <- read_rds("data/viol_crime_by_state.rds") |> 
+viol_crime_by_state <- read_rds(file.path(sp_path, "viol_crime_by_state.rds")) |> 
   filter(state == state_name)
-viol_crime_by_off_state <- read_rds("data/viol_crime_by_off_state.rds") |> 
-  filter(state == state_name)
-
-viol_crime_2021_state <- read_rds("data/viol_crime_2021_state.rds") |> 
-  filter(state == state_name)
-viol_crime_2021_by_off_state <- read_rds("data/viol_crime_2021_by_off_state.rds") |> 
+viol_crime_by_off_state <- read_rds(file.path(sp_path, "viol_crime_by_off_state.rds")) |> 
   filter(state == state_name)
 
-ucr_agency_pop <- read_rds("data/ucr_agency_pop.rds") |> 
+viol_crime_2021_state <- read_rds(file.path(sp_path, "viol_crime_2021_state.rds")) |> 
+  filter(state == state_name)
+viol_crime_2021_by_off_state <- read_rds(file.path(sp_path, "viol_crime_2021_by_off_state.rds")) |> 
+  filter(state == state_name)
+
+ucr_agency_pop <- read_rds(file.path(sp_path, "ucr_agency_pop.rds")) |> 
   filter(state_abbr == params$state)
-state_nibrs_pop_cov <- read_rds("data/state_nibrs_pop_cov.rds") |> 
+state_nibrs_pop_cov <- read_rds(file.path(sp_path, "state_nibrs_pop_cov.rds")) |> 
   filter(state_abb == params$state)
 
 # viol_prison_state <- read_rds("data/viol_prison_state.rds") |> 
 #   filter(state == state_name)
 
 # read in prison population data
-us_prison <- read_rds("data/us_prison.rds")
-viol_prison_pop_state <- read_rds("data/viol_prison_pop_state.rds") |> 
+us_prison <- read_rds(file.path(sp_path, "us_prison.rds"))
+viol_prison_pop_state <- read_rds(file.path(sp_path, "viol_prison_pop_state.rds")) |> 
   filter(state == state_name)
-viol_prison_pop_by_off_state <- read_rds("data/viol_prison_pop_by_off_state.rds") |> 
+viol_prison_pop_by_off_state <- read_rds(file.path(sp_path, "viol_prison_pop_by_off_state.rds")) |> 
   filter(state == state_name)
 
 # check if we will consider this a nibrs state for this report

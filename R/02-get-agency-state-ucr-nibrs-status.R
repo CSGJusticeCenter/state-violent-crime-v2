@@ -8,6 +8,9 @@ library(tidyverse)
 library(httr2)
 library(lubridate)
 
+# path to data folder on sharepoint
+sp_path <- csg_sp_path("ad_hoc_requests/state_violent_crime_marshall/data")
+
 # define function to pull state nibrs participation data from fbi api cde
 # for a given state, this will return state and population percent coverage
 get_state_nibrs_cov <- function(state) {
@@ -50,7 +53,7 @@ get_agency_pop <- function(ori) {
 
 # read in ucr srs offenses known
 # we just need this to get population info for agencies, not the actual crime data
-okca <- read_rds("data/offenses_known_yearly_1960_2020.rds")
+okca <- read_rds(file.path(sp_path, "offenses_known_yearly_1960_2020.rds"))
 
 # make api request to fbi cde api for all ucr reporting agencies
 # contains agency name, state, county and nibrs status
@@ -122,5 +125,5 @@ ucr_agency_pop_joined <- all_ucr_agency_pop |>
   rows_update(missing_pop_agency_api_res, by = "ori")
 
 # write agency population and state nibrs population coverage to disk
-write_rds(ucr_agency_pop_joined, "data/ucr_agency_pop.rds")
-write_rds(state_nibrs_pop_cov, "data/state_nibrs_pop_cov.rds")
+write_rds(ucr_agency_pop_joined, file.path(sp_path, "ucr_agency_pop.rds"))
+write_rds(state_nibrs_pop_cov, file.path(sp_path, "state_nibrs_pop_cov.rds"))

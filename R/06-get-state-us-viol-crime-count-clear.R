@@ -4,8 +4,11 @@
 
 library(tidyverse)
 
+# path to data folder on sharepoint
+sp_path <- csg_sp_path("ad_hoc_requests/state_violent_crime_marshall/data")
+
 # read in state population
-state_pop <- read_rds("data/state_pop.rds") |>
+state_pop <- read_rds(file.path(sp_path, "state_pop.rds")) |>
   filter(state_abb != "PR")
 
 # calculate total us pop by year by aggregating state pop ests
@@ -16,12 +19,12 @@ us_pop <- state_pop |>
 # read in state-level estimates of index crime from fbi
 # downloaded from https://crime-data-explorer.fr.cloud.gov/pages/downloads
 # scroll down to additional datasets > summary reporting system
-est_crime_by_state <- read_csv("data/estimated_crimes_1979_2020.csv")
+est_crime_by_state <- read_csv(file.path(sp_path, "estimated_crimes_1979_2020.csv"))
 
 # read in ucr srs offenses known
 # jacob kaplan's concatenated files - of agency-level annual crime data reported to fbi
 # download from https://www.openicpsr.org/openicpsr/project/100707/version/V17/view
-okca <- read_rds("data/offenses_known_yearly_1960_2020.rds")
+okca <- read_rds(file.path(sp_path, "offenses_known_yearly_1960_2020.rds"))
 
 # read in national violent crime counts and clearance rates
 # one file is all viol crime, other by offense
@@ -31,8 +34,8 @@ okca <- read_rds("data/offenses_known_yearly_1960_2020.rds")
 # for 2020, crime in the us was only published on fbe cde
 # https://crime-data-explorer.fr.cloud.gov/pages/downloads
 # scroll to Crime in the United State Annual Reports and download
-us_viol_crime <- read_csv("data/us-crime-clear-cius.csv")
-us_viol_crime_by_off <- read_csv("data/us-crime-clear-cius-by-off.csv")
+us_viol_crime <- read_csv(file.path(sp_path, "us-crime-clear-cius.csv"))
+us_viol_crime_by_off <- read_csv(file.path(sp_path, "us-crime-clear-cius-by-off.csv"))
 
 # clean up state crime estimates
 # only take 2010 to 2020, keep violent index crimes only
@@ -135,7 +138,7 @@ viol_crime_by_off_us <- us_viol_crime_by_off |>
   )
 
 # write to disk
-write_rds(viol_crime_by_off_state, "data/viol_crime_by_off_state.rds")
-write_rds(viol_crime_by_state, "data/viol_crime_by_state.rds")
-write_rds(viol_crime_by_off_us, "data/viol_crime_by_off_us.rds")
-write_rds(viol_crime_us, "data/viol_crime_us.rds")
+write_rds(viol_crime_by_off_state, file.path(sp_path, "viol_crime_by_off_state.rds"))
+write_rds(viol_crime_by_state, file.path(sp_path, "viol_crime_by_state.rds"))
+write_rds(viol_crime_by_off_us, file.path(sp_path, "viol_crime_by_off_us.rds"))
+write_rds(viol_crime_us, file.path(sp_path, "viol_crime_us.rds"))

@@ -3,12 +3,15 @@
 
 library(tidyverse)
 
+# path to data folder on sharepoint
+sp_path <- csg_sp_path("ad_hoc_requests/state_violent_crime_marshall/data")
+
 # read in state population
-state_pop <- read_rds("data/state_pop.rds") |>
+state_pop <- read_rds(file.path(sp_path, "state_pop.rds")) |>
   filter(state_abb != "PR")
 
 # make vector of all state nibrs estimatation files
-nibrs_state_files <- paste0("data/nibrs_estimation_files/Indicator_Tables_no_supp_no_LEOKA_",56:106, ".csv")
+nibrs_state_files <- file.path(sp_path, paste0("nibrs_estimation_files/Indicator_Tables_no_supp_no_LEOKA_",56:106, ".csv"))
 
 # read in and bind all state nibrs estimates
 # this is a large and hard to use/understand set of files with limited documentation :(
@@ -79,12 +82,12 @@ viol_crime_2021_state <- nibrs_viol_count_clear |>
 # write two files - first with each of the 4 offenses
 viol_crime_2021_state |>
   filter(crime != "Total violent crime") |>
-  write_rds("data/viol_crime_2021_by_off_state.rds")
+  write_rds(file.path(sp_path, "viol_crime_2021_by_off_state.rds"))
 
 # second with just total violent crime
 viol_crime_2021_state |>
   filter(crime == "Total violent crime") |>
-  write_rds("data/viol_crime_2021_state.rds")
+  write_rds(file.path(sp_path, "viol_crime_2021_state.rds"))
 
 
 

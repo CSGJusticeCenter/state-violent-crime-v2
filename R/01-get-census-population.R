@@ -2,6 +2,10 @@
 
 library(tidyverse)
 library(tidycensus)
+library(csgjcr)
+
+# path to data folder on sharepoint
+sp_path <- csg_sp_path("ad_hoc_requests/state_violent_crime_marshall/data")
 
 # make look up table with state fips, state name, and state abbreviation
 fips_state_lookup <- fips_codes |>
@@ -103,4 +107,4 @@ state_pop_joined <- acs_pop_by_state |>
   left_join(fips_state_lookup, by = "state_fips")
 
 # write to disk
-write_rds(state_pop_joined, "data/state_pop.rds")
+write_rds(state_pop_joined, file.path(sp_path, "/state_pop.rds"))
