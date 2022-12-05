@@ -1,0 +1,528 @@
+---
+format:
+  html:
+    include-before-body: header.html
+params:
+  state: "MA"
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+<script>
+`r paste0("document.querySelector('#selector').value = 'state-viol-crime-", tolower(params$state), ".html'")`
+</script>
+
+```{r}
+library(tidyverse)
+library(scales)
+library(csgjcr)
+library(highcharter)
+library(htmlwidgets)
+library(reactable)
+
+source("R/utils.R")
+
+state_name <- csg_state_convert(params$state, from = "abbr", "name")
+state_name_text <- if_else(params$state == "DC", "the District of Columbia", state_name)
+
+# read in crime data
+viol_crime_us <- read_rds("data/viol_crime_us.rds")
+viol_crime_by_off_us <- read_rds("data/viol_crime_by_off_us.rds")
+
+viol_crime_by_state <- read_rds("data/viol_crime_by_state.rds") |> 
+  filter(state == state_name)
+viol_crime_by_off_state <- read_rds("data/viol_crime_by_off_state.rds") |> 
+  filter(state == state_name)
+
+viol_crime_2021_state <- read_rds("data/viol_crime_2021_state.rds") |> 
+  filter(state == state_name)
+viol_crime_2021_by_off_state <- read_rds("data/viol_crime_2021_by_off_state.rds") |> 
+  filter(state == state_name)
+
+ucr_agency_pop <- read_rds("data/ucr_agency_pop.rds") |> 
+  filter(state_abbr == params$state)
+state_nibrs_pop_cov <- read_rds("data/state_nibrs_pop_cov.rds") |> 
+  filter(state_abb == params$state)
+
+# viol_prison_state <- read_rds("data/viol_prison_state.rds") |> 
+#   filter(state == state_name)
+
+# read in prison population data
+us_prison <- read_rds("data/us_prison.rds")
+viol_prison_pop_state <- read_rds("data/viol_prison_pop_state.rds") |> 
+  filter(state == state_name)
+viol_prison_pop_by_off_state <- read_rds("data/viol_prison_pop_by_off_state.rds") |> 
+  filter(state == state_name)
+
+# check if we will consider this a nibrs state for this report
+# which means 90% or more population coverage (from violent crime estimates)
+nibrs_state <- viol_crime_2021_state |> 
+  filter(pop_cov >= 0.9) |> 
+  nrow() >= 1
+
+# check if there is any ncrp data for this state
+ncrp_state <- nrow(viol_prison_pop_state) > 1
+
+# if we're going to use nibrs data join 2021 nibrs estimates with
+# ucr srs state 2010-2020 - by offense
+if (nibrs_state) {
+  viol_crime_by_off_state <- viol_crime_by_off_state |> 
+    bind_rows(viol_crime_2021_by_off_state)
+  
+    # and again just total violent crime
+    viol_crime_by_state <- viol_crime_by_state |> 
+    bind_rows(viol_crime_2021_state)
+}
+
+# create title of page
+# we don't have IL clearance rate data so take that out of title
+doc_title <- case_when(
+  state_name == "Illinois" ~ paste(state_name, "data on violent crime and prison population"),
+  ncrp_state ~ paste(state_name, "data on violent crime, arrests, and prison population"),
+  TRUE ~ paste(state_name, "data on violent crime and arrests")
+  )
+
+# count how many agencies are nibrs reporters in the state
+nibrs_agency_count <- ucr_agency_pop |> 
+  count(is_nibrs) |> 
+  arrange(is_nibrs)
+
+# total number of agencies
+total_agencies <- nrow(ucr_agency_pop)
+
+# number of nibrs reporting agencies
+yes_nibrs_agencies <- nibrs_agency_count$n[nibrs_agency_count$is_nibrs]
+
+# number of non-nibrs agencies
+no_nibrs_agencies <- total_agencies - yes_nibrs_agencies
+```
+
+---
+title: "`r doc_title`"
+---
+
+```{r}
+min_max_viol_crime <- viol_crime_by_state |> 
+  filter(year %in% c(min(year), max(year))) |> 
+  arrange(year)
+
+max_year <- min_max_viol_crime$year[2]
+min_year <- min_max_viol_crime$year[1] 
+
+pct_change <- (min_max_viol_crime$actual_est[2] - min_max_viol_crime$actual_est[1]) / min_max_viol_crime$actual_est[1]
+
+change_text <- case_when(
+  pct_change > 0.005  ~ paste0(percent(abs(pct_change), 1),
+                                    " more"),
+  pct_change < -0.005 ~ paste0(percent(abs(pct_change), 1),
+                                    " fewer"),
+  TRUE                ~ "nearly the same number of"
+  )
+
+pct_change_clear <- min_max_viol_crime$clearance_rate[2] - min_max_viol_crime$clearance_rate[1]
+
+change_text_clear <- case_when(
+  pct_change_clear > 0.005 &
+    pct_change_clear < 0.015 ~ paste0(comma(abs(pct_change_clear * 100), 1),
+                                    " percentage point higher than"),
+  pct_change_clear >= 0.015  ~ paste0(comma(abs(pct_change_clear * 100), 1),
+                                    " percentage points higher than"),
+  pct_change_clear < -0.005 &
+    pct_change_clear > -0.015 ~ paste0(comma(abs(pct_change_clear * 100), 1),
+                                    " percentage point lower than"),
+  pct_change_clear <= -0.015 ~ paste0(comma(abs(pct_change_clear * 100), 1),
+                                    " percentage points lower than"),
+  TRUE                      ~ "nearly the same as"
+  )
+
+max_viol_crime_off <- viol_crime_by_off_state |> 
+  filter(year == max(year)) |> 
+  arrange(desc(actual_est)) |> 
+  mutate(pct = actual_est / sum(actual_est))
+
+offense_pal <- tibble(
+  color = jr_pal[1:4],
+  crime = c("Homicide", "Robbery", "Rape", "Aggravated assault")
+  )
+
+prison_offense_pal <- tibble(
+  color = jr_pal[1:5],
+  off_comb = c("Homicide", "Robbery", "Rape", "Aggravated or simple assault",
+               "Other violent offenses")
+  )
+
+nibrs_pop_cov_text <- percent(unique(max(viol_crime_2021_state$pop_cov)), 1, suffix = " percent")
+
+if (nibrs_pop_cov_text < total_agencies & nibrs_pop_cov_text == "100 percent") {
+  nibrs_pop_cov_text <- "99 percent"
+}
+```
+
+## Violent crime in `r state_name_text`
+
+```{r, eval=nibrs_state, results='asis'}
+cat(paste0(
+  "In 2021, ", comma(yes_nibrs_agencies, 1), " of ", comma(total_agencies, 1),
+  " law enforcement agencies in ", state_name_text, " reported crime data to the FBI, covering ", 
+  nibrs_pop_cov_text, " of the ",
+  if_else(state_name == "District of Columbia", "District", "state"), "'s population."
+  ))
+```
+
+```{r, eval=!nibrs_state, results='asis'}
+cat(paste0(
+  "In 2021, ", comma(yes_nibrs_agencies, 1), " of ", comma(total_agencies, 1),
+  " law enforcement agencies in ", state_name_text, " reported crime data to the FBI, covering ", 
+  percent(state_nibrs_pop_cov$pop_cov, 1, suffix = " percent"), " of the ",
+  if_else(state_name == "District of Columbia", "District", "state"), "'s population. This was too few agencies to make reliable statewide esimates of violent crime in 2021."
+  ))
+```
+
+```{r, eval=no_nibrs_agencies > 0, results='asis'}
+cat(paste0(
+  "A list of law enforcement agencies in ", state_name_text, " that did not fully report to the FBI on crime in 2021 can be found [below](#law-enforcement-agencies-not-reporting-to-nibrs)."
+  ))
+```
+
+::: {.panel-tabset}
+
+## All violent crime
+
+```{r}
+viol_crime_by_state |> 
+  bind_rows(viol_crime_us) |> 
+  mutate(
+    rate = actual_est / pop_total * 1e5,
+    tooltip = paste0(
+      "<b>", state, " – ", year, "</b><br>",
+      "Violent offenses per 100k: ", comma(rate, 1), "<br>",
+      "Violent offenses reported: ", comma(actual_est, 1)
+      ),
+    state = fct_relevel(state, "United States", after = Inf)
+    ) |>
+  hchart(
+    "spline",
+    hcaes(year, rate, group = state),
+    color = jr_pal[c(1, 7)],
+    dashStyle = c("solid", "dash"),
+    opacity = c(1, 0.75)
+  ) |> 
+  hc_title(text = paste("Violent crime in ", state_name_text, "reported to police per 100k residents")) |>
+  hc_caption(text = paste0("FBI Uniform Crime Reporting Program SRS state estimates<br>and 2021 NIBRS state estimates when available")) |> 
+  hc_setup()
+```
+
+## By offense
+
+```{r}
+to_plot <- viol_crime_by_off_state |> 
+  left_join(offense_pal, by = "crime") |> 
+  group_by(year) |> 
+  mutate(
+    tot_crime = sum(actual_est),
+    pct = actual_est / tot_crime,
+    rate = actual_est / pop_total * 1e5
+    ) |> 
+  mutate(
+    crime = fct_reorder(crime, rate),
+    tooltip = paste0(
+      "<b>", crime, " – ", year, "</b></br>",
+      "Offenses reported per 100k: ", comma(rate, 1), "<br>",
+      "Offenses reported: ", comma(actual_est, 1), "<br>",
+      "Total violent offenses reported: ", comma(tot_crime, 1), "<br>",
+      "Share of all violent offenses: ", percent(pct, 1)
+      )
+    ) |> 
+  arrange(year, crime)
+
+to_plot |> 
+  hchart(
+    "column",
+    stacking = "normal",
+    groupPadding = 0.05,
+    hcaes(year, rate, group = crime),
+  ) |> 
+  hc_colors(unique(to_plot$color)) |> 
+  hc_title(text = paste("Violent crime in ", state_name_text, " per 100k residents, by offense")) |>
+  hc_caption(text = paste0("FBI Uniform Crime Reporting Program SRS state estimates<br>and 2021 NIBRS state estimates when available")) |> 
+  hc_setup()
+```
+
+:::
+
+#### Background
+
+Beginning with data year 2021, the FBI discontinued collecting Uniform Crime Reporting data via the Summary Reporting System and required law enforcement agencies to use the [National Incident-Based Reporting System (NIBRS)](https://bjs.ojp.gov/national-incident-based-reporting-system-nibrs) to report crime statistics to the FBI. Because many states did not have full NIBRS reporting coverage in 2021, the FBI and Bureau of Justice Statistics [generated estimated crime statistics](https://bjs.ojp.gov/library/publications/estimation-procedures-crimes-united-states-based-nibrs-data) based on the agencies that reported data to the FBI. The reported crime and clearance rates for 2021 have a level of uncertainty represented by a margin of error for each estimate because not all agencies reported data to the FBI.
+
+```{r, eval=state_name != "Illinois", results='asis'}
+cat("## Clearance rate in", state_name_text, "(by arrest or exceptional means)")
+```
+
+```{r, eval=state_name != "Illinois"}
+clear_rate_max <- if_else(
+  nibrs_state,
+  paste0(
+    comma(min_max_viol_crime$clearance_rate[2] * 100, 1),
+    " percent (±", comma(abs(min_max_viol_crime$clearance_rate_moe[2]) * 100, 0.1), ")"),
+  paste0(comma(min_max_viol_crime$clearance_rate[2] * 100, 1), " percent")
+  )
+```
+
+```{r, eval=state_name != "Illinois", results='asis'}
+cat(paste0(
+  "In ", max_year, ", ", clear_rate_max, " of violent crimes reported to police were cleared by arrest or exceptional means.[^exceptional] This is ", change_text_clear, " the clearance rate in ", min_year, "."
+))
+```
+
+```{r, eval=state_name != "Illinois", results='asis'}
+cat("[^exceptional]: An incident is considered to be [cleared by exceptional means](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019/topic-pages/clearances) if a law enforcement agency is unable to arrest or formally charge a person with a crime, but the agency has met the following conditions:
+    
+    1) Identified the person who committed the crime
+    2) Gathered enough evidence to support an arrest, make a charge, and turn over the person to the court for prosecution
+    3) Identified the suspect’s exact location so that the person could be taken into custody immediately
+    4) Encountered a circumstance outside the control of law enforcement that prohibits the agency from arresting, charging, and prosecuting the person
+    
+    Examples of exceptional clearances include the death of the person who committed the crime; the victim’s refusal to cooperate with the prosecution after the person who committed the crime has been identified; or the denial of extradition.
+
+::: {.panel-tabset}
+
+## All violent crime
+")
+```
+
+
+```{r, eval=state_name != "Illinois"}
+viol_crime_by_state |> 
+  bind_rows(viol_crime_us) |> 
+  mutate(
+    clearance_rate = clearance_rate * 100,
+    tooltip = paste0(
+      "<b>", state, " – ", year, "</b><br>",
+      "Clearance rate: ", percent(clearance_rate / 100, 1), "<br>",
+      "Violent offenses reported: ", comma(actual_est, 1), "<br>",
+      "Violent offenses cleared: ", comma(cleared_est, 1)
+      ),
+    state = fct_relevel(state, "United States", after = Inf)
+    ) |> 
+  hchart(
+    "spline",
+    hcaes(year, clearance_rate, group = state),
+    color = jr_pal[c(1, 7)],
+    dashStyle = c("solid", "dash"),
+    opacity = c(1, 0.75)
+  ) |> 
+  hc_title(text = paste("Violent crime clearance rate in ", state_name_text)) |>
+  hc_caption(text = paste0("FBI Uniform Crime Reporting Program<br>Aggregated from SRS agency-level Offenses Known reports")) |> 
+  hc_setup() |> 
+  hc_yAxis(labels = list(format = "{value:,.0f}%"))
+```
+
+```{r, eval=state_name != "Illinois", results='asis'}
+cat("
+## By offense
+")
+```
+
+```{r, eval=state_name != "Illinois"}
+to_plot <- viol_crime_by_off_state |> 
+  left_join(offense_pal, by = "crime") |> 
+  mutate(
+    clearance_rate = clearance_rate * 100,
+    crime = fct_reorder(crime, clearance_rate, last),
+    tooltip = paste0(
+      "<b>", crime, " – ", year, "</b></br>",
+      "Clearance rate: ", percent(clearance_rate / 100, 1), "<br>",
+      "Violent offenses reported: ", comma(actual_est, 1), "<br>",
+      "Violent offense cleared: ", comma(cleared_est, 1)
+      )
+    ) |> 
+  arrange(desc(year), clearance_rate)
+
+to_plot |>   
+  hchart(
+    "spline",
+    hcaes(year, clearance_rate, group = crime),
+  ) |> 
+  hc_colors(unique(to_plot$color)) |> 
+  hc_title(text = paste0("Violent crime clearance rate in ", state_name_text, ", by offense")) |>
+  hc_caption(text = paste0("FBI Uniform Crime Reporting Program<br>Aggregated from SRS agency-level Offenses Known reports")) |> 
+  hc_setup() |> 
+  hc_yAxis(labels = list(format = "{value:,.0f}%"))
+```
+
+```{r, eval=state_name != "Illinois", results='asis'}
+cat("
+:::
+")
+```
+
+```{r eval=ncrp_state}
+to_plot <- viol_prison_pop_state |> 
+  group_by(year) |> 
+  mutate(
+    tot = sum(n),
+    pct = n / tot
+    ) |> 
+  ungroup() |> 
+  mutate(
+    tooltip = paste0(
+      "<b>", violent_off, " – ", year, "</b></br>",
+      violent_off, " prison population: ", comma(n, 1), "<br>",
+      "Total prison population: ", comma(tot, 1), "<br>",
+      "Share of total prison population: ", percent(pct, 1)
+      )
+  )
+
+max_min_prison <- to_plot |> 
+  filter(year %in% range(year)) |> 
+  arrange(year, violent_off)
+
+min_max_prison_viol <- max_min_prison |> 
+  filter(violent_off == "Violent")
+
+min_max_prison_non_viol <- max_min_prison |> 
+  filter(violent_off == "Nonviolent")
+
+viol_pop_pct_change <- (min_max_prison_viol$n[2] - min_max_prison_viol$n[1]) / min_max_prison_viol$n[1]
+viol_pop_change_text <- case_when(
+  viol_pop_pct_change > 0.005  ~ paste0("increased by ",
+                                        percent(abs(viol_pop_pct_change), 1, suffix = " percent")),
+  viol_pop_pct_change < -0.005 ~ paste0("decreased by ",
+                                        percent(abs(viol_pop_pct_change), 1, suffix = " percent")),
+  TRUE                         ~ "has remained nearly the the same"
+  )
+
+non_viol_pop_pct_change <- (min_max_prison_non_viol$n[2] - min_max_prison_non_viol$n[1]) / min_max_prison_non_viol$n[1]
+non_viol_pop_change_text <- case_when(
+  non_viol_pop_pct_change > 0.005  ~ paste0("increased by ",
+                                        percent(abs(non_viol_pop_pct_change), 1, suffix = " percent")),
+  non_viol_pop_pct_change < -0.005 ~ paste0("decreased by ",
+                                        percent(abs(non_viol_pop_pct_change), 1, suffix = " percent")),
+  TRUE                         ~ "has remained nearly the the same"
+  )
+
+to_plot_by_off <- viol_prison_pop_by_off_state |> 
+  left_join(prison_offense_pal, by = "off_comb") |> 
+  group_by(year) |> 
+  mutate(
+    tot = sum(n),
+    pct = n / tot
+    ) |> 
+  ungroup() |> 
+  mutate(
+    off_comb = fct_reorder(off_comb, pct, last),
+    tooltip = paste0(
+      "<b>", off_comb, " – ", year, "</b></br>",
+      off_comb, " prison population: ", comma(n, 1), "<br>",
+      "Total violent prison population: ", comma(tot, 1), "<br>",
+      "Share of violent prison population: ", percent(pct, 1)
+      )
+  ) |> 
+  arrange(year, off_comb)
+
+max_off <- to_plot_by_off |> 
+  filter(year == max(year)) |> 
+  arrange(desc(pct))
+```
+
+```{r eval=ncrp_state, results='asis'}
+top_offense_text <- if_else(
+  tolower(max_off$off_comb[1]) %in% c("aggravated or simple assault", "other violent offenses"),
+  paste0("an ", tolower(max_off$off_comb[1])),
+  paste0("a ", tolower(max_off$off_comb[1]))
+  )
+
+cat(paste0(
+"## Prison population in ", state_name_text,"
+
+There were ", comma(max_min_prison$n[4], 1), " people in prison for violent offenses in ", max_min_prison$year[4], ", comprising ", percent(max_min_prison$pct[4], 1, suffix = " percent"), " of the total prison population. Since ", max_min_prison$year[2], ", the number of people in prison for violent offenses ", viol_pop_change_text, ". During that same period, the number of people in prison for nonviolent offenses ", non_viol_pop_change_text, ". Data on prison population trends in 2020 and 2021 are not available in national datasets, but can be analyzed upon request.
+
+::: {.panel-tabset}
+
+## Violent vs. nonviolent"
+))
+```
+
+```{r eval=ncrp_state}
+to_plot |>  
+  hchart(
+    "column",
+    stacking = "normal",
+    groupPadding = 0.05,
+    color = jr_pal[c(7, 1)],
+    hcaes(year, n, group = violent_off),
+  ) |> 
+  hc_title(text = paste0("Prison population in ", state_name_text)) |>
+  hc_caption(text = paste0("National Corrections Reporting Program")) |> 
+  hc_setup() |> 
+  hc_yAxis(labels = list(format = "{value:,.0f}"))
+```
+
+```{r eval=ncrp_state, results='asis'}
+cat("## By offense")
+```
+
+```{r eval=ncrp_state}
+to_plot_by_off |> 
+  hchart(
+    "column",
+    stacking = "normal",
+    groupPadding = 0.05,
+    hcaes(year, n, group = off_comb),
+  ) |> 
+  hc_colors(unique(to_plot_by_off$color)) |> 
+  hc_title(text = paste0("Prison population in ", state_name_text, ", by offense")) |>
+  hc_caption(text = paste0("National Corrections Reporting Program")) |> 
+  hc_setup() |> 
+  hc_yAxis(labels = list(format = "{value:,.0f}"))
+```
+
+```{r eval=ncrp_state, results='asis'}
+cat(":::")
+```
+
+
+```{r eval=no_nibrs_agencies > 0, results='asis'}
+cat(paste0(
+"## Law enforcement agencies not reporting to NIBRS
+
+Not all law enforcement agencies have begun reporting NIBRS data to the FBI. As of data year 2021, ", comma(yes_nibrs_agencies, 1), " of ", comma(total_agencies, 1), " agencies in ", state_name_text, " reported NIBRS data. Agenceis that *did not* report in 2021 are listed in the table below. The population column is the number of residents of the jurisdiction covered by the law enforcement agency.[^zero]
+
+[^zero]: Some agencies, such as university and park police, are considered to have a population of zero by the FBI."
+))
+```
+
+```{r, eval=no_nibrs_agencies > 0}
+reactable_template <- function(df, sort_col = "rate", ...) {
+  reactable(
+    df,
+    highlight = TRUE,
+    searchable = TRUE,
+    defaultSorted = sort_col,
+    showPageSizeOptions	= TRUE,
+    pageSizeOptions = c(10, 25, 100),
+    defaultColDef = colDef(
+      vAlign = "center", 
+      headerStyle = list(fontSize = 15, fontWeight = 400),
+      format = colFormat(digits = 0, separators = TRUE),
+      style = list(fontWeight = 400)
+      ),
+    ...
+      )
+}
+
+ucr_agency_pop |> 
+  filter(!is_nibrs) |> 
+  select(agency_name, county_name, population) |> 
+  arrange(desc(population)) |>
+  reactable_template(
+    sort_col = list("population" = "desc"),
+    columns = list(
+      agency_name = colDef(name = "Agency", minWidth = 250),
+      county_name = colDef(name = "County"),
+      population = colDef(name = "Population")
+    )
+  )
+```
