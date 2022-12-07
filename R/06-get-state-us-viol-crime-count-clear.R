@@ -31,16 +31,16 @@ okca <- read_rds(file.path(sp_path, "offenses_known_yearly_1960_2020.rds"))
 # these come from fbi crime in the us, table 25a
 # for each year, i manually created a csv file from the annual reports
 # e.g. https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019/topic-pages/tables/table-25
-# for 2020, crime in the us was only published on fbe cde
+# for 2020, crime in the us was only published on fbi cde
 # https://crime-data-explorer.fr.cloud.gov/pages/downloads
-# scroll to Crime in the United State Annual Reports and download
+# scroll to Crime in the United States Annual Reports and download
 us_viol_crime <- read_csv(file.path(sp_path, "us-crime-clear-cius.csv"))
 us_viol_crime_by_off <- read_csv(file.path(sp_path, "us-crime-clear-cius-by-off.csv"))
 
 # clean up state crime estimates
 # only take 2010 to 2020, keep violent index crimes only
 # combine revised rape and legacy rape into one (change to revised in 2013)
-# resahpe to long with one row per yer per state per crime
+# reshape to long with one row per yer per state per crime
 est_crime_by_off_state <- est_crime_by_state |>
   filter(year >= 2010, !is.na(state_name)) |>
   transmute(
@@ -106,7 +106,7 @@ viol_crime_by_off_state <- okca |>
   mutate(cleared_est = actual_est * clearance_rate)
 
 # using above dataset, aggregate up to all violent crime by adding the four index crimes
-# calculated cleraance rate after aggregation
+# calculated clearance rate after aggregation
 viol_crime_by_state <- viol_crime_by_off_state |>
   group_by(state, state_abb, year, pop_total, pop_adult) |>
   summarize(across(c(actual, cleared, actual_est), sum)) |>

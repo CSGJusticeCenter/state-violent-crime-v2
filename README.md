@@ -6,7 +6,7 @@ Sorry for the brief readme!
 
 `R/07-` renders each state page to html and moves html files to `_site` for deploying on Netlify
 
-`R-08-` creates static plots for Marshall's ppt
+`R/08-` creates static plots for Marshall's ppt
 
 `utils.R` contains various utility functions for the interactive pages
 
