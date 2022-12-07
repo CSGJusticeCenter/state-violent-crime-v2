@@ -2,6 +2,7 @@
 ## for violent offenses also count offense detail by year and state
 
 library(tidyverse)
+library(csgjcr)
 
 # path to data folder on sharepoint
 sp_path <- csg_sp_path("ad_hoc_requests/state_violent_crime_marshall/data")

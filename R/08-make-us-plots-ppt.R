@@ -7,7 +7,7 @@ library(csgjcr)
 library(ggrepel)
 
 # path to data folder on sharepoint
-sp_path <- csg_sp_pat
+sp_path <- csg_sp_path("ad_hoc_requests/state_violent_crime_marshall/data")
 
 viol_crime_by_off_state <- read_rds(file.path(sp_path, "viol_crime_by_off_state.rds"))
 viol_crime_by_state <- read_rds(file.path(sp_path, "viol_crime_by_state.rds"))

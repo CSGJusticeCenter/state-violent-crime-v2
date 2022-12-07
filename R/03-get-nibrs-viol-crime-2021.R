@@ -2,6 +2,7 @@
 ## https://crime-data-explorer.fr.cloud.gov/pages/downloads#nibrsestimationDownloads
 
 library(tidyverse)
+library(csgjcr)
 
 # path to data folder on sharepoint
 sp_path <- csg_sp_path("ad_hoc_requests/state_violent_crime_marshall/data")
@@ -74,7 +75,8 @@ viol_crime_2021_state <- nibrs_viol_count_clear |>
       crime == "Murder and Non-negligent Manslaughter" ~ "Homicide",
       crime == "Aggravated Assault"                    ~ "Aggravated assault",
       crime == "Revised Rape"                          ~ "Rape",
-      crime == "Violent Crime"                         ~ "Total violent crime"
+      crime == "Violent Crime"                         ~ "Total violent crime",
+      TRUE ~ crime
       )
     ) |>
   left_join(state_pop, by = c("state", "year"))

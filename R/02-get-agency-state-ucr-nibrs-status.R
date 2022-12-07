@@ -7,6 +7,7 @@
 library(tidyverse)
 library(httr2)
 library(lubridate)
+library(csgjcr)
 
 # path to data folder on sharepoint
 sp_path <- csg_sp_path("ad_hoc_requests/state_violent_crime_marshall/data")
@@ -107,7 +108,7 @@ safe_get_agency_pop <- safely(get_agency_pop)
 # iterate over agencies oris with missing population and call api
 # note: this takes a decent amount of time because we have to go one by one
 # through 1000+ agencies
-missing_pop_agency_api_res <- map(mising_pop_agency$ori[1:34], safe_get_agency_pop)
+missing_pop_agency_api_res <- map(mising_pop_agency$ori, safe_get_agency_pop)
 
 # clean up api results
 # so agencies are missing from 2020 data so grab both 2020 and 2021
