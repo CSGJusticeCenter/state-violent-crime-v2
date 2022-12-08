@@ -9,7 +9,6 @@ library(csgjcr)
 library(highcharter)
 library(htmlwidgets)
 library(reactable)
-library(htmltools)
 library(openxlsx)
 
 source("utils.R")
@@ -57,8 +56,6 @@ table_vcr.all <- viol_crime_by_off_us |>
   )
 
 #break out states BY OFFENSE, only states where NIBRS participation >=90% (2021)
-totalpop.2021.gte90 <- sum(viol_crime_2021_state[which(viol_crime_2021_state$state_abb %in% states.gte90),]$pop_adult)
-
 table_vcr.gte90_21 <- viol_crime_2021_by_off_state |>
     left_join(offense_pal, by = "crime") |>
     filter(state_abb %in% states.gte90) |>
@@ -78,39 +75,72 @@ table_vcr.gte90_20 <- viol_crime_by_off_state |>
     rate = actual_est_1 / pop_total_1 * 1e4 #want the rate at 10K
   )
 
-#combine years
-table_final <- rbind(table_vcr.all,table_vcr.gte90_21)
+table_vcr.gte90_19 <- viol_crime_by_off_state |>
+  left_join(offense_pal, by = "crime") |>
+  filter(year == 2019 & state_abb %in% states.gte90) |>
+  group_by(year,crime) |>
+  summarise(across(c(actual_est,pop_total), list(sum))) |>
+  group_by(year) |>
+  mutate(
+    rate = actual_est_1 / pop_total_1 * 1e4 #want the rate at 10K
+  )
 
+#combine years, count #states increase/decrease in violent crime BY OFFENSE
 table_vcr.gte90_21_ct <- viol_crime_2021_by_off_state |>
   left_join(offense_pal, by = "crime") |>
   filter(state_abb %in% states.gte90) |>
   select(state_abb, crime, actual_est) |>
   rename(actual_est21 = actual_est)
 
-table_vcr.gte90_20_ct <- viol_crime_by_off_state |>
+table_vcr.gte90_19_ct <- viol_crime_by_off_state |>
   left_join(offense_pal, by = "crime") |>
-  filter(year == 2020 & state_abb %in% states.gte90) |>
+  filter(year == 2019 & state_abb %in% states.gte90) |>
   select(state_abb, crime, actual_est) |>
-  rename(actual_est20 = actual_est)
+  rename(actual_est19 = actual_est)
 
-table_ct <- merge(table_vcr.gte90_20_ct,table_vcr.gte90_21_ct, by = c("state_abb", "crime")) |>
+table_ct <- merge(table_vcr.gte90_19_ct,table_vcr.gte90_21_ct, by = c("state_abb", "crime")) |>
   mutate(
-    decrease = ifelse(actual_est20-actual_est21>0,1,0),
-    increase = ifelse(actual_est20-actual_est21<0,1,0)
+    decrease = ifelse(actual_est19-actual_est21>0,1,0),
+    increase = ifelse(actual_est19-actual_est21<0,1,0)
   ) |>
   group_by(crime) |>
-  summarise(across(c(decrease,increase),list(sum)))
+  summarise(across(c(decrease,increase),list(sum))) |>
+  rename(decrease19_21 = decrease_1,
+         increase19_21 = increase_1)
+
+#combine years, count #states increase/decrease in violent crime OVERALL
+table_vcr.gte90_21_ctov <- viol_crime_2021_state |>
+  filter(state_abb %in% states.gte90) |>
+  select(state_abb, actual_est) |>
+  rename(actual_est21 = actual_est)
+
+table_vcr.gte90_19_ctov <- viol_crime_by_state |>
+  filter(year == 2019 & state_abb %in% states.gte90) |>
+  select(state_abb, actual_est) |>
+  rename(actual_est19 = actual_est)
+
+table_ctov <- merge(table_vcr.gte90_19_ctov,table_vcr.gte90_21_ctov, by = "state_abb") |>
+  mutate(
+    decrease = ifelse(actual_est19-actual_est21>0,1,0),
+    increase = ifelse(actual_est19-actual_est21<0,1,0)
+  ) |>
+  summarise(across(c(decrease,increase),list(sum))) |>
+  rename(decrease19_21 = decrease_1,
+         increase19_21 = increase_1)
 
 #final table
-change <- merge(table_vcr.gte90_20,
-                table_vcr.gte90_21,
+change <- merge(table_vcr.gte90_19,
+                table_vcr.gte90_20,
                 by = "crime") |>
-  mutate(change_rate = rate.x - rate.y) |>
+  left_join(table_vcr.gte90_21, by = "crime") |>
+  mutate(change_rate19_21 = rate.x - rate,
+         change_rate20_21 = rate.y - rate) |>
   rename(
-    rate2020 = rate.x,
-    rate2021 = rate.y,
+    rate2019 = rate.x,
+    rate2020 = rate.y,
+    rate2021 = rate,
   ) |>
-  select(crime, rate2020, rate2021, change_rate) |>
+  select(crime, rate2019, rate2020, rate2021, change_rate20_21, change_rate19_21) |>
   left_join(table_ct, by = "crime")
 
 
@@ -127,8 +157,6 @@ table_vcr.all <- viol_crime_by_off_us |>
   )
 
 #break out states BY OFFENSE, only states where NIBRS participation >=90% (2021)
-totalpop.2021.gte90 <- sum(viol_crime_2021_state[which(viol_crime_2021_state$state_abb %in% states.gte90),]$pop_total)
-
 table_vcr.gte90_21 <- viol_crime_2021_by_off_state |>
   left_join(offense_pal, by = "crime") |>
   filter(state_abb %in% states.gte90) |>
@@ -148,46 +176,59 @@ table_vcr.gte90_20 <- viol_crime_by_off_state |>
     clearance_rate = cleared_1 / actual_1
   )
 
-#combine years
-table_final <- rbind(table_vcr.all,table_vcr.gte90_21)
+table_vcr.gte90_19 <- viol_crime_by_off_state |>
+  left_join(offense_pal, by = "crime") |>
+  filter(year == 2019 & state_abb %in% states.gte90) |>
+  group_by(year,crime) |>
+  summarise(across(c(cleared,actual), list(sum))) |>
+  group_by(year) |>
+  mutate(
+    clearance_rate = cleared_1 / actual_1
+  )
 
+#combine years, count #states increase/decrease in violent crime BY OFFENSE
 table_vcr.gte90_21_ct <- viol_crime_2021_by_off_state |>
   left_join(offense_pal, by = "crime") |>
   filter(state_abb %in% states.gte90) |>
   select(state_abb, crime, clearance_rate) |>
   rename(clearance_rate21 = clearance_rate)
 
-table_vcr.gte90_20_ct <- viol_crime_by_off_state |>
+table_vcr.gte90_19_ct <- viol_crime_by_off_state |>
   left_join(offense_pal, by = "crime") |>
-  filter(year == 2020 & state_abb %in% states.gte90) |>
+  filter(year == 2019 & state_abb %in% states.gte90) |>
   select(state_abb, crime, clearance_rate) |>
-  rename(clearance_rate20 = clearance_rate)
+  rename(clearance_rate19 = clearance_rate)
 
-table_ct <- merge(table_vcr.gte90_20_ct,table_vcr.gte90_21_ct, by = c("state_abb", "crime")) |>
+table_ct <- merge(table_vcr.gte90_19_ct,table_vcr.gte90_21_ct, by = c("state_abb", "crime")) |>
   mutate(
-    decrease = ifelse(clearance_rate20-clearance_rate21>0,1,0),
-    increase = ifelse(clearance_rate20-clearance_rate21<0,1,0)
+    decrease = ifelse(clearance_rate19-clearance_rate21>0,1,0),
+    increase = ifelse(clearance_rate19-clearance_rate21<0,1,0)
   ) |>
   group_by(crime) |>
-  summarise(across(c(decrease,increase),list(sum)))
+  summarise(across(c(decrease,increase),list(sum))) |>
+  rename(decrease19_21 = decrease_1,
+         increase19_21 = increase_1)
 
 #final table
-change.clear <- merge(table_vcr.gte90_20,
-                table_vcr.gte90_21,
-                by = "crime") |>
-  mutate(change_rate = clearance_rate.x - clearance_rate.y) |>
+change.clear <- merge(table_vcr.gte90_19,
+                      table_vcr.gte90_20,
+                      by = "crime") |>
+  left_join(table_vcr.gte90_21, by = "crime") |>
+  mutate(change_rate19_21 = clearance_rate.x - clearance_rate,
+         change_rate20_21 = clearance_rate.y - clearance_rate) |>
   rename(
-    rate2020 = clearance_rate.x,
-    rate2021 = clearance_rate.y,
+    rate2019 = clearance_rate.x,
+    rate2020 = clearance_rate.y,
+    rate2021 = clearance_rate,
   ) |>
-  select(crime, rate2020, rate2021, change_rate) |>
+  select(crime, rate2019, rate2020, rate2021, change_rate19_21, change_rate20_21) |>
   left_join(table_ct, by = "crime")
 
 
 write.xlsx(change,       "rates.csv",           sheetName="Sheet1")
 write.xlsx(change.clear, "clearance_rates.csv", sheetName="Sheet1")
 
-#when using weights, weighted rate is much larger
+#DEVELOP WEIGHTS based on state population size?
 #
 # weights <- viol_crime_2021_state |>
 #   filter(state_abb %in% states.gte90) |>
@@ -211,6 +252,7 @@ write.xlsx(change.clear, "clearance_rates.csv", sheetName="Sheet1")
 #     rate = (weighted_est_1/pop_total_1 *1e4)*length(states.gte90) #want the rate at 10K
 #   )
 
+#create violent crime rate plots by offense per 10k pop.
 gte90_21 <- viol_crime_2021_by_off_state |>
   left_join(offense_pal, by = "crime") |>
   filter(state_abb %in% states.gte90) |>
@@ -246,12 +288,11 @@ plot1<- to_plot[which(to_plot$crime=="Aggravated assault"),] |>
     color = "#E17619"
   ) |>
   hc_colors(unique(to_plot$color)) |>
-  hc_title(text = paste0("Violent crime rate in the US: Aggravated assault")) |>
+  hc_title(text = paste0("Violent crime rate in the US per 10k residents: Aggravated assault")) |>
   hc_caption(text = paste0("FBI Uniform Crime Reporting Program<br>Aggregated from SRS agency-level Offenses Known reports")) |>
   hc_setup() |>
   hc_exporting(enabled = FALSE) |>
-  hc_tooltip(enabled=FALSE) |>
-  hc_yAxis(labels = list(format = "{value:,.0f}%"))
+  hc_tooltip(enabled=FALSE)
 plot2<- to_plot[which(to_plot$crime=="Rape"),] |>
   hchart(
     "spline",
@@ -259,12 +300,12 @@ plot2<- to_plot[which(to_plot$crime=="Rape"),] |>
     color = "#50A25D"
   ) |>
   hc_colors(unique(to_plot$color)) |>
-  hc_title(text = paste0("Violent crime rate in the US: Rape")) |>
+  hc_title(text = paste0("Violent crime rate in the US per 10k residents: Rape")) |>
   hc_caption(text = paste0("FBI Uniform Crime Reporting Program<br>Aggregated from SRS agency-level Offenses Known reports")) |>
   hc_setup() |>
   hc_exporting(enabled = FALSE) |>
   hc_tooltip(enabled=FALSE) |>
-  hc_yAxis(labels = list(format = "{value:,.1f}%"))
+  hc_yAxis(labels = list(format = "{value:,.1f}"))
 plot3<- to_plot[which(to_plot$crime=="Robbery"),] |>
   hchart(
     "spline",
@@ -272,25 +313,24 @@ plot3<- to_plot[which(to_plot$crime=="Robbery"),] |>
     color = "#273C4C"
   ) |>
   hc_colors(unique(to_plot$color)) |>
-  hc_title(text = paste0("Violent crime rate in the US: Robbery")) |>
+  hc_title(text = paste0("Violent crime rate in the US per 10k residents: Robbery")) |>
   hc_caption(text = paste0("FBI Uniform Crime Reporting Program<br>Aggregated from SRS agency-level Offenses Known reports")) |>
   hc_setup() |>
   hc_exporting(enabled = FALSE) |>
   hc_tooltip(enabled=FALSE) |>
-  hc_yAxis(labels = list(format = "{value:,.0f}%"))
+  hc_yAxis(labels = list(format = "{value:,.1f}"))
 plot4<- to_plot[which(to_plot$crime=="Homicide"),] |>
   hchart(
     "spline",
     hcaes(year, rate, group = crime),
     color = "#4095B1",
   ) |>
-  hc_title(text = paste0("Violent crime rate in the US: Homicide")) |>
+  hc_title(text = paste0("Violent crime rate in the US per 10k residents: Homicide")) |>
   hc_caption(text = paste0("FBI Uniform Crime Reporting Program<br>Aggregated from SRS agency-level Offenses Known reports")) |>
   hc_setup() |>
   hc_exporting(enabled = FALSE) |>
   hc_tooltip(enabled=FALSE) |>
-  hc_yAxis(labels = list(format = "{value:,.1f}%"))
-finalgrid <- hw_grid(plot1,plot2,plot3,plot4,ncol=2)
+  hc_yAxis(labels = list(format = "{value:,.2f}"))
 
-htmltools::browsable(finalgrid) # print
-htmltools::save_html(finalgrid,"finalgrid.html") # save
+#grid of plots
+finalgrid <- hw_grid(plot1,plot2,plot3,plot4,ncol=2)
