@@ -6,10 +6,9 @@ hcoptslang$thousandsSep <- ","
 options(highcharter.lang = hcoptslang)
 
 # set highcharter fonts to match Quarto default fonts
-default_fonts <- c("system-ui", "-apple-system", "Segoe UI", "Roboto",
-                   "Helvetica Neue", "Arial", "Noto Sans", "Liberation Sans",
-                   "sans-serif", "Apple Color Emoji", "Segoe UI Emoji",
-                   "Segoe UI Symbol", "Noto Color Emoji")
+default_fonts <- "GT America Regular"
+header_font <- "GT America"
+header_weight <- 700
 
 # define justice reinvestment color palette
 jr_pal <- c("#4095B1", "#273C4C", "#50A25D", "#E17619", "#E25449", "#779F38", "#AFABAB")
@@ -23,10 +22,11 @@ hc_theme_jc <- hc_theme_merge(
       marginTop = 75,
       style = list(fontFamily = default_fonts)
     ),
-    title = list(style = list(fontFamily = default_fonts, fontSize = "24px")),
+    title = list(style = list(fontFamily = header_font, color = "#004270",
+                              fontSize = "24px", fontWeight = 700)),
     subtitle = list(style = list(fontFamily = default_fonts, fontSize = "16px")),
     legend = list(align = "center", verticalAlign = "bottom"),
-    caption = list(align = "right", y = -5),
+    caption = list(align = "right"),
     plotOptions = list(
       series = list(states = list(inactive = list(opacity = 1))),
       line = list(marker = list(enabled = TRUE)),

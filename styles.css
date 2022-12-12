@@ -53,13 +53,13 @@
 }
 
 h1 {
-  font-family: GT-America;
+  font-family: GT America;
   font-weight: 700;
   color: #004270;
 }
 
 h2, h3 {
-  font-family: GT-America;
+  font-family: GT America;
   font-weight: 700;
   color: #005FAD;
 }
@@ -68,10 +68,14 @@ h4 {
   color: #005FAD;
 }
 
-a, a:hover, .nav-link {
-  color: #00355a;
-}
-
 .nav-link {
   color: #005FAD;
+}
+
+.footnotes, .tippy-content {
+  font-size: 0.85em;
+}
+
+.Reactable {
+  font-size: 0.85em;
 }

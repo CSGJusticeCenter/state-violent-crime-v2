@@ -2,6 +2,9 @@
 format:
   html:
     include-before-body: header.html
+    css: styles.css
+mainfont: GT America Regular
+linkcolor: "#00355a"
 params:
   state: "IA"
 execute:
@@ -507,9 +510,10 @@ reactable_template <- function(df, sort_col = "rate", ...) {
     pageSizeOptions = c(10, 25, 100),
     defaultColDef = colDef(
       vAlign = "center", 
-      headerStyle = list(fontSize = 15, fontWeight = 400),
       format = colFormat(digits = 0, separators = TRUE),
-      style = list(fontWeight = 400)
+      headerStyle = list(fontWeight = 700, fontFamily = default_fonts,
+                         fontVariant = "all-petite-caps"),
+      style = list(fontWeight = 400, fontFamily = default_fonts)
       ),
     ...
       )
