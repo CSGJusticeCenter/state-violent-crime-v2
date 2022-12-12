@@ -440,7 +440,7 @@ top_offense_text <- if_else(
 cat(paste0(
 "## Prison population in ", state_name_text,"
 
-There were ", comma(max_min_prison$n[4], 1), " people in prison for violent offenses in ", max_min_prison$year[4], ", comprising ", percent(max_min_prison$pct[4], 1, suffix = " percent"), " of the total prison population. Since ", max_min_prison$year[2], ", the number of people in prison for violent offenses ", viol_pop_change_text, ". During that same period, the number of people in prison for nonviolent offenses ", non_viol_pop_change_text, ". Data on prison population trends in 2020 and 2021 are not available in national datasets, but can be analyzed upon request.
+There were ", comma(max_min_prison$n[4], 1), " people in prison for violent offenses in ", max_min_prison$year[4], ", comprising ", percent(max_min_prison$pct[4], 1, suffix = " percent"), " of the total prison population. Since ", max_min_prison$year[2], ", the number of people in prison for violent offenses ", viol_pop_change_text, ". During that same period, the number of people in prison for nonviolent offenses ", non_viol_pop_change_text, ". Data on prison population trends in 2021 and 2022 are not available in national datasets, but can be analyzed upon request.
 
 ::: {.panel-tabset}
 
@@ -491,7 +491,6 @@ cat(":::")
 cat(paste0(
 "## Law enforcement agencies not reporting to NIBRS
 
-Not all law enforcement agencies have begun reporting NIBRS data to the FBI. As of data year 2021, ", comma(yes_nibrs_agencies, 1), " of ", comma(total_agencies, 1), " agencies in ", state_name_text, " reported NIBRS data. Agencies that *did not* report in 2021 are listed in the table below. The population column is the number of residents of the jurisdiction covered by the law enforcement agency.[^zero]
 
 [^zero]: Some agencies, such as university and park police, are considered to have a population of zero by the FBI."
 ))
