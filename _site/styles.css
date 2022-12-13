@@ -2,9 +2,7 @@
 @font-face{
     font-family:"GT-America";
     font-style: normal;
-    src:url("fonts/GT-America-Standard-Regular.eot?#iefix");
-    src:url("fonts/GT-America-Standard-Regular.eot?#iefix") format("eot"),
-        url("fonts/GT-America-Standard-Regular.woff2") format("woff2"),
+    src:url("fonts/GT-America-Standard-Regular.woff2") format("woff2"),
         url("fonts/GT-America-Standard-Regular.woff") format("woff")
 }
 
@@ -12,18 +10,14 @@
     font-family:"GT-America";
     font-weight: 200;
     font-style: normal;
-    src:url("fonts/GT-America-Standard-Light.eot?#iefix");
-    src:url("fonts/GT-America-Standard-Light.eot?#iefix") format("eot"),
-        url("fonts/GT-America-Standard-Light.woff2") format("woff2"),
+    src:url("fonts/GT-America-Standard-Light.woff2") format("woff2"),
         url("fonts/GT-America-Standard-Light.woff") format("woff"),
 }
 
 @font-face{
     font-family:"GT-America";
     font-style: italic;
-    src:url("fonts/GT-America-Standard-Regular-Italic.eot?#iefix");
-    src:url("fonts/GT-America-Standard-Regular-Italic.eot?#iefix") format("eot"),
-        url("fonts/GT-America-Standard-Regular-Italic.woff2") format("woff2"),
+    src:url("fonts/GT-America-Standard-Regular-Italic.woff2") format("woff2"),
         url("fonts/GT-America-Standard-Regular-Italic.woff") format("woff")
 }
 
@@ -31,9 +25,7 @@
     font-family:"GT-America";
     font-weight: 500;
     font-style: normal;
-    src:url("fonts/GT-America-Standard-Medium.eot?#iefix");
-    src:url("fonts/GT-America-Standard-Medium.eot?#iefix") format("eot"),
-        url("fonts/GT-America-Standard-Medium.woff2") format("woff2"),
+    src:url("fonts/GT-America-Standard-Medium.woff2") format("woff2"),
         url("fonts/GT-America-Standard-Medium.woff") format("woff")
 }
 
@@ -41,9 +33,7 @@
     font-family:"GT-America";
     font-weight: 700;
     font-style: normal;
-    src:url("fonts/GT-America-Standard-Bold.eot?#iefix");
-    src:url("fonts/GT-America-Standard-Bold.eot?#iefix") format("eot"),
-        url("fonts/GT-America-Standard-Bold.woff2") format("woff2"),
+    src:url("fonts/GT-America-Standard-Bold.woff2") format("woff2"),
         url("fonts/GT-America-Standard-Bold.woff") format("woff")
 }
 

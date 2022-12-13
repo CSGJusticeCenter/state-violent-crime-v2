@@ -1,0 +1,149 @@
+---
+format:
+  html:
+    include-before-body: header.html
+    css: styles.css
+mainfont: "GT-America"
+linkcolor: "#00355a"
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r}
+library(tidyverse)
+library(scales)
+library(csgjcr)
+library(highcharter)
+library(htmlwidgets)
+library(reactable)
+
+source("R/utils.R")
+
+# path to data folder on sharepoint
+sp_path <- csg_sp_path("ad_hoc_requests/state_violent_crime_marshall/data")
+
+state_name <- "United States"
+state_name_text <- "the United States"
+  
+# read in crime data
+viol_crime_us <- read_rds(file.path(sp_path, "viol_crime_us.rds"))
+viol_crime_by_off_us <- read_rds(file.path(sp_path, "viol_crime_by_off_us.rds"))
+
+viol_crime_by_state <- read_rds(file.path(sp_path, "viol_crime_by_state.rds"))
+
+viol_crime_by_off_state <- read_rds(file.path(sp_path, "viol_crime_by_off_state.rds"))
+viol_crime_2021_state <- read_rds(file.path(sp_path, "viol_crime_2021_state.rds"))
+viol_crime_2021_by_off_state <- read_rds(file.path(sp_path, "viol_crime_2021_by_off_state.rds")) 
+
+ucr_agency_pop <- read_rds(file.path(sp_path, "ucr_agency_pop.rds"))
+state_nibrs_pop_cov <- read_rds(file.path(sp_path, "state_nibrs_pop_cov.rds"))
+# viol_prison_state <- read_rds("data/viol_prison_state.rds") |> 
+#   filter(state == state_name)
+
+# read in prison population data
+us_prison <- read_rds(file.path(sp_path, "us_prison.rds"))
+viol_prison_pop_state <- read_rds(file.path(sp_path, "viol_prison_pop_state.rds"))
+viol_prison_pop_by_off_state <- read_rds(file.path(sp_path, "viol_prison_pop_by_off_state.rds"))
+
+# check if we will consider this a nibrs state for this report
+# which means 90% or more population coverage (from violent crime estimates)
+nibrs_state <- viol_crime_2021_state |> 
+  filter(pop_cov >= 0.9) |> 
+  nrow() >= 1
+
+# check if there is any ncrp data for this state
+ncrp_state <- nrow(viol_prison_pop_state) > 1
+
+# if we're going to use nibrs data join 2021 nibrs estimates with
+# ucr srs state 2010-2020 - by offense
+if (nibrs_state) {
+  viol_crime_by_off_state <- viol_crime_by_off_state |> 
+    bind_rows(viol_crime_2021_by_off_state)
+  
+    # and again just total violent crime
+    viol_crime_by_state <- viol_crime_by_state |> 
+    bind_rows(viol_crime_2021_state)
+}
+
+# create title of page
+# we don't have IL clearance rate data so take that out of title
+doc_title <- case_when(
+  state_name == "Illinois" ~ paste(state_name, "data on violent crime and prison population"),
+  ncrp_state ~ paste(state_name, "data on violent crime, arrests, and prison population"),
+  TRUE ~ paste(state_name, "data on violent crime and arrests")
+  )
+
+# count how many agencies are nibrs reporters in the state
+nibrs_agency_count <- ucr_agency_pop |> 
+  count(is_nibrs) |> 
+  arrange(is_nibrs)
+
+# total number of agencies
+total_agencies <- nrow(ucr_agency_pop)
+
+# number of nibrs reporting agencies
+yes_nibrs_agencies <- nibrs_agency_count$n[nibrs_agency_count$is_nibrs]
+
+# number of non-nibrs agencies
+no_nibrs_agencies <- total_agencies - yes_nibrs_agencies
+```
+
+---
+title: "`r doc_title`"
+---
+
+### Clearance rate of violent crime, 2020
+
+```{r}
+hex <- sf::read_sf("us_states_hexgrid.geojson") |> 
+  select(state_abb = iso3166_2)
+
+hex_gj <- hex %>% 
+  sf::st_transform(3857) %>%
+  geojsonsf::sf_geojson() %>% 
+  jsonlite::fromJSON(simplifyVector = FALSE)
+
+highchart_hex_map <- function(x) {
+  highchart()  |> 
+    hc_add_series_map(
+      map = hex_gj,
+      df = x,
+      joinBy = "state_abb",
+      value = "rate",
+      dataLabels = list(enabled = TRUE, format = "{point.state_abb}",
+                        style = list(fontSize = "9px", fontWeight = "regular",
+                                     textOutline = 0)),
+      nullColor = "#e8e8e8"
+      )  |> 
+    hc_colorAxis(minColor = "#f7fdff", maxColor = "#1795BF") |> 
+    hc_setup()
+}
+
+to_plot <- viol_crime_by_state |> 
+  filter(year == 2020) |> 
+  mutate(
+    clearance_rate = if_else(state_abb == "IL", NA_real_, clearance_rate),
+    clearance_rate = clearance_rate * 100,
+    rate = clearance_rate,
+    tooltip = paste0(
+      "<b>", state, " – ", year, "</b><br>",
+      "Clearance rate: ", percent(clearance_rate / 100, 1), "<br>",
+      "Violent offenses reported: ", comma(actual_est, 1), "<br>",
+      "Violent offenses cleared: ", comma(cleared_est, 1)
+      ),
+    url = paste0("state-viol-crime-", tolower(state_abb), ".html")
+    )
+
+highchart_hex_map(to_plot) |> 
+  hc_tooltip(enabled = FALSE) |> 
+  hc_plotOptions(
+    series = list(
+      point = list(
+        events = list(
+          click = JS("function(){location.href = this.options.url}"))
+        )
+      )
+    )
+```

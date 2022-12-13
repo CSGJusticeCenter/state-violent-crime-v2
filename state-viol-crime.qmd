@@ -6,7 +6,7 @@ format:
 mainfont: "GT-America"
 linkcolor: "#00355a"
 params:
-  state: "IA"
+  state: "AL"
 execute:
   echo: false
   warning: false
@@ -231,6 +231,7 @@ to_plot <- viol_crime_by_off_state |>
     pct = actual_est / tot_crime,
     rate = actual_est / pop_total * 1e5
     ) |> 
+  ungroup() |> 
   mutate(
     crime = fct_reorder(crime, rate),
     tooltip = paste0(
@@ -256,6 +257,79 @@ to_plot |>
   hc_setup()
 ```
 
+## Homicide
+
+```{r}
+to_plot_2 <- to_plot |> 
+  filter(crime == "Homicide")
+
+to_plot_2 |> 
+  hchart(
+    "spline",
+    stacking = "normal",
+    hcaes(year, rate)
+  ) |> 
+  hc_yAxis(min = 0) |> 
+  hc_colors(unique(to_plot_2$color)) |> 
+  hc_title(text = paste("Homicide offenses in ", state_name_text, " per 100k residents")) |>
+  hc_caption(text = paste0("FBI Uniform Crime Reporting Program SRS state estimates<br>and 2021 NIBRS state estimates when available")) |> 
+  hc_setup()
+```
+
+## Aggravated assault
+
+```{r}
+to_plot_3 <- to_plot |> 
+  filter(crime == "Aggravated assault")
+
+to_plot_3 |> 
+  hchart(
+    "spline",
+    stacking = "normal",
+    hcaes(year, rate)
+  ) |> 
+  hc_colors(unique(to_plot_3$color)) |> 
+  hc_title(text = paste("Aggravated assault offenses in ", state_name_text, " per 100k residents")) |>
+  hc_caption(text = paste0("FBI Uniform Crime Reporting Program SRS state estimates<br>and 2021 NIBRS state estimates when available")) |> 
+  hc_setup()
+```
+
+## Rape
+
+```{r}
+to_plot_4 <- to_plot |> 
+  filter(crime == "Rape")
+
+to_plot_4 |> 
+  hchart(
+    "spline",
+    stacking = "normal",
+    hcaes(year, rate)
+  ) |> 
+  hc_colors(unique(to_plot_4$color)) |> 
+  hc_title(text = paste("Rape offenses in ", state_name_text, " per 100k residents")) |>
+  hc_caption(text = paste0("FBI Uniform Crime Reporting Program SRS state estimates<br>and 2021 NIBRS state estimates when available")) |> 
+  hc_setup()
+```
+
+## Robbery
+
+```{r}
+to_plot_5 <- to_plot |> 
+  filter(crime == "Robbery")
+
+to_plot_5 |>
+  hchart(
+    "spline",
+    stacking = "normal",
+    hcaes(year, rate)
+  ) |> 
+  hc_colors(unique(to_plot_5$color)) |> 
+  hc_title(text = paste("Robbery offenses in ", state_name_text, " per 100k residents")) |>
+  hc_caption(text = paste0("FBI Uniform Crime Reporting Program SRS state estimates<br>and 2021 NIBRS state estimates when available")) |> 
+  hc_setup()
+```
+
 :::
 
 #### Background
@@ -267,13 +341,13 @@ cat("## Clearance rate in", state_name_text, "(by arrest or exceptional means)")
 ```
 
 ```{r, eval=state_name != "Illinois"}
-clear_rate_max <- if_else(
-  nibrs_state,
-  paste0(
+clear_rate_max <- paste0(comma(min_max_viol_crime$clearance_rate[2] * 100, 1), " percent")
+
+if (nibrs_state) {
+  clear_rate_max <- paste0(
     comma(min_max_viol_crime$clearance_rate[2] * 100, 1),
-    " percent (±", comma(abs(min_max_viol_crime$clearance_rate_moe[2]) * 100, 0.1), ")"),
-  paste0(comma(min_max_viol_crime$clearance_rate[2] * 100, 1), " percent")
-  )
+    " percent (±", comma(abs(min_max_viol_crime$clearance_rate_moe[2]) * 100, 0.1), ")")
+}
 ```
 
 ```{r, eval=state_name != "Illinois", results='asis'}
