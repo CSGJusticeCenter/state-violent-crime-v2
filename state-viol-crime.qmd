@@ -3,7 +3,7 @@ format:
   html:
     include-before-body: header.html
     css: styles.css
-mainfont: GT America Regular
+mainfont: "GT-America"
 linkcolor: "#00355a"
 params:
   state: "IA"

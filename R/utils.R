@@ -6,8 +6,8 @@ hcoptslang$thousandsSep <- ","
 options(highcharter.lang = hcoptslang)
 
 # set highcharter fonts to match Quarto default fonts
-default_fonts <- "GT America Regular"
-header_font <- "GT America"
+default_fonts <- "GT-America"
+header_font <- "GT-America"
 header_weight <- 700
 
 # define justice reinvestment color palette
@@ -23,7 +23,7 @@ hc_theme_jc <- hc_theme_merge(
       style = list(fontFamily = default_fonts)
     ),
     title = list(style = list(fontFamily = header_font, color = "#004270",
-                              fontSize = "24px", fontWeight = 700)),
+                              fontSize = "24px")),
     subtitle = list(style = list(fontFamily = default_fonts, fontSize = "16px")),
     legend = list(align = "center", verticalAlign = "bottom"),
     caption = list(align = "right"),
