@@ -568,6 +568,9 @@ cat(":::")
 cat(paste0(
 "## Law enforcement agencies not reporting to NIBRS
 
+Not all law enforcement agencies have begun reporting NIBRS data to the FBI. As of data year 2021, ", comma(yes_nibrs_agencies, 1), " of ", comma(total_agencies, 1), " agencies in ", state_name_text, " reported NIBRS data, covering ", 
+  percent(state_nibrs_pop_cov$pop_cov, 1, suffix = " percent"), " of the ",
+  if_else(state_name == "District of Columbia", "District", "state"), "'s population. Agencies that *did not* report in 2021 are listed in the table below. The population column is the number of residents of the jurisdiction covered by the law enforcement agency.[^zero]
 
 [^zero]: Some agencies, such as university and park police, are considered to have a population of zero by the FBI."
 ))
@@ -595,6 +598,7 @@ reactable_template <- function(df, sort_col = "rate", ...) {
 
 ucr_agency_pop |> 
   filter(!is_nibrs) |> 
+  mutate(county_name = if_else(county_name == "Not Specified", "", county_name)) |> 
   select(agency_name, county_name, population) |> 
   arrange(desc(population)) |>
   reactable_template(

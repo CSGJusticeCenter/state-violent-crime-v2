@@ -16,7 +16,7 @@ purrr::walk(c(state.abb, "DC"), render_state)
 
 # us page
 quarto::quarto_render(
-  input = "state-viol-crime-home.qmd",
+  input = "index.qmd",
   output_file = "index.html",
   quiet = TRUE
 )

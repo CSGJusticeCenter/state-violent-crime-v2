@@ -44,8 +44,9 @@ viol_prison_pop_by_off_state <- ncrp |>
       str_detect(OFFDETAIL, "Other|manslaughter")  ~ "Other violent offenses"
       )
     ) |>
+  count(STATE, year, off_comb, wt = n) |>
   separate(STATE, into = c("a", "state"), sep = " ", extra = "merge") |>
-  select(-a, -OFFDETAIL)
+  select(-a)
 
 # write prison pop to disk
 write_rds(viol_prison_pop_state, file.path(sp_path, "viol_prison_pop_state.rds"))
