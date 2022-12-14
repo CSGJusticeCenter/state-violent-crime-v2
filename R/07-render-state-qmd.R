@@ -21,17 +21,17 @@ quarto::quarto_render(
   quiet = TRUE
 )
 
-# copy csg logo to site folder (prob is already there)
-file.copy(
-  from = "logo.png",
-  to = "_site/logo.png",
-  overwrite = TRUE
-)
-
 # copy css stylesheet site folder
 file.copy(
   from = "styles.css",
   to = "_site/styles.css",
+  overwrite = TRUE
+)
+
+# copy csg logo to site folder (prob is already there)
+file.copy(
+  from = "logo.png",
+  to = "_site/logo.png",
   overwrite = TRUE
 )
 
