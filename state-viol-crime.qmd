@@ -415,8 +415,8 @@ to_plot <- viol_crime_by_off_state |>
     tooltip = paste0(
       "<b>", crime, " – ", year, "</b></br>",
       "Clearance rate: ", percent(clearance_rate / 100, 1), "<br>",
-      "Violent offenses reported: ", comma(actual_est, 1), "<br>",
-      "Violent offense cleared: ", comma(cleared_est, 1)
+      "Offenses reported: ", comma(actual_est, 1), "<br>",
+      "Offenses cleared: ", comma(cleared_est, 1)
       )
     ) |> 
   arrange(desc(year), clearance_rate)
