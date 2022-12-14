@@ -2,7 +2,6 @@
 @font-face{
     font-family:"GT-America";
     font-style: normal;
-    display: swap;
     src:url("fonts/GT-America-Standard-Regular.woff2") format("woff2"),
         url("fonts/GT-America-Standard-Regular.woff") format("woff")
 }
@@ -11,7 +10,6 @@
     font-family:"GT-America";
     font-weight: 200;
     font-style: normal;
-    display: swap;
     src:url("fonts/GT-America-Standard-Light.woff2") format("woff2"),
         url("fonts/GT-America-Standard-Light.woff") format("woff"),
 }
@@ -19,7 +17,6 @@
 @font-face{
     font-family:"GT-America";
     font-style: italic;
-    display: swap;
     src:url("fonts/GT-America-Standard-Regular-Italic.woff2") format("woff2"),
         url("fonts/GT-America-Standard-Regular-Italic.woff") format("woff")
 }
@@ -27,7 +24,6 @@
 @font-face{
     font-family:"GT-America";
     font-weight: 500;
-    display: swap;
     font-style: normal;
     src:url("fonts/GT-America-Standard-Medium.woff2") format("woff2"),
         url("fonts/GT-America-Standard-Medium.woff") format("woff")
@@ -36,13 +32,10 @@
 @font-face{
     font-family:"GT-America";
     font-weight: 700;
-    display: swap;
     font-style: normal;
     src:url("fonts/GT-America-Standard-Bold.woff2") format("woff2"),
         url("fonts/GT-America-Standard-Bold.woff") format("woff")
 }
-
-@import url('https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@600&display=swap');
 
 h1 {
   font-weight: 700;
@@ -62,14 +55,10 @@ h4 {
   color: #005FAD;
 }
 
-.footnotes, .tippy-content, .Reactable {
+.footnotes, .tippy-content {
   font-size: 0.85em;
 }
 
-.callout-body {
-  font-size: 0.8em !important;
-}
-
-div.callout-note.callout {
-  border-left-color: #005fad;
+.Reactable {
+  font-size: 0.85em;
 }
