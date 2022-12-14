@@ -63,10 +63,11 @@ h4 {
   color: #005FAD;
 }
 
-.footnotes, .tippy-content {
+.footnotes, .tippy-content, .Reactable {
   font-size: 0.85em;
 }
 
-.Reactable {
-  font-size: 0.85em;
+ .callout-body {
+  font-size: 0.75em;
+  color: #666666;
 }
