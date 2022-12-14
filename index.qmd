@@ -49,33 +49,9 @@ us_prison <- read_rds(file.path(sp_path, "us_prison.rds"))
 viol_prison_pop_state <- read_rds(file.path(sp_path, "viol_prison_pop_state.rds"))
 viol_prison_pop_by_off_state <- read_rds(file.path(sp_path, "viol_prison_pop_by_off_state.rds"))
 
-# check if we will consider this a nibrs state for this report
-# which means 90% or more population coverage (from violent crime estimates)
-nibrs_state <- viol_crime_2021_state |> 
-  filter(pop_cov >= 0.9) |> 
-  nrow() >= 1
-
-# check if there is any ncrp data for this state
-ncrp_state <- nrow(viol_prison_pop_state) > 1
-
-# if we're going to use nibrs data join 2021 nibrs estimates with
-# ucr srs state 2010-2020 - by offense
-if (nibrs_state) {
-  viol_crime_by_off_state <- viol_crime_by_off_state |> 
-    bind_rows(viol_crime_2021_by_off_state)
-  
-    # and again just total violent crime
-    viol_crime_by_state <- viol_crime_by_state |> 
-    bind_rows(viol_crime_2021_state)
-}
-
 # create title of page
 # we don't have IL clearance rate data so take that out of title
-doc_title <- case_when(
-  state_name == "Illinois" ~ paste(state_name, "data on violent crime and prison population"),
-  ncrp_state ~ paste(state_name, "data on violent crime, arrests, and prison population"),
-  TRUE ~ paste(state_name, "data on violent crime and arrests")
-  )
+doc_title <- paste(state_name, "data on violent crime and arrests")
 
 # count how many agencies are nibrs reporters in the state
 nibrs_agency_count <- ucr_agency_pop |> 
@@ -92,22 +68,6 @@ yes_nibrs_agencies <- nibrs_agency_count$n[nibrs_agency_count$is_nibrs]
 no_nibrs_agencies <- total_agencies - yes_nibrs_agencies
 
 nibrs_pop_cov_text <- percent(0.648, 1, suffix = " percent")
-
-if (nibrs_pop_cov_text < total_agencies & nibrs_pop_cov_text == "100 percent") {
-  nibrs_pop_cov_text <- "99 percent"
-}
-
-offense_pal <- tibble(
-  color = jr_pal[1:4],
-  crime = c("Homicide", "Robbery", "Rape", "Aggravated assault")
-  )
-
-prison_offense_pal <- tibble(
-  color = jr_pal[1:5],
-  off_comb = c("Homicide", "Robbery", "Rape", "Aggravated or simple assault",
-               "Other violent offenses")
-  )
-
 ```
 
 ---
@@ -119,7 +79,7 @@ title: "`r doc_title`"
 ```{r, results='asis'}
 cat(paste0(
   "In 2021, ", comma(yes_nibrs_agencies, 1), " of ", comma(total_agencies, 1),
-  " law enforcement agencies in ", state_name_text, " reported crime data to the FBI, covering ", nibrs_pop_cov_text, " of the nation's population. This was too few agencies to make reliable national esimates of violent crime in 2021, therefore the national crime data on this page end in 2020."
+  " law enforcement agencies in ", state_name_text, " reported crime data to the FBI, covering ", nibrs_pop_cov_text, " of the nation's population. This was too few agencies to make reliable national esimates of violent crime in 2021, therefore the national crime data presented on this page end in 2020."
   ))
 ```
 
@@ -149,12 +109,12 @@ viol_crime_us |>
     hcaes(year, rate),
     color = jr_pal[1]
   ) |> 
-  hc_title(text = paste("Violent crime in ", state_name_text, "reported to police per 100k residents")) |>
+  hc_title(text = paste0("Violent crime in ", state_name_text)) |>
+  hc_subtitle(text = "Crime reported to police per 100,000 residents") |> 
   hc_caption(text = paste0("FBI Uniform Crime Reporting Program SRS state estimates")) |> 
   hc_setup()
 ```
 
-## By offense
 
 ```{r}
 to_plot <- viol_crime_by_off_us |> 
@@ -177,20 +137,7 @@ to_plot <- viol_crime_by_off_us |>
       )
     ) |> 
   arrange(year, crime)
-
-to_plot |> 
-  hchart(
-    "column",
-    stacking = "normal",
-    groupPadding = 0.05,
-    hcaes(year, rate, group = crime),
-  ) |> 
-  hc_colors(unique(to_plot$color)) |> 
-  hc_title(text = paste("Violent crime in ", state_name_text, " per 100k residents, by offense")) |>
-  hc_caption(text = paste0("FBI Uniform Crime Reporting Program SRS state estimates")) |> 
-  hc_setup()
 ```
-
 
 ## Homicide
 
@@ -206,8 +153,9 @@ to_plot_2 |>
   ) |> 
   hc_yAxis(min = 0) |> 
   hc_colors(unique(to_plot_2$color)) |> 
-  hc_title(text = paste("Homicide offenses in ", state_name_text, " per 100k residents")) |>
-  hc_caption(text = paste0("FBI Uniform Crime Reporting Program SRS state estimates")) |> 
+  hc_title(text = paste0("Homicide in ", state_name_text)) |>
+  hc_subtitle(text = "Homicide offenses reported to police per 100,000 residents") |> 
+  hc_caption(text = "FBI Uniform Crime Reporting Program SRS state estimates<br>and 2021 NIBRS state estimates when available") |> 
   hc_setup()
 ```
 
@@ -224,26 +172,9 @@ to_plot_3 |>
     hcaes(year, rate)
   ) |> 
   hc_colors(unique(to_plot_3$color)) |> 
-  hc_title(text = paste("Aggravated assault offenses in ", state_name_text, " per 100k residents")) |>
-  hc_caption(text = paste0("FBI Uniform Crime Reporting Program SRS state estimates")) |> 
-  hc_setup()
-```
-
-## Rape
-
-```{r}
-to_plot_4 <- to_plot |> 
-  filter(crime == "Rape")
-
-to_plot_4 |> 
-  hchart(
-    "spline",
-    stacking = "normal",
-    hcaes(year, rate)
-  ) |> 
-  hc_colors(unique(to_plot_4$color)) |> 
-  hc_title(text = paste("Rape offenses in ", state_name_text, " per 100k residents")) |>
-  hc_caption(text = paste0("FBI Uniform Crime Reporting Program SRS state estimates")) |> 
+  hc_title(text = paste0("Aggravated assault in ", state_name_text)) |>
+  hc_subtitle(text = "Aggravated assault offenses reported to police per 100,000 residents") |>
+  hc_caption(text = "FBI Uniform Crime Reporting Program SRS state estimates<br>and 2021 NIBRS state estimates when available") |> 
   hc_setup()
 ```
 
@@ -260,16 +191,57 @@ to_plot_5 |>
     hcaes(year, rate)
   ) |> 
   hc_colors(unique(to_plot_5$color)) |> 
-  hc_title(text = paste("Robbery offenses in ", state_name_text, " per 100k residents")) |>
-  hc_caption(text = paste0("FBI Uniform Crime Reporting Program SRS state estimates")) |> 
+  hc_title(text = paste0("Robbery in ", state_name_text)) |>
+  hc_subtitle(text = "Robbery offenses reported to police per 100,000 residents") |>
+  hc_caption(text = "FBI Uniform Crime Reporting Program SRS state estimates<br>and 2021 NIBRS state estimates when available") |> 
+  hc_setup()
+```
+
+## Rape
+
+```{r}
+to_plot_4 <- to_plot |> 
+  filter(crime == "Rape")
+
+to_plot_4 |> 
+  hchart(
+    "spline",
+    stacking = "normal",
+    hcaes(year, rate)
+  ) |> 
+  hc_colors(unique(to_plot_4$color)) |> 
+  hc_title(text = paste0("Rape in ", state_name_text)) |>
+  hc_subtitle(text = "Rape offenses reported to police per 100,000 residents") |>
+  hc_caption(text = "FBI Uniform Crime Reporting Program SRS state estimates<br>and 2021 NIBRS state estimates when available<br>The FBI <a href='https://ucr.fbi.gov/recent-program-updates/new-rape-definition-frequently-asked-questions'>broadened the definition of rape<a/> for crime reporting in 2013") |> 
+  hc_setup()
+```
+
+## By offense
+
+```{r}
+to_plot |> 
+  hchart(
+    "column",
+    stacking = "normal",
+    groupPadding = 0.05,
+    hcaes(year, rate, group = crime),
+  ) |> 
+  hc_colors(unique(to_plot$color)) |> 
+  hc_title(text = paste0("Violent crime in ", state_name_text, ", by offense")) |>
+  hc_subtitle(text = "Crime reported to police per 100,000 residents") |> 
+  hc_caption(text = "FBI Uniform Crime Reporting Program SRS state estimates<br>and 2021 NIBRS state estimates when available") |> 
   hc_setup()
 ```
 
 :::
 
-#### Background
+::: {.callout-note icon=false collapse=true}
+
+## Background on crime data reporting
 
 Beginning with data year 2021, the FBI discontinued collecting Uniform Crime Reporting data via the Summary Reporting System and required law enforcement agencies to use the [National Incident-Based Reporting System (NIBRS)](https://bjs.ojp.gov/national-incident-based-reporting-system-nibrs) to report crime statistics to the FBI. Because many states did not have full NIBRS reporting coverage in 2021, the FBI and Bureau of Justice Statistics [generated estimated crime statistics](https://bjs.ojp.gov/library/publications/estimation-procedures-crimes-united-states-based-nibrs-data) based on the agencies that reported data to the FBI. The reported crime and clearance rates for 2021 have a level of uncertainty represented by a margin of error for each estimate because not all agencies reported data to the FBI.
+
+:::
 
 ### Clearance rate of violent crime, 2020
 
@@ -336,25 +308,6 @@ Not all law enforcement agencies have begun reporting NIBRS data to the FBI. As 
 
 
 ```{r}
-reactable_template <- function(df, sort_col = "rate", ...) {
-  reactable(
-    df,
-    highlight = TRUE,
-    searchable = TRUE,
-    defaultSorted = sort_col,
-    showPageSizeOptions	= TRUE,
-    pageSizeOptions = c(10, 25, 100),
-    defaultColDef = colDef(
-      vAlign = "center", 
-      format = colFormat(digits = 0, separators = TRUE),
-      headerStyle = list(fontWeight = 700, fontFamily = default_fonts,
-                         fontVariant = "all-petite-caps"),
-      style = list(fontWeight = 400, fontFamily = default_fonts)
-      ),
-    ...
-      )
-}
-
 ucr_agency_pop |> 
   filter(!is_nibrs) |> 
   mutate(county_name = if_else(county_name == "Not Specified", "", county_name)) |> 
@@ -366,7 +319,8 @@ ucr_agency_pop |>
       agency_name = colDef(name = "Agency", minWidth = 250),
       state_abbr = colDef(name = "State"),
       county_name = colDef(name = "County"),
-      population = colDef(name = "Population")
-    )
+      population = colDef(name = "Population", style = list(
+        fontFamily = "Source Sans Pro",
+        fontWeight = 600)))
   )
 ```
