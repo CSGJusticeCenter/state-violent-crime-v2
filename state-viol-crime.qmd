@@ -450,7 +450,7 @@ to_plot <- viol_prison_pop_state |>
   mutate(
     tooltip = paste0(
       "<b>", violent_off, " – ", year, "</b></br>",
-      violent_off, " prison population: ", comma(n, 1), "<br>",
+      violent_off, " offenses: ", comma(n, 1), "<br>",
       "Total prison population: ", comma(tot, 1), "<br>",
       "Share of total prison population: ", percent(pct, 1)
       )
@@ -496,9 +496,9 @@ to_plot_by_off <- viol_prison_pop_by_off_state |>
     off_comb = fct_reorder(off_comb, pct, last),
     tooltip = paste0(
       "<b>", off_comb, " – ", year, "</b></br>",
-      off_comb, " prison population: ", comma(n, 1), "<br>",
-      "Total violent prison population: ", comma(tot, 1), "<br>",
-      "Share of violent prison population: ", percent(pct, 1)
+      off_comb, " offenses: ", comma(n, 1), "<br>",
+      "Total violent offenses: ", comma(tot, 1), "<br>",
+      "Share of all violent offenses: ", percent(pct, 1)
       )
   ) |> 
   arrange(year, off_comb)
@@ -554,7 +554,7 @@ to_plot_by_off |>
     hcaes(year, n, group = off_comb),
   ) |> 
   hc_colors(unique(to_plot_by_off$color)) |> 
-  hc_title(text = paste0("Prison population in ", state_name_text, ", by offense")) |>
+  hc_title(text = paste0("Prison population in ", state_name_text, " for violent offense")) |>
   hc_caption(text = "National Corrections Reporting Program") |> 
   hc_setup() |> 
   hc_yAxis(labels = list(format = "{value:,.0f}"))
