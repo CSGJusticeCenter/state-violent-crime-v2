@@ -1,3 +1,6 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@600&display=swap');
+
 /* add gt america font */
 @font-face{
     font-family:"GT-America";
@@ -41,8 +44,6 @@
     src:url("fonts/GT-America-Standard-Bold.woff2") format("woff2"),
         url("fonts/GT-America-Standard-Bold.woff") format("woff")
 }
-
-@import url('https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@600&display=swap');
 
 h1 {
   font-weight: 700;
