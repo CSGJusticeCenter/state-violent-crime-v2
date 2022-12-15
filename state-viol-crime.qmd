@@ -554,7 +554,7 @@ to_plot_by_off |>
     hcaes(year, n, group = off_comb),
   ) |> 
   hc_colors(unique(to_plot_by_off$color)) |> 
-  hc_title(text = paste0("Prison population in ", state_name_text, " for violent offense")) |>
+  hc_title(text = paste0("Prison population in ", state_name_text, " for violent offenses")) |>
   hc_caption(text = "National Corrections Reporting Program") |> 
   hc_setup() |> 
   hc_yAxis(labels = list(format = "{value:,.0f}"))
