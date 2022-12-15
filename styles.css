@@ -1,0 +1,73 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@600&display=swap');
+
+/* add gt america font */
+@font-face{
+    font-family:"GT-America";
+    display: swap;
+    font-style: normal;
+    src:url("fonts/GT-America-Standard-Regular.woff2") format("woff2"),
+        url("fonts/GT-America-Standard-Regular.woff") format("woff")
+}
+
+@font-face{
+    font-family:"GT-America";
+    display: swap;
+    font-weight: 200;
+    font-style: normal;
+    src:url("fonts/GT-America-Standard-Light.woff2") format("woff2"),
+        url("fonts/GT-America-Standard-Light.woff") format("woff"),
+}
+
+@font-face{
+    font-family:"GT-America";
+    display: swap;
+    font-style: italic;
+    src:url("fonts/GT-America-Standard-Regular-Italic.woff2") format("woff2"),
+        url("fonts/GT-America-Standard-Regular-Italic.woff") format("woff")
+}
+
+@font-face{
+    font-family:"GT-America";
+    font-weight: 500;
+    display: swap;
+    font-style: normal;
+    src:url("fonts/GT-America-Standard-Medium.woff2") format("woff2"),
+        url("fonts/GT-America-Standard-Medium.woff") format("woff")
+}
+
+@font-face{
+    font-family:"GT-America";
+    font-weight: 700;
+    display: swap;
+    font-style: normal;
+    src:url("fonts/GT-America-Standard-Bold.woff2") format("woff2"),
+        url("fonts/GT-America-Standard-Bold.woff") format("woff")
+}
+
+h1 {
+  font-weight: 700;
+  color: #004270;
+}
+
+h2, h3 {
+  font-weight: 700;
+  color: #005FAD;
+}
+
+h4 {
+  color: #005FAD;
+}
+
+.nav-link {
+  color: #005FAD;
+}
+
+.footnotes, .tippy-content, .Reactable {
+  font-size: 0.85em;
+}
+
+ .callout-body {
+  font-size: 0.75em !important;
+  color: #666666;
+}

@@ -2,6 +2,7 @@
 ## https://crime-data-explorer.fr.cloud.gov/pages/downloads#nibrsestimationDownloads
 
 library(tidyverse)
+library(csgjcr)
 
 # path to data folder on sharepoint
 sp_path <- csg_sp_path("ad_hoc_requests/state_violent_crime_marshall/data")

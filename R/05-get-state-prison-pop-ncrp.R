@@ -2,17 +2,18 @@
 ## for violent offenses also count offense detail by year and state
 
 library(tidyverse)
+library(csgjcr)
 
 # path to data folder on sharepoint
 sp_path <- csg_sp_path("ad_hoc_requests/state_violent_crime_marshall/data")
 
 # load ncrp data, ds0004 (year-end population)
-# https://www.icpsr.umich.edu/web/NACJD/studies/38048
-load(file.path(sp_path, "ICPSR_38048-V1/ICPSR_38048/DS0004/38048-0004-Data.rda"))
+# https://www.icpsr.umich.edu/web/NACJD/studies/38492
+load(file.path(sp_path, "ICPSR_38492/DS0004/38492-0004-Data.rda"))
 
 # only 2010 and more recent and sentences greater than a year
 # TODO: check with jess if correct to limit to 1+ year sentences
-ncrp <- da38048.0004 |>
+ncrp <- da38492.0004 |>
   as_tibble() |>
   filter(RPTYEAR >= 2010, !SENTLGTH %in% "(0) < 1 year") |>
   mutate(
@@ -43,12 +44,13 @@ viol_prison_pop_by_off_state <- ncrp |>
       str_detect(OFFDETAIL, "Other|manslaughter")  ~ "Other violent offenses"
       )
     ) |>
+  count(STATE, year, off_comb, wt = n) |>
   separate(STATE, into = c("a", "state"), sep = " ", extra = "merge") |>
-  select(-a, -OFFDETAIL)
+  select(-a)
 
 # write prison pop to disk
 write_rds(viol_prison_pop_state, file.path(sp_path, "viol_prison_pop_state.rds"))
-write_rds(viol_prison_pop_by_off_state, file.paht(sp_path, "viol_prison_pop_by_off_state.rds"))
+write_rds(viol_prison_pop_by_off_state, file.path(sp_path, "viol_prison_pop_by_off_state.rds"))
 
 
 

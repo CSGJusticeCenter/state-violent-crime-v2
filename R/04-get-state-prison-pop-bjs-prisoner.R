@@ -1,6 +1,7 @@
 ## read in and clean up state and us prison population data from bjs prisoner series
 
 library(tidyverse)
+library(csgjcr)
 
 # path to data folder on sharepoint
 sp_path <- csg_sp_path("ad_hoc_requests/state_violent_crime_marshall/data")

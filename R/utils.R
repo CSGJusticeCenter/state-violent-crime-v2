@@ -6,10 +6,9 @@ hcoptslang$thousandsSep <- ","
 options(highcharter.lang = hcoptslang)
 
 # set highcharter fonts to match Quarto default fonts
-default_fonts <- c("system-ui", "-apple-system", "Segoe UI", "Roboto",
-                   "Helvetica Neue", "Arial", "Noto Sans", "Liberation Sans",
-                   "sans-serif", "Apple Color Emoji", "Segoe UI Emoji",
-                   "Segoe UI Symbol", "Noto Color Emoji")
+default_fonts <- "GT-America"
+header_font <- "GT-America"
+header_weight <- 700
 
 # define justice reinvestment color palette
 jr_pal <- c("#4095B1", "#273C4C", "#50A25D", "#E17619", "#E25449", "#779F38", "#AFABAB")
@@ -23,10 +22,12 @@ hc_theme_jc <- hc_theme_merge(
       marginTop = 75,
       style = list(fontFamily = default_fonts)
     ),
-    title = list(style = list(fontFamily = default_fonts, fontSize = "24px")),
-    subtitle = list(style = list(fontFamily = default_fonts, fontSize = "16px")),
+    title = list(style = list(fontFamily = header_font, color = "#004270",
+                              fontSize = "24px")),
+    subtitle = list(style = list(fontFamily = default_fonts, fontSize = "16px",
+                                 color = "#666666")),
     legend = list(align = "center", verticalAlign = "bottom"),
-    caption = list(align = "right", y = -5),
+    caption = list(align = "right"),
     plotOptions = list(
       series = list(states = list(inactive = list(opacity = 1))),
       line = list(marker = list(enabled = TRUE)),
@@ -67,4 +68,35 @@ hc_setup <- function(x) {
       title = "",
       labels = list(format = "{value:,.0f}")
     )
+}
+
+
+offense_pal <- tibble(
+  color = jr_pal[1:4],
+  crime = c("Homicide", "Robbery", "Rape", "Aggravated assault")
+)
+
+prison_offense_pal <- tibble(
+  color = jr_pal[1:5],
+  off_comb = c("Homicide", "Robbery", "Rape", "Aggravated or simple assault",
+               "Other violent offenses")
+)
+
+reactable_template <- function(df, sort_col = "rate", ...) {
+  reactable(
+    df,
+    highlight = TRUE,
+    searchable = TRUE,
+    defaultSorted = sort_col,
+    showPageSizeOptions	= TRUE,
+    pageSizeOptions = c(10, 25, 100),
+    defaultColDef = colDef(
+      vAlign = "center",
+      format = colFormat(digits = 0, separators = TRUE),
+      headerStyle = list(fontWeight = 700, fontFamily = default_fonts,
+                         fontVariant = "all-petite-caps"),
+      style = list(fontWeight = 400, fontFamily = default_fonts)
+    ),
+    ...
+  )
 }
