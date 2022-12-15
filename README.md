@@ -6,7 +6,9 @@ Sorry for the brief readme!
 
 `R/07-` renders each state page to html and moves html files to `_site` for deploying on Netlify
 
-`R-08-` creates static plots for Marshall's ppt
+`R/08-` creates static plots for Marshall's ppt
+
+`R/09-` creates table of crime rates (per 10K people) by offense at national level (2019-2021), table of crime clearance rates by offense at national level (2019-2021), and crime rate plots 2010-2021 by offense at national level
 
 `utils.R` contains various utility functions for the interactive pages
 

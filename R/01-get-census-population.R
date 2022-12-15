@@ -24,7 +24,7 @@ fips_state_lookup <- fips_codes |>
     )
   )
 
-# define function to pull total popualtion for a given year and geography
+# define function to pull total population for a given year and geography
 get_acs_total_pop <- function(year, geography) {
   get_acs(
     geography = geography,
@@ -39,7 +39,7 @@ get_acs_total_pop <- function(year, geography) {
 # https://censusreporter.org/tables/B01001/
 age_vars <- paste0("B01001_", str_pad(c(7:25, 31:49), width = 3, pad = "0"))
 
-# define function to pull adult popualtion vars for a given year and geography
+# define function to pull adult population vars for a given year and geography
 # then sum all age groups we have pulled to create total adult pop
 get_acs_adult_pop <- function(year, geography) {
   ret <- get_acs(
@@ -64,7 +64,7 @@ acs_adult_pop_by_state <- map_dfr(acs_years, ~ get_acs_adult_pop(.x, "state"))
 acs_pop_by_state <- acs_total_pop_by_state |>
   left_join(acs_adult_pop_by_state, by = c("year", "state_fips"))
 
-# get 2010 decenial census total and adult pop
+# get 2010 decennial census total and adult pop
 # https://api.census.gov/data/2010/dec/sf1/variables/P001001.json
 # https://api.census.gov/data/2010/dec/sf1/variables/P010001.json
 state_pop_2010 <- get_decennial(
@@ -108,3 +108,10 @@ state_pop_joined <- acs_pop_by_state |>
 
 # write to disk
 write_rds(state_pop_joined, file.path(sp_path, "/state_pop.rds"))
+
+
+#need 2021 US pop for calculating rates
+acs_total_pop <- map_dfr(acs_years, ~ get_acs_total_pop(.x, "us")) |>
+  filter(year==2021)
+# write to disk
+write_rds(acs_total_pop, file.path(sp_path, "/us_pop.rds"))

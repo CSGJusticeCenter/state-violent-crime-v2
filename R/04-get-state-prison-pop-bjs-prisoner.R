@@ -6,10 +6,10 @@ library(csgjcr)
 # path to data folder on sharepoint
 sp_path <- csg_sp_path("ad_hoc_requests/state_violent_crime_marshall/data")
 
-# read in prisoners in 2020 bjs report with total state prison popuation
+# read in prisoners in 2020 bjs report with total state prison population
 # downloaded from https://bjs.ojp.gov/library/publications/prisoners-2020-statistical-tables
 # clean up state names and calculate total violent prison pop
-# note we're going to use this for marhsall's ppt static graphs,
+# note we're going to use this for marshall's ppt static graphs,
 # not the interactive site where we use ncrp data
 viol_prison_state <- read_csv(file.path(sp_path, "p20stt16.csv"), skip = 10) |>
   select(

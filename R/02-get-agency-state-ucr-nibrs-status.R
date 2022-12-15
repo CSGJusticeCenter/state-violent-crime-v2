@@ -54,6 +54,8 @@ get_agency_pop <- function(ori) {
 
 # read in ucr srs offenses known
 # we just need this to get population info for agencies, not the actual crime data
+# jacob kaplan's concatenated files - of agency-level annual crime data reported to fbi
+# download from https://www.openicpsr.org/openicpsr/project/100707/version/V17/view
 okca <- read_rds(file.path(sp_path, "offenses_known_yearly_1960_2020.rds"))
 
 # make api request to fbi cde api for all ucr reporting agencies
@@ -113,7 +115,7 @@ missing_pop_agency_api_res <- map(mising_pop_agency$ori, safe_get_agency_pop)
 # clean up api results
 # so agencies are missing from 2020 data so grab both 2020 and 2021
 # if we have both, pick 2020 to align with offenses known population
-missing_pop_agency_api_res <- missing_pop_agency_api_res |>
+missing_pop_agency_api_res2 <- missing_pop_agency_api_res |>
   map_dfr(pluck, "result") |>
   filter(data_year %in% 2020:2021) |>
   group_by(ori) |>
@@ -123,7 +125,7 @@ missing_pop_agency_api_res <- missing_pop_agency_api_res |>
 
 # update rows that were missing pop with newly downloaded api pop data
 ucr_agency_pop_joined <- all_ucr_agency_pop |>
-  rows_update(missing_pop_agency_api_res, by = "ori")
+  rows_update(missing_pop_agency_api_res2, by = "ori")
 
 # write agency population and state nibrs population coverage to disk
 write_rds(ucr_agency_pop_joined, file.path(sp_path, "ucr_agency_pop.rds"))
