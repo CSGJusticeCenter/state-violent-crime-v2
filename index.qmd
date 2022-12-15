@@ -46,8 +46,6 @@ state_nibrs_pop_cov <- read_rds(file.path(sp_path, "state_nibrs_pop_cov.rds"))
 
 # read in prison population data
 us_prison <- read_rds(file.path(sp_path, "us_prison.rds"))
-viol_prison_pop_state <- read_rds(file.path(sp_path, "viol_prison_pop_state.rds"))
-viol_prison_pop_by_off_state <- read_rds(file.path(sp_path, "viol_prison_pop_by_off_state.rds"))
 
 # create title of page
 # we don't have IL clearance rate data so take that out of title
@@ -360,62 +358,69 @@ to_plot |>
 
 :::
 
-```{r, eval=FALSE}
-#| column: page-inset
-#| out.width: "990px"
-#| out.height: "600px"
-
-### Clearance rate of violent crime, 2020
-
-hex <- sf::read_sf("us_states_hexgrid.geojson") |> 
-  select(state_abb = iso3166_2)
-
-hex_gj <- hex %>% 
-  sf::st_transform(3857) %>%
-  geojsonsf::sf_geojson() %>% 
-  jsonlite::fromJSON(simplifyVector = FALSE)
-
-highchart_hex_map <- function(x) {
-  highchart()  |> 
-    hc_add_series_map(
-      map = hex_gj,
-      df = x,
-      joinBy = "state_abb",
-      value = "rate",
-      dataLabels = list(enabled = TRUE, format = "{point.state_abb}",
-                        style = list(fontSize = "12px", fontWeight = "regular",
-                                     textOutline = 0)),
-      nullColor = "#e8e8e8"
-      )  |> 
-    hc_colorAxis(minColor = "#f7fdff", maxColor = "#1795BF") |> 
-    hc_setup()
-}
-
-to_plot <- viol_crime_by_state |> 
-  filter(year == 2020) |> 
+```{r}
+to_plot <- us_prison |>
+  mutate(non_violent = total - violent) |>
+  pivot_longer(-c(year, total), values_to = "n") |>
   mutate(
-    clearance_rate = if_else(state_abb == "IL", NA_real_, clearance_rate),
-    clearance_rate = clearance_rate * 100,
-    rate = clearance_rate,
+    pct = n / total,
+    violent_off = if_else(name == "violent", "Violent", "Nonviolent"),
     tooltip = paste0(
-      "<b>", state, " – ", year, "</b><br>",
-      "Clearance rate: ", percent(clearance_rate / 100, 1), "<br>",
-      "Violent offenses reported: ", comma(actual_est, 1), "<br>",
-      "Violent offenses cleared: ", comma(cleared_est, 1)
-      ),
-    url = paste0("state-viol-crime-", tolower(state_abb), ".html")
-    )
-
-highchart_hex_map(to_plot) |> 
-  hc_tooltip(enabled = FALSE) |> 
-  hc_plotOptions(
-    series = list(
-      point = list(
-        events = list(
-          click = JS("function(){location.href = this.options.url}"))
-        )
+      "<b>", violent_off, " – ", year, "</b></br>",
+      violent_off, " offenses: ", comma(n, 1), "<br>",
+      "Total prison population: ", comma(total, 1), "<br>",
+      "Share of total prison population: ", percent(pct, 1)
       )
-    )
+  )
+
+max_min_prison <- to_plot |> 
+  filter(year %in% range(year)) |> 
+  arrange(year, violent_off)
+
+min_max_prison_viol <- max_min_prison |> 
+  filter(violent_off == "Violent")
+
+min_max_prison_non_viol <- max_min_prison |> 
+  filter(violent_off == "Nonviolent")
+
+viol_pop_pct_change <- (min_max_prison_viol$n[2] - min_max_prison_viol$n[1]) / min_max_prison_viol$n[1]
+viol_pop_change_text <- case_when(
+  viol_pop_pct_change > 0.005  ~ paste0("increased by ",
+                                        percent(abs(viol_pop_pct_change), 1, suffix = " percent")),
+  viol_pop_pct_change < -0.005 ~ paste0("decreased by ",
+                                        percent(abs(viol_pop_pct_change), 1, suffix = " percent")),
+  TRUE                         ~ "has remained nearly the the same"
+  )
+
+non_viol_pop_pct_change <- (min_max_prison_non_viol$n[2] - min_max_prison_non_viol$n[1]) / min_max_prison_non_viol$n[1]
+non_viol_pop_change_text <- case_when(
+  non_viol_pop_pct_change > 0.005  ~ paste0("increased by ",
+                                        percent(abs(non_viol_pop_pct_change), 1, suffix = " percent")),
+  non_viol_pop_pct_change < -0.005 ~ paste0("decreased by ",
+                                        percent(abs(non_viol_pop_pct_change), 1, suffix = " percent")),
+  TRUE                         ~ "has remained nearly the the same"
+  )
+```
+
+
+## Prison population in  `r state_name_text`
+
+There were `r comma(max_min_prison$n[4], 1)` people in prison for violent offenses in `r max_min_prison$year[4]`, comprising `r percent(max_min_prison$pct[4], 1, suffix = " percent")` of the total prison population. Since `r max_min_prison$year[2]`, the number of people in prison for violent offenses `r viol_pop_change_text`. During that same period, the number of people in prison for nonviolent offenses `r non_viol_pop_change_text`. Data on prison population trends in 2021 and 2022 are not yet available in national datasets.
+
+```{r}
+to_plot |>
+  arrange(year) |>
+  hchart(
+    "column",
+    stacking = "normal",
+    groupPadding = 0.05,
+    color = jr_pal[c(7, 1)],
+    hcaes(as.character(year), n, group = violent_off),
+  ) |> 
+  hc_title(text = paste0("Prison population in ", state_name_text)) |>
+  hc_caption(text = paste0("BJS Prisoners Series")) |> 
+  hc_setup() |> 
+  hc_yAxis(labels = list(format = "{value:,.0f}"))
 ```
 
 ## Law enforcement agencies not reporting to NIBRS
