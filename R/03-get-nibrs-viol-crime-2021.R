@@ -165,6 +165,71 @@ viol_crime_2021 <- nibrs_viol_count_clear |>
   filter(crime != "Total violent crime") |>
   write_rds(file.path(sp_path, "viol_crime_2021_by_off.rds"))
 
+
+all_viol_clear <- c(
+  "t_1a_13_64_17",
+  "t_1a_13_65_17",
+  "t_1a_13_66_17",
+  "t_1a_13_67_17",
+  "t_1a_13_68_17",
+  "t_1a_13_69_17",
+  "t_1a_13_70_17",
+  "t_1a_13_71_17"
+  )
+
+nibrs_viol_count_clear <- nibrs_est |>
+  filter(der_variable_name %in% all_viol_clear & estimate_type == "percentage") |>
+  select(
+    indicator_name,
+    estimate_domain_1,
+    estimate_domain_2,
+    estimate_geographic_location,
+    estimate,
+    estimate_upper_bound,
+    estimate_lower_bound,
+    pop_cov,
+    agency_counts
+  )
+
+# do some very ugly reshaping to create a data set with one row per crime per state per year
+# and counts of actual incidents, clearance rates, cleared incidents
+# with upper and lower bounds and moes
+# rename crimes to align with ucr offense categories
+viol_crime_2021_state <- nibrs_viol_count_clear |>
+  group_by(
+    year = 2021,
+    state = str_remove(estimate_geographic_location, "State "),
+    crime = indicator_name
+  ) |>
+  summarize(
+    actual = estimate[estimate_domain_1 == "Incident count"],
+    actual_est = actual,
+    actual_upper = estimate_upper_bound[estimate_domain_1 == "Incident count"],
+    actual_lower = estimate_lower_bound[estimate_domain_1 == "Incident count"],
+    actual_moe = actual_upper - actual,
+    clearance_rate = (100 - estimate[estimate_domain_1 == "Clearance"]) / 100,
+    clearance_rate_upper = (100 - estimate_upper_bound[estimate_domain_1 == "Clearance"]) / 100,
+    clearance_rate_lower = (100 - estimate_lower_bound[estimate_domain_1 == "Clearance"]) / 100,
+    clearance_rate_moe = clearance_rate_upper - clearance_rate,
+    cleared = actual * clearance_rate,
+    cleared_est = cleared,
+    agency_counts = agency_counts[estimate_domain_1 == "Incident count"],
+    pop_cov = pop_cov[estimate_domain_1 == "Incident count"]
+  ) |>
+  ungroup() |>
+  mutate(
+    crime = case_when(
+      crime == "Murder and Non-negligent Manslaughter" ~ "Homicide",
+      crime == "Aggravated Assault"                    ~ "Aggravated assault",
+      crime == "Revised Rape"                          ~ "Rape",
+      crime == "Violent Crime"                         ~ "Total violent crime",
+      TRUE ~ crime
+    )
+  ) |>
+  left_join(state_pop, by = c("state", "year"))
+
+
+
 # not used at this time
 # nibrs_us <- paste0("data/Indicator_Tables_no_supp_no_LEOKA/Indicator_Tables_no_supp_no_LEOKA_01.csv")
 #
