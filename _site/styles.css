@@ -68,6 +68,6 @@ h4 {
 }
 
  .callout-body {
-  font-size: 0.75em !important;
-  color: #666666;
+  font-size: 0.95em;
+  color: var(--quarto-text-muted);
 }
