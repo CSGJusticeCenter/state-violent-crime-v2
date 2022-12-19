@@ -5,9 +5,9 @@ hcoptslang <- getOption("highcharter.lang")
 hcoptslang$thousandsSep <- ","
 options(highcharter.lang = hcoptslang)
 
-# set highcharter fonts to match Quarto default fonts
-default_fonts <- "GT-America"
-header_font <- "GT-America"
+# set fonts to use as defaults
+default_fonts <- c("GT-America", "sans-serif")
+header_font <- c("GT-America", "sans-serif")
 header_weight <- 700
 
 # define justice reinvestment color palette

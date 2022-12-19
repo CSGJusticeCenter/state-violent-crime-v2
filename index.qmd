@@ -291,10 +291,10 @@ In `r max_year`, `r clear_rate_max` of violent crimes reported to police were cl
 
 [^exceptional]: An incident is considered to be [cleared by exceptional means](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019/topic-pages/clearances) if a law enforcement agency is unable to arrest or formally charge a person with a crime, but the agency has met the following conditions:
     
-    1) Identified the person who committed the crime
-    2) Gathered enough evidence to support an arrest, make a charge, and turn over the person to the court for prosecution
-    3) Identified the suspect’s exact location so that the person could be taken into custody immediately
-    4) Encountered a circumstance outside the control of law enforcement that prohibits the agency from arresting, charging, and prosecuting the person
+    a) Identified the person who committed the crime
+    b) Gathered enough evidence to support an arrest, make a charge, and turn over the person to the court for prosecution
+    c) Identified the suspect’s exact location so that the person could be taken into custody immediately
+    d) Encountered a circumstance outside the control of law enforcement that prohibits the agency from arresting, charging, and prosecuting the person
     
     Examples of exceptional clearances include the death of the person who committed the crime; the victim’s refusal to cooperate with the prosecution after the person who committed the crime has been identified; or the denial of extradition.
 
@@ -456,14 +456,14 @@ ucr_agency_pop |>
 
 Data regarding crime and clearance rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr). Counts of reported violent crime between 2010 and 2020 are derived from the Summary Reporting System (SRS) in which law enforcement agencies submitted monthly counts of the four violent Part 1 Index Crimes (murder, aggravated assault, rape, and robbery). The FBI generated national estimates for reported crime and clearances based on agency-level reports, and these estimates were published through 2020 in the FBI's annual report, [_Crime in the U.S._](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019)
 
-National crime rates are calculated by dividing the number of estimated offenses by the total U.S. population. Population data comes from the U.S. Census Bureau [American Community Survey 1-year estimates (table B01003)](https://www.census.gov/programs-surveys/acs/data.html) and the [2020 Decennial Census Redistricting Data (table P1)](https://www.census.gov/programs-surveys/decennial-census/about/rdo/summary-files.html)
+National crime rates are calculated by dividing the number of estimated offenses by the total U.S. population. Population data come from the U.S. Census Bureau [American Community Survey 1-year estimates (table B01003)](https://www.census.gov/programs-surveys/acs/data.html) and the [2020 Decennial Census Redistricting Data (table P1)](https://www.census.gov/programs-surveys/decennial-census/about/rdo/summary-files.html)
 
 #### NIBRS participation
 
-The number of agencies reporting to NIBRS comes from the the _State level UCR Participation Endpoint API_. The participation status of individual agencies comes from the Agency level _UCR Participation Endpoint API_. Documentation of the FBI crime data API endpoints can be found on [Crime Data Explorer](https://crime-data-explorer.fr.cloud.gov/pages/docApi).
+The number of agencies reporting to NIBRS comes from the the _State level UCR Participation Endpoint API_. The participation status of individual agencies comes from the _Agency level UCR Participation Endpoint API_. Documentation of the FBI crime data API endpoints can be found on [Crime Data Explorer](https://crime-data-explorer.fr.cloud.gov/pages/docApi).
 
 #### Prison population
 
-United States prison population comes from the Bureau of Justice Statistics (BJS) National Prisoner Statistics Program and the  National Corrections Reporting Program. These data collection programs are used to aggregate and estimate state-level counts of people in prison and published by BJS in the annual [Prisoners series reports](https://bjs.ojp.gov/library/publications/list?series_filter=Prisoners).
+United States prison populations come from the Bureau of Justice Statistics (BJS) [National Prisoner Statistics Program](https://bjs.ojp.gov/data-collection/national-prisoner-statistics-nps-program) and the [National Corrections Reporting Program (NCRP)](https://bjs.ojp.gov/data-collection/national-corrections-reporting-program-ncrp). These data collection programs are used to aggregate and estimate state-level counts of people in prison and published by BJS in the annual [Prisoners series reports](https://bjs.ojp.gov/library/publications/list?series_filter=Prisoners).
 
 :::

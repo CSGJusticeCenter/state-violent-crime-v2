@@ -360,10 +360,10 @@ cat(paste0(
 ```{r, eval=state_name != "Illinois", results='asis'}
 cat("[^exceptional]: An incident is considered to be [cleared by exceptional means](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019/topic-pages/clearances) if a law enforcement agency is unable to arrest or formally charge a person with a crime, but the agency has met the following conditions:
     
-    1) Identified the person who committed the crime
-    2) Gathered enough evidence to support an arrest, make a charge, and turn over the person to the court for prosecution
-    3) Identified the suspect’s exact location so that the person could be taken into custody immediately
-    4) Encountered a circumstance outside the control of law enforcement that prohibits the agency from arresting, charging, and prosecuting the person
+    a) Identified the person who committed the crime
+    b) Gathered enough evidence to support an arrest, make a charge, and turn over the person to the court for prosecution
+    c) Identified the suspect’s exact location so that the person could be taken into custody immediately
+    d) Encountered a circumstance outside the control of law enforcement that prohibits the agency from arresting, charging, and prosecuting the person
     
     Examples of exceptional clearances include the death of the person who committed the crime; the victim’s refusal to cooperate with the prosecution after the person who committed the crime has been identified; or the denial of extradition.
 
@@ -602,23 +602,23 @@ ucr_agency_pop |>
 
 Data regarding crime and clearance rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr). State-level counts of reported violent crime between 2010 and 2020 are derived from the Summary Reporting System (SRS) in which law enforcement agencies submitted monthly counts of the four violent Part 1 Index Crimes (murder, aggravated assault, rape, and robbery). The FBI generated state-level estimates for reported crime from 1979 to 2020 based on agency-level reports, and these estimates are used on this page for counts of crime. These estimates can be downloaded from the [FBI's Crime Data Explorer](https://crime-data-explorer.fr.cloud.gov/pages/downloads).
 
-State-level crime rates are calculated by dividing the number of estimated offenses by the total state population. Population data comes from the U.S. Census Bureau [American Community Survey 1-year estimates (table B01003)](https://www.census.gov/programs-surveys/acs/data.html) and the [2020 Decennial Census Redistricting Data (table P1)](https://www.census.gov/programs-surveys/decennial-census/about/rdo/summary-files.html).
+State-level crime rates are calculated by dividing the number of estimated offenses by the total state population. Population data come from the U.S. Census Bureau [American Community Survey 1-year estimates (table B01003)](https://www.census.gov/programs-surveys/acs/data.html) and the [2020 Decennial Census Redistricting Data (table P1)](https://www.census.gov/programs-surveys/decennial-census/about/rdo/summary-files.html).
 
-State-level clearance rates are estimated by aggregating agency-level data from the SRS Offenses Known and Clearances by Arrest (Return A) data set. The clearance rates reported here are the number of offenses cleared by arrest plus the number of offenses exceptionally cleared divided by the total number of offenses known.
+State-level clearance rates are estimated by aggregating agency-level data from the SRS Offenses Known and Clearances by Arrest (Return A) dataset. The clearance rates reported here are the number of offenses cleared by arrest plus the number of offenses exceptionally cleared divided by the total number of offenses known.
 
 National rates of crime and clearances come from the FBI's annual report, [_Crime in the U.S._](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019)
 
-State-level crime and clearance data for 2021 come from the FBI's National Incident-Based Reporting System [state estimation program](https://bjs.ojp.gov/library/publications/estimation-procedures-crimes-united-states-based-nibrs-data). These estimates can be downloaded from the [FBI's Crime Data Explorer](https://crime-data-explorer.fr.cloud.gov/pages/downloads). Crime data for 2021 is included in these pages for states in which law enforcement agencies covering at least 90 percent of the population reported NIBRS data.
+State-level crime and clearance data for 2021 come from the FBI's National Incident-Based Reporting System [state estimation program](https://bjs.ojp.gov/library/publications/estimation-procedures-crimes-united-states-based-nibrs-data). These estimates can be downloaded from the [FBI's Crime Data Explorer](https://crime-data-explorer.fr.cloud.gov/pages/downloads). Crime data for 2021 are included in these pages for states in which law enforcement agencies covering at least 90 percent of the population reported NIBRS data.
 
 #### NIBRS participation
 
-The number of agencies reporting to NIBRS comes from the the _State level UCR Participation Endpoint API_. The participation status of individual agencies comes from the Agency level _UCR Participation Endpoint API_. Documentation of the FBI crime data API endpoints can be found on [Crime Data Explorer](https://crime-data-explorer.fr.cloud.gov/pages/docApi).
+The number of agencies reporting to NIBRS comes from the the _State level UCR Participation Endpoint API_. The participation status of individual agencies comes from the _Agency level UCR Participation Endpoint API_. Documentation of the FBI crime data API endpoints can be found on [Crime Data Explorer](https://crime-data-explorer.fr.cloud.gov/pages/docApi).
 
 #### Prison population
 
-State-level prison populations come from the Bureau of Justice Statistics [National Corrections Reporting Program (NCRP)](https://bjs.ojp.gov/data-collection/national-corrections-reporting-program-ncrp). NCRP data is collected annually from state departments of correction, which report individual-level data on people in prison custody. Not all states report data to BJS each year.
+State-level prison populations come from the Bureau of Justice Statistics [National Corrections Reporting Program (NCRP)](https://bjs.ojp.gov/data-collection/national-corrections-reporting-program-ncrp). NCRP data are collected annually from state departments of correction, which report individual-level data on people in prison custody. Not all states report data to BJS each year.
 
-To generate the counts of people in prison, annual NCRP data was filtered to remove people with prison sentences of less than one year. An offense is associated with each person's prison term and this offense was used to calculate prison population by offense. The violent offense category includes murder, manslaughter, rape, robbery, aggravated or simple assault, and other violent offenses.
+To generate the counts of people in prison, annual NCRP data were filtered to remove people with prison sentences of less than one year. An offense is associated with each person's prison term, and this offense was used to calculate prison population by offense. The violent offense category includes murder, manslaughter, rape, robbery, aggravated or simple assault, and other violent offenses.
 
 Alaska, Connecticut, Delaware, Hawaii, Rhode Island, and Vermont have
 integrated systems that combine prisons and jails, so the populations reported to NCRP include people held in both prisons and jails.
