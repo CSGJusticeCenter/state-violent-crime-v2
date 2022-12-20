@@ -405,7 +405,7 @@ non_viol_pop_change_text <- case_when(
 
 ## Prison population in  `r state_name_text`
 
-There were `r comma(max_min_prison$n[4], 1)` people in prison for violent offenses in `r max_min_prison$year[4]`, comprising `r percent(max_min_prison$pct[4], 1, suffix = " percent")` of the total prison population. Since `r max_min_prison$year[2]`, the number of people in prison for violent offenses `r viol_pop_change_text`. During that same period, the number of people in prison for nonviolent offenses `r non_viol_pop_change_text`. Data on prison population trends in 2021 and 2022 are not yet available in national datasets.
+There were `r comma(max_min_prison$n[4], 1)` people in prison for violent offenses at the end of `r max_min_prison$year[4]`, comprising `r percent(max_min_prison$pct[4], 1, suffix = " percent")` of the total prison population. Since `r max_min_prison$year[2]`, the number of people in prison for violent offenses `r viol_pop_change_text`. During that same period, the number of people in prison for nonviolent offenses `r non_viol_pop_change_text`. Data on prison population trends in 2021 and 2022 are not yet available in national datasets.
 
 ```{r}
 to_plot |>

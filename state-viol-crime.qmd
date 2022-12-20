@@ -518,7 +518,7 @@ top_offense_text <- if_else(
 cat(paste0(
 "## Prison population in ", state_name_text,"
 
-There were ", comma(max_min_prison$n[4], 1), " people in prison for violent offenses in ", max_min_prison$year[4], ", comprising ", percent(max_min_prison$pct[4], 1, suffix = " percent"), " of the total prison population. Since ", max_min_prison$year[2], ", the number of people in prison for violent offenses ", viol_pop_change_text, ". During that same period, the number of people in prison for nonviolent offenses ", non_viol_pop_change_text, ". Data on prison population trends in 2021 and 2022 are not available in national datasets, but can be analyzed upon request.
+There were ", comma(max_min_prison$n[4], 1), " people in prison for violent offenses in at the end of ", max_min_prison$year[4], ", comprising ", percent(max_min_prison$pct[4], 1, suffix = " percent"), " of the total prison population. Since ", max_min_prison$year[2], ", the number of people in prison for violent offenses ", viol_pop_change_text, ". During that same period, the number of people in prison for nonviolent offenses ", non_viol_pop_change_text, ". Data on prison population trends in 2021 and 2022 are not available in national datasets, but can be analyzed upon request.
 
 ::: {.panel-tabset}
 
