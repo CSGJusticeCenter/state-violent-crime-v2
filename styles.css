@@ -16,7 +16,7 @@
     font-weight: 200;
     font-style: normal;
     src:url("fonts/GT-America-Standard-Light.woff2") format("woff2"),
-        url("fonts/GT-America-Standard-Light.woff") format("woff"),
+        url("fonts/GT-America-Standard-Light.woff") format("woff")
 }
 
 @font-face{
