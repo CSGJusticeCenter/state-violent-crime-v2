@@ -19,7 +19,6 @@ hc_theme_jc <- hc_theme_merge(
   hc_theme(
     colors = jr_pal,
     chart = list(
-      marginTop = 75,
       style = list(fontFamily = default_fonts)
     ),
     title = list(style = list(fontFamily = header_font, color = "#004270",
