@@ -11,6 +11,8 @@ execute:
   message: false
 ---
 
+<base target="_parent">
+
 ```{r}
 library(tidyverse)
 library(scales)
