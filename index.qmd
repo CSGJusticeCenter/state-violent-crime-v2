@@ -5,6 +5,7 @@ format:
     css: styles.css
 mainfont: "GT-America"
 linkcolor: "#00355a"
+anchor-sections: false
 execute:
   echo: false
   warning: false

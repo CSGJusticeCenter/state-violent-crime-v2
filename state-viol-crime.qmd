@@ -5,6 +5,7 @@ format:
     css: styles.css
 mainfont: "GT-America"
 linkcolor: "#00355a"
+anchor-sections: false
 params:
   state: "AL"
 execute:
@@ -12,6 +13,8 @@ execute:
   warning: false
   message: false
 ---
+
+<base target="_parent">
 
 <!-- <script> -->
 <!-- `r paste0("document.querySelector('#selector').value = 'state-viol-crime-", tolower(params$state), ".html'")` -->
