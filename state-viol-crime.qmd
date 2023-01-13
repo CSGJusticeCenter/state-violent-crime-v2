@@ -7,7 +7,7 @@ mainfont: "GT-America"
 linkcolor: "#00355a"
 anchor-sections: false
 params:
-  state: "AL"
+  state: "ID"
 execute:
   echo: false
   warning: false
@@ -60,9 +60,9 @@ state_nibrs_pop_cov <- read_rds(file.path(sp_path, "state_nibrs_pop_cov.rds")) |
 
 # read in prison population data
 us_prison <- read_rds(file.path(sp_path, "us_prison.rds"))
-viol_prison_pop_state <- read_rds(file.path(sp_path, "viol_prison_pop_state.rds")) |> 
+viol_prison_pop_state <- read_rds(file.path(sp_path, "viol_prison_pop_state_imputed.rds")) |> 
   filter(state == state_name)
-viol_prison_pop_by_off_state <- read_rds(file.path(sp_path, "viol_prison_pop_by_off_state.rds")) |> 
+viol_prison_pop_by_off_state <- read_rds(file.path(sp_path, "viol_prison_pop_by_off_state_imputed.rds")) |>
   filter(state == state_name)
 
 # check if we will consider this a nibrs state for this report
@@ -619,9 +619,13 @@ The number of agencies reporting to NIBRS comes from the the _State level UCR Pa
 
 #### Prison population
 
-State-level prison populations come from the Bureau of Justice Statistics [National Corrections Reporting Program (NCRP)](https://bjs.ojp.gov/data-collection/national-corrections-reporting-program-ncrp). NCRP data are collected annually from state departments of correction, which report individual-level data on people in prison custody. Not all states report data to BJS each year.
+State-level total prison populations come from the Bureau of Justice Statistics [Prisoners series reports](https://bjs.ojp.gov/library/publications/list?series_filter=Prisoners), which publishes year-end population counts for each state's prison system. The data in these annual reports come from state reports to BJS via the [National Corrections Reporting Program (NCRP)](https://bjs.ojp.gov/data-collection/national-corrections-reporting-program-ncrp) and the [National Prisoner Statistics Program](https://bjs.ojp.gov/data-collection/national-prisoner-statistics-nps-program).
 
-To generate the counts of people in prison, annual NCRP data were filtered to remove people with prison sentences of less than one year. An offense is associated with each person's prison term, and this offense was used to calculate prison population by offense. The violent offense category includes murder, manslaughter, rape, robbery, aggravated or simple assault, and other violent offenses.
+NCRP data were used to calculate the percentage of people in prison for violent and non-violent offenses, as well as by violent offense type. NCRP data are collected annually from state departments of correction, which report individual-level data on people in prison custody. Not all states report NCRP data to BJS each year.
+
+To generate the proportions of people in prison for different offense categories, annual NCRP data were filtered to remove people with prison sentences of less than one year. An offense is associated with each person's prison term, and this offense was used to calculate prison population by offense. The violent offense category includes murder, manslaughter, rape, robbery, aggravated or simple assault, and other violent offenses.
+
+The total prison populations from the BJS Prisoner series reports were combined with the percentages calculated using NCRP data to impute the counts of prison population by the offense categories shown on this page.
 
 Alaska, Connecticut, Delaware, Hawaii, Rhode Island, and Vermont have
 integrated systems that combine prisons and jails, so the populations reported to NCRP include people held in both prisons and jails.

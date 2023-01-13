@@ -21,14 +21,17 @@ ncrp <- da38492.0004 |>
     violent_off = if_else(OFFGENERAL %in% "(1) Violent", "Violent", "Nonviolent")
   )
 
-# count violent and nonviolent prison pop by year by state
+# count violent and nonviolent prison pop by year by state, calculate percentage of each
 # clean up state column
 viol_prison_pop_state <- ncrp |>
   count(STATE, year, violent_off) |>
   separate(STATE, into = c("a", "state"), sep = " ", extra = "merge") |>
-  select(-a)
+  select(-a) |>
+  group_by(state, year) |>
+  mutate(pct = n / sum(n)) |>
+  ungroup()
 
-# count violent offenses by offense detail prison pop by year by state
+# count violent offenses by offense detail prison pop by year by state, calc percentage of each offense
 # combine negligent manslaughter and other violent offenses to better match UCR homicide definition
 # TODO: check with jess if correct
 # clean up state column
@@ -46,7 +49,10 @@ viol_prison_pop_by_off_state <- ncrp |>
     ) |>
   count(STATE, year, off_comb, wt = n) |>
   separate(STATE, into = c("a", "state"), sep = " ", extra = "merge") |>
-  select(-a)
+  select(-a) |>
+  group_by(state, year) |>
+  mutate(pct = n / sum(n)) |>
+  ungroup()
 
 # write prison pop to disk
 write_rds(viol_prison_pop_state, file.path(sp_path, "viol_prison_pop_state.rds"))
