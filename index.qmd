@@ -213,7 +213,7 @@ to_plot_3 |>
   ) |> 
   hc_colors(unique(to_plot_3$color)) |> 
   hc_title(text = paste0("Aggravated assault in ", state_name_text)) |>
-  hc_subtitle(text = "Aggravated assault incidents reported to police per 100,000 residents") |>
+  hc_subtitle(text = "Incidents reported to police per 100,000 residents where aggravated assault was the most serious offense") |>
   hc_caption(text = "FBI <em>Crime in the U.S.</em>") |> 
   hc_setup()
 ```
@@ -232,7 +232,7 @@ to_plot_5 |>
   ) |> 
   hc_colors(unique(to_plot_5$color)) |> 
   hc_title(text = paste0("Robbery in ", state_name_text)) |>
-  hc_subtitle(text = "Robbery incidents reported to police per 100,000 residents") |>
+  hc_subtitle(text = "Incidents reported to police per 100,000 residents where robbery was the most serious offense") |>
   hc_caption(text = "FBI <em>Crime in the U.S.</em>") |> 
   hc_setup()
 ```
@@ -251,7 +251,7 @@ to_plot_4 |>
   ) |> 
   hc_colors(unique(to_plot_4$color)) |> 
   hc_title(text = paste0("Rape in ", state_name_text)) |>
-  hc_subtitle(text = "Rape incidents reported to police per 100,000 residents") |>
+  hc_subtitle(text = "Incidents reported to police per 100,000 residents where rape was the most serious offense") |>
   hc_caption(text = "FBI <em>Crime in the U.S.</em><br>The FBI <a href='https://ucr.fbi.gov/recent-program-updates/new-rape-definition-frequently-asked-questions'  target='_parent'>broadened the definition of rape<a/> for crime reporting in 2013") |> 
   hc_setup()
 ```

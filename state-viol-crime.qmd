@@ -270,7 +270,7 @@ to_plot_3 |>
   ) |> 
   hc_colors(unique(to_plot_3$color)) |> 
   hc_title(text = paste0("Aggravated assault in ", state_name_text)) |>
-  hc_subtitle(text = "Aggravated assault incidents reported to police per 100,000 residents") |>
+  hc_subtitle(text = "Incidents reported to police per 100,000 residents where aggravated assault was the most serious offense") |>
   hc_caption(text = "FBI Uniform Crime Reporting Program SRS state estimates<br>and 2021 NIBRS state estimates when available") |> 
   hc_setup()
 ```
@@ -289,7 +289,7 @@ to_plot_5 |>
   ) |> 
   hc_colors(unique(to_plot_5$color)) |> 
   hc_title(text = paste0("Robbery in ", state_name_text)) |>
-  hc_subtitle(text = "Robbery incidents reported to police per 100,000 residents") |>
+  hc_subtitle(text = "Incidents reported to police per 100,000 residents where robbery was the most serious offense") |>
   hc_caption(text = "FBI Uniform Crime Reporting Program SRS state estimates<br>and 2021 NIBRS state estimates when available") |> 
   hc_setup()
 ```
@@ -308,7 +308,7 @@ to_plot_4 |>
   ) |> 
   hc_colors(unique(to_plot_4$color)) |> 
   hc_title(text = paste0("Rape in ", state_name_text)) |>
-  hc_subtitle(text = "Rape incidents reported to police per 100,000 residents") |>
+  hc_subtitle(text = "Incidents reported to police per 100,000 residents where rape was the most serious offense") |>
   hc_caption(text = "FBI Uniform Crime Reporting Program SRS state estimates<br>and 2021 NIBRS state estimates when available<br>The FBI <a href='https://ucr.fbi.gov/recent-program-updates/new-rape-definition-frequently-asked-questions' target='_parent'>broadened the definition of rape<a/> for crime reporting in 2013") |> 
   hc_setup()
 ```
@@ -558,7 +558,7 @@ to_plot_by_off |>
   ) |> 
   hc_colors(unique(to_plot_by_off$color)) |> 
   hc_title(text = paste0("Prison population in ", state_name_text, " for violent offenses")) |>
-  hc_caption(text = "National Corrections Reporting Program") |> 
+  hc_caption(text = paste0("BJS Prisoners Series and National Corrections Reporting Program")) |> 
   hc_setup() |> 
   hc_yAxis(labels = list(format = "{value:,.0f}"))
 ```
@@ -624,8 +624,6 @@ State-level total prison populations come from the Bureau of Justice Statistics 
 The NPS Program collects aggregate data from states regarding prison populations, while the NCRP collects individual-level data about people in prison. This difference in data collection methodology explains variations in reported prison populations depending on the data source used.
 
 The total prison populations from the NPS program were combined with the percentages calculated using NCRP data to impute the counts of prison population by the offense categories shown on this page.
-
-NCRP data were used to calculate the percentage of people in prison for violent and non-violent offenses, as well as by violent offense type. NCRP data are collected annually from state departments of correction, which report individual-level data on people in prison custody. Not all states report NCRP data to BJS each year.
 
 To generate the proportions of people in prison for different offense categories, annual NCRP data were filtered to remove people with prison sentences of less than one year. An offense is associated with each person's prison term, and this offense was used to calculate prison population by offense. The violent offense category includes murder, manslaughter, rape, robbery, aggravated or simple assault, and other violent offenses.
 
