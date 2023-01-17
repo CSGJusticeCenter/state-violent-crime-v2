@@ -180,7 +180,7 @@ cat(paste0(
 
 ```{r, eval=no_nibrs_agencies > 0, results='asis'}
 cat(paste0(
-  "A list of law enforcement agencies in ", state_name_text, " that did not fully report to the FBI on crime in 2021 can be found [below](#law-enforcement-agencies-not-reporting-to-nibrs)."
+  "A list of law enforcement agencies in ", state_name_text, " that did not fully report to the FBI on crime in 2021 can be found at the bottom of this page."
   ))
 ```
 
