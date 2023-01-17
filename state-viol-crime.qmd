@@ -7,7 +7,7 @@ mainfont: "GT-America"
 linkcolor: "#00355a"
 anchor-sections: false
 params:
-  state: "ID"
+  state: "WA"
 execute:
   echo: false
   warning: false
@@ -195,8 +195,8 @@ viol_crime_by_state |>
     rate = actual_est / pop_total * 1e5,
     tooltip = paste0(
       "<b>", state, " – ", year, "</b><br>",
-      "Violent offenses per 100k: ", comma(rate, 1), "<br>",
-      "Violent offenses reported: ", comma(actual_est, 1)
+      "Violent incidents per 100k: ", comma(rate, 1), "<br>",
+      "Violent incidents reported: ", comma(actual_est, 1)
       ),
     state = fct_relevel(state, "United States", after = Inf)
     ) |>
@@ -227,10 +227,10 @@ to_plot <- viol_crime_by_off_state |>
     crime = fct_reorder(crime, rate),
     tooltip = paste0(
       "<b>", crime, " – ", year, "</b></br>",
-      "Offenses reported per 100k: ", comma(rate, 1), "<br>",
-      "Offenses reported: ", comma(actual_est, 1), "<br>",
-      "Total violent offenses reported: ", comma(tot_crime, 1), "<br>",
-      "Share of all violent offenses: ", percent(pct, 1)
+      "Incidents reported per 100k: ", comma(rate, 1), "<br>",
+      "Incidents reported: ", comma(actual_est, 1), "<br>",
+      "Total violent incidents reported: ", comma(tot_crime, 1), "<br>",
+      "Share of all violent incidents: ", percent(pct, 1)
       )
     ) |> 
   arrange(year, crime)
@@ -251,7 +251,7 @@ to_plot_2 |>
   hc_yAxis(min = 0) |> 
   hc_colors(unique(to_plot_2$color)) |> 
   hc_title(text = paste0("Homicide in ", state_name_text)) |>
-  hc_subtitle(text = "Homicide offenses reported to police per 100,000 residents") |> 
+  hc_subtitle(text = "Homicide incidents reported to police per 100,000 residents") |> 
   hc_caption(text = "FBI Uniform Crime Reporting Program SRS state estimates<br>and 2021 NIBRS state estimates when available") |> 
   hc_setup()
 ```
@@ -270,7 +270,7 @@ to_plot_3 |>
   ) |> 
   hc_colors(unique(to_plot_3$color)) |> 
   hc_title(text = paste0("Aggravated assault in ", state_name_text)) |>
-  hc_subtitle(text = "Aggravated assault offenses reported to police per 100,000 residents") |>
+  hc_subtitle(text = "Aggravated assault incidents reported to police per 100,000 residents") |>
   hc_caption(text = "FBI Uniform Crime Reporting Program SRS state estimates<br>and 2021 NIBRS state estimates when available") |> 
   hc_setup()
 ```
@@ -289,7 +289,7 @@ to_plot_5 |>
   ) |> 
   hc_colors(unique(to_plot_5$color)) |> 
   hc_title(text = paste0("Robbery in ", state_name_text)) |>
-  hc_subtitle(text = "Robbery offenses reported to police per 100,000 residents") |>
+  hc_subtitle(text = "Robbery incidents reported to police per 100,000 residents") |>
   hc_caption(text = "FBI Uniform Crime Reporting Program SRS state estimates<br>and 2021 NIBRS state estimates when available") |> 
   hc_setup()
 ```
@@ -308,8 +308,8 @@ to_plot_4 |>
   ) |> 
   hc_colors(unique(to_plot_4$color)) |> 
   hc_title(text = paste0("Rape in ", state_name_text)) |>
-  hc_subtitle(text = "Rape offenses reported to police per 100,000 residents") |>
-  hc_caption(text = "FBI Uniform Crime Reporting Program SRS state estimates<br>and 2021 NIBRS state estimates when available<br>The FBI <a href='https://ucr.fbi.gov/recent-program-updates/new-rape-definition-frequently-asked-questions'>broadened the definition of rape<a/> for crime reporting in 2013") |> 
+  hc_subtitle(text = "Rape incidents reported to police per 100,000 residents") |>
+  hc_caption(text = "FBI Uniform Crime Reporting Program SRS state estimates<br>and 2021 NIBRS state estimates when available<br>The FBI <a href='https://ucr.fbi.gov/recent-program-updates/new-rape-definition-frequently-asked-questions' target='_parent'>broadened the definition of rape<a/> for crime reporting in 2013") |> 
   hc_setup()
 ```
 
@@ -385,8 +385,8 @@ viol_crime_by_state |>
     tooltip = paste0(
       "<b>", state, " – ", year, "</b><br>",
       "Clearance rate: ", percent(clearance_rate / 100, 1), "<br>",
-      "Violent offenses reported: ", comma(actual_est, 1), "<br>",
-      "Violent offenses cleared: ", comma(cleared_est, 1)
+      "Violent incidents reported: ", comma(actual_est, 1), "<br>",
+      "Violent incidents cleared: ", comma(cleared_est, 1)
       ),
     state = fct_relevel(state, "United States", after = Inf)
     ) |> 
@@ -418,8 +418,8 @@ to_plot <- viol_crime_by_off_state |>
     tooltip = paste0(
       "<b>", crime, " – ", year, "</b></br>",
       "Clearance rate: ", percent(clearance_rate / 100, 1), "<br>",
-      "Offenses reported: ", comma(actual_est, 1), "<br>",
-      "Offenses cleared: ", comma(cleared_est, 1)
+      "Incidents reported: ", comma(actual_est, 1), "<br>",
+      "Incidents cleared: ", comma(cleared_est, 1)
       )
     ) |> 
   arrange(desc(year), clearance_rate)
@@ -539,7 +539,7 @@ to_plot |>
     hcaes(year, n, group = violent_off),
   ) |> 
   hc_title(text = paste0("Prison population in ", state_name_text)) |>
-  hc_caption(text = paste0("National Corrections Reporting Program")) |> 
+  hc_caption(text = paste0("BJS Prisoners Series and National Corrections Reporting Program")) |> 
   hc_setup() |> 
   hc_yAxis(labels = list(format = "{value:,.0f}"))
 ```
@@ -603,33 +603,35 @@ ucr_agency_pop |>
 
 #### Crime and clearance rates
 
-Data regarding crime and clearance rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr). State-level counts of reported violent crime between 2010 and 2020 are derived from the Summary Reporting System (SRS) in which law enforcement agencies submitted monthly counts of the four violent Part 1 Index Crimes (murder, aggravated assault, rape, and robbery). The FBI generated state-level estimates for reported crime from 1979 to 2020 based on agency-level reports, and these estimates are used on this page for counts of crime. These estimates can be downloaded from the [FBI's Crime Data Explorer](https://crime-data-explorer.fr.cloud.gov/pages/downloads).
+Data regarding crime and clearance rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr). State-level counts of reported violent crime incidents between 2010 and 2020 are derived from the Summary Reporting System (SRS) in which law enforcement agencies submitted monthly counts of the four violent Part 1 Index Crimes (murder, aggravated assault, rape, and robbery). The FBI generated state-level estimates for reported crime from 1979 to 2020 based on agency-level reports, and these estimates are used on this page for counts of crime. These estimates can be downloaded from the [FBI's Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/downloads).
 
-State-level crime rates are calculated by dividing the number of estimated offenses by the total state population. Population data come from the U.S. Census Bureau [American Community Survey 1-year estimates (table B01003)](https://www.census.gov/programs-surveys/acs/data.html) and the [2020 Decennial Census Redistricting Data (table P1)](https://www.census.gov/programs-surveys/decennial-census/about/rdo/summary-files.html).
+State-level crime rates are calculated by dividing the number of estimated incidents by the total state population. Population data come from the U.S. Census Bureau [American Community Survey 1-year estimates (table B01003)](https://www.census.gov/programs-surveys/acs/data.html) and the [2020 Decennial Census Redistricting Data (table P1)](https://www.census.gov/programs-surveys/decennial-census/about/rdo/summary-files.html).
 
-State-level clearance rates are estimated by aggregating agency-level data from the SRS Offenses Known and Clearances by Arrest (Return A) dataset. The clearance rates reported here are the number of offenses cleared by arrest plus the number of offenses exceptionally cleared divided by the total number of offenses known.
+State-level clearance rates are estimated by aggregating agency-level data from the SRS Offenses Known and Clearances by Arrest (Return A) dataset. The clearance rates reported here are the number of incidents cleared by arrest plus the number of incidents exceptionally cleared divided by the total number of incidents known.
 
 National rates of crime and clearances come from the FBI's annual report, [_Crime in the U.S._](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019)
 
-State-level crime and clearance data for 2021 come from the FBI's National Incident-Based Reporting System [state estimation program](https://bjs.ojp.gov/library/publications/estimation-procedures-crimes-united-states-based-nibrs-data). These estimates can be downloaded from the [FBI's Crime Data Explorer](https://crime-data-explorer.fr.cloud.gov/pages/downloads). Crime data for 2021 are included in these pages for states in which law enforcement agencies covering at least 90 percent of the population reported NIBRS data.
+State-level crime and clearance data for 2021 come from the FBI's National Incident-Based Reporting System [state estimation program](https://bjs.ojp.gov/library/publications/estimation-procedures-crimes-united-states-based-nibrs-data). Crime data for 2021 are included in these pages for states in which law enforcement agencies covering at least 90 percent of the population reported NIBRS data.
 
 #### NIBRS participation
 
-The number of agencies reporting to NIBRS comes from the the _State level UCR Participation Endpoint API_. The participation status of individual agencies comes from the _Agency level UCR Participation Endpoint API_. Documentation of the FBI crime data API endpoints can be found on [Crime Data Explorer](https://crime-data-explorer.fr.cloud.gov/pages/docApi).
+The number of agencies reporting to NIBRS comes from the the _State level UCR Participation Endpoint API_. The participation status of individual agencies comes from the _Agency level UCR Participation Endpoint API_. Documentation of the FBI crime data API endpoints can be found on [Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/docApi).
 
 #### Prison population
 
 State-level total prison populations come from the Bureau of Justice Statistics [Prisoners series reports](https://bjs.ojp.gov/library/publications/list?series_filter=Prisoners), which publishes year-end population counts for each state's prison system. The data in these annual reports come from state reports to BJS via the [National Corrections Reporting Program (NCRP)](https://bjs.ojp.gov/data-collection/national-corrections-reporting-program-ncrp) and the [National Prisoner Statistics Program](https://bjs.ojp.gov/data-collection/national-prisoner-statistics-nps-program).
 
+The NPS Program collects aggregate data from states regarding prison populations, while the NCRP collects individual-level data about people in prison. This difference in data collection methodology explains variations in reported prison populations depending on the data source used.
+
+The total prison populations from the NPS program were combined with the percentages calculated using NCRP data to impute the counts of prison population by the offense categories shown on this page.
+
 NCRP data were used to calculate the percentage of people in prison for violent and non-violent offenses, as well as by violent offense type. NCRP data are collected annually from state departments of correction, which report individual-level data on people in prison custody. Not all states report NCRP data to BJS each year.
 
 To generate the proportions of people in prison for different offense categories, annual NCRP data were filtered to remove people with prison sentences of less than one year. An offense is associated with each person's prison term, and this offense was used to calculate prison population by offense. The violent offense category includes murder, manslaughter, rape, robbery, aggravated or simple assault, and other violent offenses.
 
-The total prison populations from the BJS Prisoner series reports were combined with the percentages calculated using NCRP data to impute the counts of prison population by the offense categories shown on this page.
-
 Alaska, Connecticut, Delaware, Hawaii, Rhode Island, and Vermont have
-integrated systems that combine prisons and jails, so the populations reported to NCRP include people held in both prisons and jails.
+integrated systems that combine prisons and jails, so the populations reported to BJS include people held in both prisons and jails.
 
-NCRP data can be downloaded from the [National Archive of Criminal Justice Data](https://www.icpsr.umich.edu/web/NACJD/studies/38492).
+[NPS](https://www.icpsr.umich.edu/web/NACJD/series/886) and [NCRP](https://www.icpsr.umich.edu/web/NACJD/studies/38492) data can be downloaded from the National Archive of Criminal Justice Data.
 
 :::

@@ -139,8 +139,8 @@ viol_crime_us |>
     rate = actual_est / pop_total * 1e5,
     tooltip = paste0(
       "<b>", state, " – ", year, "</b><br>",
-      "Violent offenses per 100k: ", comma(rate, 1), "<br>",
-      "Violent offenses reported: ", comma(actual_est, 1)
+      "Violent incidents per 100k: ", comma(rate, 1), "<br>",
+      "Violent incidents reported: ", comma(actual_est, 1)
       ),
     state = fct_relevel(state, "United States", after = Inf)
     ) |>
@@ -170,10 +170,10 @@ to_plot <- viol_crime_by_off_us |>
     crime = fct_reorder(crime, rate),
     tooltip = paste0(
       "<b>", crime, " – ", year, "</b></br>",
-      "Offenses reported per 100k: ", comma(rate, 1), "<br>",
-      "Offenses reported: ", comma(actual_est, 1), "<br>",
-      "Total violent offenses reported: ", comma(tot_crime, 1), "<br>",
-      "Share of all violent offenses: ", percent(pct, 1)
+      "Incidents reported per 100k: ", comma(rate, 1), "<br>",
+      "Incidents reported: ", comma(actual_est, 1), "<br>",
+      "Total violent incidents reported: ", comma(tot_crime, 1), "<br>",
+      "Share of all violent incidents: ", percent(pct, 1)
       )
     ) |> 
   arrange(year, crime)
@@ -194,7 +194,7 @@ to_plot_2 |>
   hc_yAxis(min = 0) |> 
   hc_colors(unique(to_plot_2$color)) |> 
   hc_title(text = paste0("Homicide in ", state_name_text)) |>
-  hc_subtitle(text = "Homicide offenses reported to police per 100,000 residents") |> 
+  hc_subtitle(text = "Homicide incidents reported to police per 100,000 residents") |> 
   hc_caption(text = "FBI <em>Crime in the U.S.</em>") |>
   hc_setup()
 ```
@@ -213,7 +213,7 @@ to_plot_3 |>
   ) |> 
   hc_colors(unique(to_plot_3$color)) |> 
   hc_title(text = paste0("Aggravated assault in ", state_name_text)) |>
-  hc_subtitle(text = "Aggravated assault offenses reported to police per 100,000 residents") |>
+  hc_subtitle(text = "Aggravated assault incidents reported to police per 100,000 residents") |>
   hc_caption(text = "FBI <em>Crime in the U.S.</em>") |> 
   hc_setup()
 ```
@@ -232,7 +232,7 @@ to_plot_5 |>
   ) |> 
   hc_colors(unique(to_plot_5$color)) |> 
   hc_title(text = paste0("Robbery in ", state_name_text)) |>
-  hc_subtitle(text = "Robbery offenses reported to police per 100,000 residents") |>
+  hc_subtitle(text = "Robbery incidents reported to police per 100,000 residents") |>
   hc_caption(text = "FBI <em>Crime in the U.S.</em>") |> 
   hc_setup()
 ```
@@ -251,8 +251,8 @@ to_plot_4 |>
   ) |> 
   hc_colors(unique(to_plot_4$color)) |> 
   hc_title(text = paste0("Rape in ", state_name_text)) |>
-  hc_subtitle(text = "Rape offenses reported to police per 100,000 residents") |>
-  hc_caption(text = "FBI <em>Crime in the U.S.</em><br>The FBI <a href='https://ucr.fbi.gov/recent-program-updates/new-rape-definition-frequently-asked-questions'>broadened the definition of rape<a/> for crime reporting in 2013") |> 
+  hc_subtitle(text = "Rape incidents reported to police per 100,000 residents") |>
+  hc_caption(text = "FBI <em>Crime in the U.S.</em><br>The FBI <a href='https://ucr.fbi.gov/recent-program-updates/new-rape-definition-frequently-asked-questions'  target='_parent'>broadened the definition of rape<a/> for crime reporting in 2013") |> 
   hc_setup()
 ```
 
@@ -312,8 +312,8 @@ viol_crime_us |>
     tooltip = paste0(
       "<b>", state, " – ", year, "</b><br>",
       "Clearance rate: ", percent(clearance_rate / 100, 1), "<br>",
-      "Violent offenses reported: ", comma(actual_est, 1), "<br>",
-      "Violent offenses cleared: ", comma(cleared_est, 1)
+      "Violent incidents reported: ", comma(actual_est, 1), "<br>",
+      "Violent incidents cleared: ", comma(cleared_est, 1)
       ),
     state = fct_relevel(state, "United States", after = Inf)
     ) |> 
@@ -341,8 +341,8 @@ to_plot <- viol_crime_by_off_us |>
     tooltip = paste0(
       "<b>", crime, " – ", year, "</b></br>",
       "Clearance rate: ", percent(clearance_rate / 100, 1), "<br>",
-      "Offenses reported: ", comma(actual_est, 1), "<br>",
-      "Offenses cleared: ", comma(cleared_est, 1)
+      "Incidents reported: ", comma(actual_est, 1), "<br>",
+      "Incidents cleared: ", comma(cleared_est, 1)
       )
     ) |> 
   arrange(desc(year), clearance_rate)
@@ -459,7 +459,7 @@ ucr_agency_pop |>
 
 Data regarding crime and clearance rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr). Counts of reported violent crime between 2010 and 2020 are derived from the Summary Reporting System (SRS) in which law enforcement agencies submitted monthly counts of the four violent Part 1 Index Crimes (murder, aggravated assault, rape, and robbery). The FBI generated national estimates for reported crime and clearances based on agency-level reports, and these estimates were published through 2020 in the FBI's annual report, [_Crime in the U.S._](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019)
 
-National crime rates are calculated by dividing the number of estimated offenses by the total U.S. population. Population data come from the U.S. Census Bureau [American Community Survey 1-year estimates (table B01003)](https://www.census.gov/programs-surveys/acs/data.html) and the [2020 Decennial Census Redistricting Data (table P1)](https://www.census.gov/programs-surveys/decennial-census/about/rdo/summary-files.html)
+National crime rates are calculated by dividing the number of estimated incidents by the total U.S. population. Population data come from the U.S. Census Bureau [American Community Survey 1-year estimates (table B01003)](https://www.census.gov/programs-surveys/acs/data.html) and the [2020 Decennial Census Redistricting Data (table P1)](https://www.census.gov/programs-surveys/decennial-census/about/rdo/summary-files.html)
 
 #### NIBRS participation
 
