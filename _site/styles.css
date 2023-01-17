@@ -71,3 +71,7 @@ h4 {
   font-size: 0.95em;
   color: var(--quarto-text-muted);
 }
+
+#quarto-appendix {
+  display: none;
+}
