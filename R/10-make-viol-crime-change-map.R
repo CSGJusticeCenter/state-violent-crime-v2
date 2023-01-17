@@ -28,7 +28,6 @@ map_colors_rev <- list(
   list(name = "No 2021 data", from = 3, to = 3, color = "darkgray")
 )
 
-
 make_hex_map <- function(df, colors) {
   highchart()  |>
     hc_add_series_map(
@@ -82,13 +81,13 @@ viol_crime_change <- viol_crime_2021_state |>
   filter(pop_cov >= 0.9) |>
   transmute(
     state,
-    viol_crime_21 = actual,
-    viol_crime_rate_21 = actual / pop_total,
+    viol_crime_21 = actual_est,
+    viol_crime_rate_21 = actual_est / pop_total,
     viol_crime_clear_21 = clearance_rate
     ) |>
   full_join(filter(viol_crime_by_state, year == 2019), by = "state") |>
   transmute(state, state_abb, viol_crime_21, viol_crime_rate_21, viol_crime_clear_21,
-            viol_crime_19 = actual, viol_crime_rate_19 = actual / pop_total,
+            viol_crime_19 = actual_est, viol_crime_rate_19 = actual_est / pop_total,
             viol_crime_clear_19 = clearance_rate)
 
 
