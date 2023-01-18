@@ -14,12 +14,6 @@ execute:
   message: false
 ---
 
-<base target="_parent">
-
-<!-- <script> -->
-<!-- `r paste0("document.querySelector('#selector').value = 'state-viol-crime-", tolower(params$state), ".html'")` -->
-<!-- </script> -->
-
 ```{r}
 library(tidyverse)
 library(scales)
@@ -336,7 +330,7 @@ to_plot |>
 
 ## Background on crime data reporting
 
-Beginning with data year 2021, the FBI discontinued collecting Uniform Crime Reporting data via the Summary Reporting System and required law enforcement agencies to use the [National Incident-Based Reporting System (NIBRS)](https://bjs.ojp.gov/national-incident-based-reporting-system-nibrs) to report crime statistics to the FBI. Because many states did not have full NIBRS reporting coverage in 2021, the FBI and Bureau of Justice Statistics [generated estimated crime statistics](https://bjs.ojp.gov/library/publications/estimation-procedures-crimes-united-states-based-nibrs-data) based on the agencies that reported data to the FBI. The reported crime and clearance rates for 2021 have a level of uncertainty represented by a margin of error for each estimate because not all agencies reported data to the FBI.
+Beginning with data year 2021, the FBI discontinued collecting Uniform Crime Reporting data via the Summary Reporting System and required law enforcement agencies to use the [National Incident-Based Reporting System (NIBRS)](https://bjs.ojp.gov/national-incident-based-reporting-system-nibrs){target="_parent"} to report crime statistics to the FBI. Because many states did not have full NIBRS reporting coverage in 2021, the FBI and Bureau of Justice Statistics [generated estimated crime statistics](https://bjs.ojp.gov/library/publications/estimation-procedures-crimes-united-states-based-nibrs-data){target="_parent"} based on the agencies that reported data to the FBI. The reported crime and clearance rates for 2021 have a level of uncertainty represented by a margin of error for each estimate because not all agencies reported data to the FBI.
 
 :::
 
@@ -361,7 +355,7 @@ cat(paste0(
 ```
 
 ```{r, eval=state_name != "Illinois", results='asis'}
-cat("[^exceptional]: An incident is considered to be [cleared by exceptional means](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019/topic-pages/clearances) if a law enforcement agency is unable to arrest or formally charge a person with a crime, but the agency has met the following conditions:
+cat("[^exceptional]: An incident is considered to be [cleared by exceptional means](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019/topic-pages/clearances){target='_parent'} if a law enforcement agency is unable to arrest or formally charge a person with a crime, but the agency has met the following conditions:
     
     a) Identified the person who committed the crime
     b) Gathered enough evidence to support an arrest, make a charge, and turn over the person to the court for prosecution
@@ -603,23 +597,23 @@ ucr_agency_pop |>
 
 #### Crime and clearance rates
 
-Data regarding crime and clearance rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr). State-level counts of reported violent crime incidents between 2010 and 2020 are derived from the Summary Reporting System (SRS) in which law enforcement agencies submitted monthly counts of the four violent Part 1 Index Crimes (murder, aggravated assault, rape, and robbery). The FBI generated state-level estimates for reported crime from 1979 to 2020 based on agency-level reports, and these estimates are used on this page for counts of crime. These estimates can be downloaded from the [FBI's Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/downloads).
+Data regarding crime and clearance rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr){target="_parent"}. State-level counts of reported violent crime incidents between 2010 and 2020 are derived from the Summary Reporting System (SRS) in which law enforcement agencies submitted monthly counts of the four violent Part 1 Index Crimes (murder, aggravated assault, rape, and robbery). The FBI generated state-level estimates for reported crime from 1979 to 2020 based on agency-level reports, and these estimates are used on this page for counts of crime. These estimates can be downloaded from the [FBI's Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/downloads){target="_parent"}.
 
-State-level crime rates are calculated by dividing the number of estimated incidents by the total state population. Population data come from the U.S. Census Bureau [American Community Survey 1-year estimates (table B01003)](https://www.census.gov/programs-surveys/acs/data.html) and the [2020 Decennial Census Redistricting Data (table P1)](https://www.census.gov/programs-surveys/decennial-census/about/rdo/summary-files.html).
+State-level crime rates are calculated by dividing the number of estimated incidents by the total state population. Population data come from the U.S. Census Bureau [American Community Survey 1-year estimates (table B01003)](https://www.census.gov/programs-surveys/acs/data.html){target="_parent"} and the [2020 Decennial Census Redistricting Data (table P1)](https://www.census.gov/programs-surveys/decennial-census/about/rdo/summary-files.html){target="_parent"}.
 
 State-level clearance rates are estimated by aggregating agency-level data from the SRS Offenses Known and Clearances by Arrest (Return A) dataset. The clearance rates reported here are the number of incidents cleared by arrest plus the number of incidents exceptionally cleared divided by the total number of incidents known.
 
-National rates of crime and clearances come from the FBI's annual report, [_Crime in the U.S._](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019)
+National rates of crime and clearances come from the FBI's annual report, [_Crime in the U.S._](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019){target="_parent"}
 
-State-level crime and clearance data for 2021 come from the FBI's National Incident-Based Reporting System [state estimation program](https://bjs.ojp.gov/library/publications/estimation-procedures-crimes-united-states-based-nibrs-data). Crime data for 2021 are included in these pages for states in which law enforcement agencies covering at least 90 percent of the population reported NIBRS data.
+State-level crime and clearance data for 2021 come from the FBI's National Incident-Based Reporting System [state estimation program](https://bjs.ojp.gov/library/publications/estimation-procedures-crimes-united-states-based-nibrs-data){target="_parent"}. Crime data for 2021 are included in these pages for states in which law enforcement agencies covering at least 90 percent of the population reported NIBRS data.
 
 #### NIBRS participation
 
-The number of agencies reporting to NIBRS comes from the the _State level UCR Participation Endpoint API_. The participation status of individual agencies comes from the _Agency level UCR Participation Endpoint API_. Documentation of the FBI crime data API endpoints can be found on [Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/docApi).
+The number of agencies reporting to NIBRS comes from the the _State level UCR Participation Endpoint API_. The participation status of individual agencies comes from the _Agency level UCR Participation Endpoint API_. Documentation of the FBI crime data API endpoints can be found on [Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/docApi){target="_parent"}.
 
 #### Prison population
 
-State-level total prison populations come from the Bureau of Justice Statistics' (BJS) [Prisoners series reports](https://bjs.ojp.gov/library/publications/list?series_filter=Prisoners), which publishes year-end population counts for each state's prison system. The data in these annual reports come from state reports to BJS via the [National Corrections Reporting Program (NCRP)](https://bjs.ojp.gov/data-collection/national-corrections-reporting-program-ncrp) and the [National Prisoner Statistics (NPS) Program](https://bjs.ojp.gov/data-collection/national-prisoner-statistics-nps-program).
+State-level total prison populations come from the Bureau of Justice Statistics' (BJS) [Prisoners series reports](https://bjs.ojp.gov/library/publications/list?series_filter=Prisoners){target="_parent"}, which publishes year-end population counts for each state's prison system. The data in these annual reports come from state reports to BJS via the [National Corrections Reporting Program (NCRP)](https://bjs.ojp.gov/data-collection/national-corrections-reporting-program-ncrp){target="_parent"} and the [National Prisoner Statistics (NPS) Program](https://bjs.ojp.gov/data-collection/national-prisoner-statistics-nps-program){target="_parent"}.
 
 The NPS Program collects aggregate data from states regarding prison populations, while the NCRP collects individual-level data about people in prison. This difference in data collection methodology explains variations in reported prison populations depending on the data source used.
 
@@ -630,6 +624,6 @@ To generate the proportions of people in prison for different offense categories
 Alaska, Connecticut, Delaware, Hawaii, Rhode Island, and Vermont have
 integrated systems that combine prisons and jails, so the populations reported to BJS include people held in both prisons and jails.
 
-[NPS](https://www.icpsr.umich.edu/web/NACJD/series/886) and [NCRP](https://www.icpsr.umich.edu/web/NACJD/studies/38492) data can be downloaded from the National Archive of Criminal Justice Data.
+[NPS](https://www.icpsr.umich.edu/web/NACJD/series/886){target="_parent"} and [NCRP](https://www.icpsr.umich.edu/web/NACJD/studies/38492){target="_parent"} data can be downloaded from the National Archive of Criminal Justice Data.
 
 :::
