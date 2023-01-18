@@ -7,7 +7,7 @@ mainfont: "GT-America"
 linkcolor: "#00355a"
 anchor-sections: false
 params:
-  state: "WA"
+  state: "ID"
 execute:
   echo: false
   warning: false
@@ -619,11 +619,11 @@ The number of agencies reporting to NIBRS comes from the the _State level UCR Pa
 
 #### Prison population
 
-State-level total prison populations come from the Bureau of Justice Statistics [Prisoners series reports](https://bjs.ojp.gov/library/publications/list?series_filter=Prisoners), which publishes year-end population counts for each state's prison system. The data in these annual reports come from state reports to BJS via the [National Corrections Reporting Program (NCRP)](https://bjs.ojp.gov/data-collection/national-corrections-reporting-program-ncrp) and the [National Prisoner Statistics Program](https://bjs.ojp.gov/data-collection/national-prisoner-statistics-nps-program).
+State-level total prison populations come from the Bureau of Justice Statistics' (BJS) [Prisoners series reports](https://bjs.ojp.gov/library/publications/list?series_filter=Prisoners), which publishes year-end population counts for each state's prison system. The data in these annual reports come from state reports to BJS via the [National Corrections Reporting Program (NCRP)](https://bjs.ojp.gov/data-collection/national-corrections-reporting-program-ncrp) and the [National Prisoner Statistics (NPS) Program](https://bjs.ojp.gov/data-collection/national-prisoner-statistics-nps-program).
 
 The NPS Program collects aggregate data from states regarding prison populations, while the NCRP collects individual-level data about people in prison. This difference in data collection methodology explains variations in reported prison populations depending on the data source used.
 
-The total prison populations from the NPS program were combined with the percentages calculated using NCRP data to impute the counts of prison population by the offense categories shown on this page.
+The total prison populations from the NPS Program were combined with the percentages calculated using NCRP data to impute the counts of prison population by the offense categories shown on this page.
 
 To generate the proportions of people in prison for different offense categories, annual NCRP data were filtered to remove people with prison sentences of less than one year. An offense is associated with each person's prison term, and this offense was used to calculate prison population by offense. The violent offense category includes murder, manslaughter, rape, robbery, aggravated or simple assault, and other violent offenses.
 
