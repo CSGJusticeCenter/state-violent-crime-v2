@@ -1,7 +1,7 @@
 ---
 format:
   html:
-    # include-before-body: header.html
+    footnotes-hover: false
     css: styles.css
 mainfont: "GT-America"
 linkcolor: "#00355a"
@@ -109,7 +109,7 @@ max_viol_crime_off <- viol_crime_by_off_us |>
 ```
 
 ---
-title: "`r doc_title`"
+title: "United States data on violent crime, arrests, and prison population"
 ---
 
 ## Violent crime in `r state_name_text`
@@ -117,13 +117,13 @@ title: "`r doc_title`"
 ```{r, results='asis'}
 cat(paste0(
   "In 2021, ", comma(yes_nibrs_agencies, 1), " of ", comma(total_agencies, 1),
-  " law enforcement agencies in ", state_name_text, " reported crime data to the FBI, covering ", nibrs_pop_cov_text, " of the nation's population. This was too few agencies to make reliable national esimates of violent crime in 2021, therefore the national crime data presented on this page end in 2020."
+  " law enforcement agencies in ", state_name_text, " reported crime data to the FBI, covering ", nibrs_pop_cov_text, " of the nation's population. This was too few agencies to make reliable national estimates of violent crime in 2021, therefore the national crime data presented on this page end in 2020."
   ))
 ```
 
 ```{r, results='asis'}
 cat(paste0(
-  "A list of law enforcement agencies in ", state_name_text, " that did not fully report to the FBI on crime in 2021 can be found at the bottom of this page."
+  "A list of law enforcement agencies in ", state_name_text, " that reported no or insufficient 2021 data to the FBI can be found at the bottom of this page."
   ))
 ```
 
@@ -461,7 +461,7 @@ National crime rates are calculated by dividing the number of estimated incident
 
 #### NIBRS participation
 
-The number of agencies reporting to NIBRS comes from the the _State level UCR Participation Endpoint API_. The participation status of individual agencies comes from the _Agency level UCR Participation Endpoint API_. Documentation of the FBI crime data API endpoints can be found on [Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/docApi){target="_parent"}.
+The number of agencies reporting to NIBRS comes from the _State level UCR Participation Endpoint API_. The participation status of individual agencies comes from the _Agency level UCR Participation Endpoint API_. Documentation of the FBI crime data API endpoints can be found on [Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/docApi){target="_parent"}.
 
 #### Prison population
 

@@ -1,7 +1,7 @@
 ---
 format:
   html:
-    # include-before-body: header.html
+    footnotes-hover: false
     css: styles.css
 mainfont: "GT-America"
 linkcolor: "#00355a"
@@ -168,13 +168,13 @@ cat(paste0(
   "In 2021, ", comma(yes_nibrs_agencies, 1), " of ", comma(total_agencies, 1),
   " law enforcement agencies in ", state_name_text, " reported crime data to the FBI, covering ", 
   percent(state_nibrs_pop_cov$pop_cov, 1, suffix = " percent"), " of the ",
-  if_else(state_name == "District of Columbia", "District", "state"), "'s population. This was too few agencies to make reliable statewide esimates of violent crime in 2021."
+  if_else(state_name == "District of Columbia", "District", "state"), "'s population. This was too few agencies to make reliable statewide estimates of violent crime in 2021."
   ))
 ```
 
 ```{r, eval=no_nibrs_agencies > 0, results='asis'}
 cat(paste0(
-  "A list of law enforcement agencies in ", state_name_text, " that did not fully report to the FBI on crime in 2021 can be found at the bottom of this page."
+  "A list of law enforcement agencies in ", state_name_text, " that reported no or insufficient 2021 data to the FBI can be found at the bottom of this page."
   ))
 ```
 
@@ -515,7 +515,7 @@ top_offense_text <- if_else(
 cat(paste0(
 "## Prison population in ", state_name_text,"
 
-There were ", comma(max_min_prison$n[4], 1), " people in prison for violent offenses in at the end of ", max_min_prison$year[4], ", comprising ", percent(max_min_prison$pct[4], 1, suffix = " percent"), " of the total prison population. Since ", max_min_prison$year[2], ", the number of people in prison for violent offenses ", viol_pop_change_text, ". During that same period, the number of people in prison for nonviolent offenses ", non_viol_pop_change_text, ". Data on prison population trends in 2021 and 2022 are not available in national datasets, but can be analyzed upon request.
+There were ", comma(max_min_prison$n[4], 1), " people in prison for violent offenses at the end of ", max_min_prison$year[4], ", comprising ", percent(max_min_prison$pct[4], 1, suffix = " percent"), " of the total prison population. Since ", max_min_prison$year[2], ", the number of people in prison for violent offenses ", viol_pop_change_text, ". During that same period, the number of people in prison for nonviolent offenses ", non_viol_pop_change_text, ". Data on prison population trends in 2021 and 2022 are not available in national datasets, but can be analyzed upon request.
 
 ::: {.panel-tabset}
 
@@ -609,7 +609,7 @@ State-level crime and clearance data for 2021 come from the FBI's National Incid
 
 #### NIBRS participation
 
-The number of agencies reporting to NIBRS comes from the the _State level UCR Participation Endpoint API_. The participation status of individual agencies comes from the _Agency level UCR Participation Endpoint API_. Documentation of the FBI crime data API endpoints can be found on [Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/docApi){target="_parent"}.
+The number of agencies reporting to NIBRS comes from the _State level UCR Participation Endpoint API_. The participation status of individual agencies comes from the _Agency level UCR Participation Endpoint API_. Documentation of the FBI crime data API endpoints can be found on [Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/docApi){target="_parent"}.
 
 #### Prison population
 
