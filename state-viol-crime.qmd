@@ -7,7 +7,7 @@ mainfont: "GT-America"
 linkcolor: "#00355a"
 anchor-sections: false
 params:
-  state: "ID"
+  state: "AK"
 execute:
   echo: false
   warning: false
@@ -58,15 +58,17 @@ viol_prison_pop_state <- read_rds(file.path(sp_path, "viol_prison_pop_state_impu
   filter(state == state_name)
 viol_prison_pop_by_off_state <- read_rds(file.path(sp_path, "viol_prison_pop_by_off_state_imputed.rds")) |>
   filter(state == state_name)
+prison_by_state_bjs <- read_rds(file.path(sp_path, "bjs_prisoners", "prison_by_state.rds")) |>
+  filter(state == state_name)
+
+prison_by_off_state <- !state_name %in% c("Alaska", "Idaho", "District of Columbia")
+prison_pop_only_state <- state_name %in% c("Alaska", "Idaho")
 
 # check if we will consider this a nibrs state for this report
 # which means 90% or more population coverage (from violent crime estimates)
 nibrs_state <- viol_crime_2021_state |> 
   filter(pop_cov >= 0.9) |> 
   nrow() >= 1
-
-# check if there is any ncrp data for this state
-ncrp_state <- nrow(viol_prison_pop_state) > 1
 
 # if we're going to use nibrs data join 2021 nibrs estimates with
 # ucr srs state 2010-2020 - by offense
@@ -83,8 +85,8 @@ if (nibrs_state) {
 # we don't have IL clearance rate data so take that out of title
 doc_title <- case_when(
   state_name == "Illinois" ~ paste(state_name, "data on violent crime and prison population"),
-  ncrp_state ~ paste(state_name, "data on violent crime, arrests, and prison population"),
-  TRUE ~ paste(state_name, "data on violent crime and arrests")
+  state_name == "District of Columbia" ~ paste(state_name, "data on violent crime and arrests"),
+  TRUE ~ paste(state_name, "data on violent crime, arrests, and prison population"),
   )
 
 # count how many agencies are nibrs reporters in the state
@@ -436,7 +438,7 @@ cat("
 ")
 ```
 
-```{r eval=ncrp_state}
+```{r eval=prison_by_off_state}
 to_plot <- viol_prison_pop_state |> 
   group_by(year) |> 
   mutate(
@@ -505,7 +507,7 @@ max_off <- to_plot_by_off |>
   arrange(desc(pct))
 ```
 
-```{r eval=ncrp_state, results='asis'}
+```{r eval=prison_by_off_state, results='asis'}
 top_offense_text <- if_else(
   tolower(max_off$off_comb[1]) %in% c("aggravated or simple assault", "other violent offenses"),
   paste0("an ", tolower(max_off$off_comb[1])),
@@ -523,7 +525,7 @@ There were ", comma(max_min_prison$n[4], 1), " people in prison for violent offe
 ))
 ```
 
-```{r eval=ncrp_state}
+```{r eval=prison_by_off_state}
 to_plot |>  
   hchart(
     "column",
@@ -538,11 +540,11 @@ to_plot |>
   hc_yAxis(labels = list(format = "{value:,.0f}"))
 ```
 
-```{r eval=ncrp_state, results='asis'}
+```{r eval=prison_by_off_state, results='asis'}
 cat("## By offense")
 ```
 
-```{r eval=ncrp_state}
+```{r eval=prison_by_off_state}
 to_plot_by_off |> 
   hchart(
     "column",
@@ -557,10 +559,56 @@ to_plot_by_off |>
   hc_yAxis(labels = list(format = "{value:,.0f}"))
 ```
 
-```{r eval=ncrp_state, results='asis'}
+```{r eval=prison_by_off_state, results='asis'}
 cat(":::")
 ```
 
+
+```{r eval=prison_pop_only_state}
+to_plot <- prison_by_state_bjs |> 
+  mutate(
+    tooltip = paste0(
+      "<b>", state, " – ", year, "</b></br>",
+      "Total prison population: ", comma(tot_prison_pop, 1)
+      )
+  )
+
+max_min_prison <- to_plot |> 
+  filter(year %in% range(year)) |> 
+  arrange(year)
+
+pop_pct_change <- (max_min_prison$tot_prison_pop[2] - max_min_prison$tot_prison_pop[1]) / max_min_prison$tot_prison_pop [1]
+
+pop_change_text <- case_when(
+  pop_pct_change > 0.005  ~ paste0("increased by ",
+                                        percent(abs(pop_pct_change), 1, suffix = " percent")),
+  pop_pct_change < -0.005 ~ paste0("decreased by ",
+                                        percent(abs(pop_pct_change), 1, suffix = " percent")),
+  TRUE                         ~ "has remained nearly the the same"
+  )
+```
+
+```{r eval=prison_pop_only_state, results='asis'}
+cat(paste0(
+"## Prison population in ", state_name_text,"
+
+There were ", comma(max_min_prison$tot_prison_pop[2], 1), " people in prison at the end of ", max_min_prison$year[2], ". Since ", max_min_prison$year[1], ", the number of people in prison ", pop_change_text, ". Data on prison population trends in 2021 and 2022 are not available in national datasets, but can be analyzed upon request."
+))
+```
+
+```{r eval=prison_pop_only_state}
+to_plot |>  
+  hchart(
+    "column",
+    groupPadding = 0.05,
+    color = jr_pal[1],
+    hcaes(year, tot_prison_pop),
+  ) |> 
+  hc_title(text = paste0("Prison population in ", state_name_text)) |>
+  hc_caption(text = paste0("BJS Prisoners Series")) |> 
+  hc_setup() |> 
+  hc_yAxis(labels = list(format = "{value:,.0f}"))
+```
 
 ```{r eval=no_nibrs_agencies > 0, results='asis'}
 cat(paste0(
