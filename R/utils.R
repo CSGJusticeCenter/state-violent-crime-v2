@@ -37,35 +37,50 @@ hc_theme_jc <- hc_theme_merge(
   )
 )
 
+render_image <- JS("
+  function(){
+    this.renderer.image('https://csg-state-violent-crime.netlify.app/img/csgjc-logo.png', 30, this.chartHeight - 37, 140.1, 30)
+    .add();
+  }")
+
 # define default setup for highcharter plots
 # add and configure exporting and accessibility modules
 # set justice center theme
 # set default tooltip text to be in input data column `tooltip`
 hc_setup <- function(x) {
-  hc_add_dependency(x, name = "modules/exporting.js") %>%
-    hc_add_dependency(name = "modules/offline-exporting.js") %>%
-    hc_add_dependency(name = "modules/accessibility.js") %>%
+  hc_add_dependency(x, name = "modules/exporting.js") |>
+    hc_add_dependency(name = "modules/offline-exporting.js") |>
+    hc_add_dependency(name = "modules/accessibility.js") |>
     hc_exporting(
       enabled = TRUE,
       buttons = list(contextButton = list(menuItems = list("printChart", "downloadPNG"))),
       accessibility = list(enabled = TRUE)
-    ) %>%
-    hc_add_theme(hc_theme_jc) %>%
-    hc_tooltip(formatter = JS("function(){return(this.point.tooltip)}")) %>%
+    ) |>
+    hc_add_theme(hc_theme_jc) |>
+    hc_tooltip(formatter = JS("function(){return(this.point.tooltip)}")) |>
     hc_plotOptions(
       series = list(animation = FALSE),
       accessibility = list(
         enabled = TRUE,
         keyboardNavigation = list(enabled = TRUE)
       )
-    ) %>%
+    ) |>
     hc_xAxis(
       title = "",
       labels = list(y = 25)
-    ) %>%
+    ) |>
     hc_yAxis(
       title = "",
       labels = list(format = "{value:,.0f}")
+    ) |>
+    hc_exporting(
+      chartOptions = list(
+        chart = list(
+          events = list(
+            load = render_image
+          )
+        )
+      )
     )
 }
 
