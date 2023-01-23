@@ -53,7 +53,7 @@ hc_setup <- function(x) {
     hc_add_dependency(name = "modules/accessibility.js") |>
     hc_exporting(
       enabled = TRUE,
-      buttons = list(contextButton = list(menuItems = list("printChart", "downloadPNG"))),
+      buttons = list(contextButton = list(menuItems = list("downloadPNG"))),
       accessibility = list(enabled = TRUE)
     ) |>
     hc_add_theme(hc_theme_jc) |>
