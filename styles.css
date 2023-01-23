@@ -72,6 +72,8 @@ h4 {
   color: var(--quarto-text-muted);
 }
 
-#quarto-appendix {
-  display: none;
+@page {
+    size: auto;
+    margin-top: 5mm;
+    margin-bottom: 0mm;
 }

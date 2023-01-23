@@ -71,3 +71,9 @@ h4 {
   font-size: 0.95em;
   color: var(--quarto-text-muted);
 }
+
+@page {
+    size: auto;
+    margin-top: 5mm;
+    margin-bottom: 0mm;
+}
