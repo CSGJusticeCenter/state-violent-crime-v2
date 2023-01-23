@@ -14,6 +14,10 @@ execute:
   message: false
 ---
 
+<head>
+<img src='https://csg-state-violent-crime.netlify.app/img/csgjc-logo.png' style='display: none;'> 
+</head>
+
 ```{r}
 library(tidyverse)
 library(scales)

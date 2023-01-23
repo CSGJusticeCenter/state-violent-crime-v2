@@ -43,6 +43,14 @@ render_image <- JS("
     .add();
   }")
 
+render_image_print <- JS("
+  function(){
+    logo=this.renderer.image('https://csg-state-violent-crime.netlify.app/img/csgjc-logo.png', 30, this.chartHeight - 37, 140.1, 30)
+    .add(); this.print();
+  }")
+
+render_image_remove <- JS("function(){logo.element.remove();}")
+
 # define default setup for highcharter plots
 # add and configure exporting and accessibility modules
 # set justice center theme
@@ -53,7 +61,7 @@ hc_setup <- function(x) {
     hc_add_dependency(name = "modules/accessibility.js") |>
     hc_exporting(
       enabled = TRUE,
-      buttons = list(contextButton = list(menuItems = list("downloadPNG"))),
+      buttons = list(contextButton = list(menuItems = list("downloadPNG", "printChart"))),
       accessibility = list(enabled = TRUE)
     ) |>
     hc_add_theme(hc_theme_jc) |>
@@ -80,6 +88,12 @@ hc_setup <- function(x) {
             load = render_image
           )
         )
+      )
+    ) |>
+    hc_chart(
+      events = list(
+        beforePrint = render_image_print,
+        afterPrint = render_image_remove
       )
     )
 }
