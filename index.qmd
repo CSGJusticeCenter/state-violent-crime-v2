@@ -149,11 +149,16 @@ viol_crime_us |>
   hchart(
     "spline",
     hcaes(year, rate),
-    color = jr_pal[1]
+    color = jr_pal[1],
+    accessibility = list(
+      point = list(
+        valueDescriptionFormat = "{point.state}, year: {point.x:.0f}, rate: {point.y:.1f}"
+        )
+      )
   ) |> 
   hc_title(text = paste0("Violent crime in ", state_name_text)) |>
   hc_subtitle(text = "Crime reported to police per 100,000 residents") |> 
-  hc_caption(text = "FBI <em>Crime in the U.S.</em>") |> 
+  hc_caption(text = "FBI <em>Crime in the U.S.</em>") |>
   hc_setup()
 ```
 
@@ -190,8 +195,12 @@ to_plot_2 <- to_plot |>
 to_plot_2 |> 
   hchart(
     "spline",
-    stacking = "normal",
-    hcaes(year, rate)
+    hcaes(year, rate),
+    accessibility = list(
+      point = list(
+        valueDescriptionFormat = "{point.state}, year: {point.x:.0f}, rate: {point.y:.1f}"
+        )
+      )
   ) |> 
   hc_yAxis(min = 0) |> 
   hc_colors(unique(to_plot_2$color)) |> 
@@ -210,8 +219,12 @@ to_plot_3 <- to_plot |>
 to_plot_3 |> 
   hchart(
     "spline",
-    stacking = "normal",
-    hcaes(year, rate)
+    hcaes(year, rate),
+    accessibility = list(
+      point = list(
+        valueDescriptionFormat = "{point.state}, year: {point.x:.0f}, rate: {point.y:.1f}"
+        )
+      )    
   ) |> 
   hc_colors(unique(to_plot_3$color)) |> 
   hc_title(text = paste0("Aggravated assault in ", state_name_text)) |>
@@ -229,8 +242,12 @@ to_plot_5 <- to_plot |>
 to_plot_5 |>
   hchart(
     "spline",
-    stacking = "normal",
-    hcaes(year, rate)
+    hcaes(year, rate),
+    accessibility = list(
+      point = list(
+        valueDescriptionFormat = "{point.state}, year: {point.x:.0f}, rate: {point.y:.1f}"
+        )
+      )    
   ) |> 
   hc_colors(unique(to_plot_5$color)) |> 
   hc_title(text = paste0("Robbery in ", state_name_text)) |>
@@ -248,8 +265,12 @@ to_plot_4 <- to_plot |>
 to_plot_4 |> 
   hchart(
     "spline",
-    stacking = "normal",
-    hcaes(year, rate)
+    hcaes(year, rate),
+    accessibility = list(
+      point = list(
+        valueDescriptionFormat = "{point.state}, year: {point.x:.0f}, rate: {point.y:.1f}"
+        )
+      )    
   ) |> 
   hc_colors(unique(to_plot_4$color)) |> 
   hc_title(text = paste0("Rape in ", state_name_text)) |>
@@ -267,6 +288,11 @@ to_plot |>
     stacking = "normal",
     groupPadding = 0.05,
     hcaes(year, rate, group = crime),
+    accessibility = list(
+      point = list(
+        valueDescriptionFormat = "{point.state}, year: {point.x:.0f}, rate: {point.y:.1f}"
+        )
+      )    
   ) |> 
   hc_colors(unique(to_plot$color)) |> 
   hc_title(text = paste0("Violent crime in ", state_name_text, ", by offense")) |>
@@ -323,8 +349,11 @@ viol_crime_us |>
     "spline",
     hcaes(year, clearance_rate),
     color = jr_pal[1],
-    dashStyle = "solid",
-    opacity = c(1, 0.75)
+    accessibility = list(
+      point = list(
+        valueDescriptionFormat = "{point.state}, year: {point.x:.0f}, clearance rate: {point.y:.1f}%"
+        )
+      )     
   ) |> 
   hc_title(text = paste("Violent crime clearance rate in ", state_name_text)) |>
   hc_caption(text = "FBI <em>Crime in the U.S.</em>") |> 
@@ -353,6 +382,11 @@ to_plot |>
   hchart(
     "spline",
     hcaes(year, clearance_rate, group = crime),
+    accessibility = list(
+      point = list(
+        valueDescriptionFormat = "{point.state}, year: {point.x:.0f}, clearance rate: {point.y:.1f}%"
+        )
+      )     
   ) |> 
   hc_colors(unique(to_plot$color)) |> 
   hc_title(text = paste0("Violent crime clearance rate in ", state_name_text, ", by offense")) |>
@@ -420,7 +454,12 @@ to_plot |>
     stacking = "normal",
     groupPadding = 0.05,
     color = jr_pal[c(7, 1)],
-    hcaes(as.character(year), n, group = violent_off),
+    hcaes(year, n, group = violent_off),
+    accessibility = list(
+      point = list(
+        valueDescriptionFormat = "{point.state}, year: {point.x:.0f}, prison population: {point.y:.0f}"
+        )
+      )     
   ) |> 
   hc_title(text = paste0("Prison population in ", state_name_text)) |>
   hc_caption(text = paste0("BJS Prisoners Series")) |> 
