@@ -163,3 +163,23 @@ saveWidget(hom_hex, "hom-hex-map.html", selfcontained = FALSE, libdir = "map-lib
 
 saveWidget(viol_crime_clear_hex, "viol-crime-clear-hex-map.html", selfcontained = FALSE, libdir = "map-libs")
 saveWidget(hom_clear_hex, "hom-clear-hex-map.html", selfcontained = FALSE, libdir = "map-libs")
+
+# viol_crime_2021_state |>
+#   mutate(
+#     rate = actual_est / pop_total,
+#     rate_lower = actual_lower / pop_total,
+#     rate_upper = actual_upper / pop_total,
+#     state = fct_reorder(state, rate)
+#     ) |>
+#   ggplot(aes(rate, state)) +
+#   geom_errorbarh(aes(xmin = rate_lower, xmax = rate_upper), color = "gray20",
+#                  alpha = 0.8) +
+#   geom_point(color = "steelblue") +
+#   scale_x_continuous(labels = scales::label_comma(scale = 1e5)) +
+#   labs(
+#     title = "Reported violent crime incidents per 100k residents, 2021",
+#     x = NULL,
+#     y = NULL
+#   ) +
+#   theme_minimal()
+#

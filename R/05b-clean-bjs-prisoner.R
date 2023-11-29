@@ -71,23 +71,39 @@ b <- map_dfr(2012:2019, read_clean_bjs_prison_2)
 
 
 # 2020 is it's own special snowflake of data cleaning
-c <- read_csv(
-  file.path(prison_path, "p20st", "p20stt02.csv"),
-  skip = 11,
-  col_select = c(2, 6)
-) |>
-  rename(state = 1, n = 2) |>
-  mutate(
-    state = str_remove(state, "/.*"),
-    n = parse_number(as.character(n)),
-    year = 2020
-  ) |>
-  filter(state %in% state.name)
+# a slightly different function to read in bjs csv files, clean and come out with
+# state name and total prison pop as published
+read_clean_bjs_prison_3 <- function(year) {
+
+  year_two <- str_sub(year, 3)
+
+  file_name <- glue("p{year_two}stt02.csv")
+
+  read_csv(
+    file.path(prison_path, glue("p{year_two}st"), file_name),
+    skip = 11,
+    col_select = c(2, 6)
+    ) |>
+    rename(state = 1, n = 2) |>
+    mutate(
+      state = str_remove(state, "/.*"),
+      n = parse_number(as.character(n)),
+      year = year
+    ) |>
+    filter(state %in% state.name)
+}
+
+# works for 2012-2019
+c <- map_dfr(2020:2021, read_clean_bjs_prison_3)
 
 # combine each cleaned year(s) of data
 prison_by_state <- bind_rows(a, b, c) |>
   arrange(year, state) |>
-  rename(tot_prison_pop = n)
+  rename(tot_prison_pop = n) |>
+  group_by(state) |>
+  mutate(pct_change = (tot_prison_pop - lag(tot_prison_pop)) / lag(tot_prison_pop)) |>
+  ungroup()
 
 # write to disk
 write_rds(prison_by_state, file.path(prison_path, "prison_by_state.rds"))
+

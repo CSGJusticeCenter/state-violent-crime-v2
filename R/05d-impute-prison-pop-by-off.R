@@ -21,7 +21,8 @@ prison_by_state_bjs <- read_rds(file.path(sp_path, "bjs_prisoners", "prison_by_s
 viol_prison_pop_state_imputed <- viol_prison_pop_state |>
   left_join(prison_by_state_bjs, by = c("year", "state")) |>
   mutate(n_imputed = tot_prison_pop * pct) |>
-  rename(n_ncrp = n, n = n_imputed)
+  rename(n_ncrp = n, n = n_imputed) |>
+  filter(!(state == "Virginia" & year == 2010))
 
 # get impute violent population for each year and state
 violent_imputed_to_join <- viol_prison_pop_state_imputed |>
