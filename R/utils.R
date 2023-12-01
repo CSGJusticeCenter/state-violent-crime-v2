@@ -26,7 +26,7 @@ hc_theme_jc <- hc_theme_merge(
     subtitle = list(style = list(fontFamily = default_fonts, fontSize = "16px",
                                  color = "#666666")),
     legend = list(align = "center", verticalAlign = "bottom"),
-    caption = list(align = "right"),
+    caption = list(align = "left"),
     plotOptions = list(
       series = list(states = list(inactive = list(opacity = 1))),
       line = list(marker = list(enabled = TRUE)),
@@ -98,16 +98,9 @@ hc_setup <- function(x) {
     )
 }
 
-
 offense_pal <- tibble(
-  color = jr_pal[1:4],
+  color = jr_pal[c(2:5)],
   crime = c("Homicide", "Robbery", "Rape", "Aggravated assault")
-)
-
-prison_offense_pal <- tibble(
-  color = jr_pal[1:5],
-  off_comb = c("Homicide", "Robbery", "Rape", "Aggravated or simple assault",
-               "Other violent offenses")
 )
 
 reactable_template <- function(df, sort_col = "rate", ...) {
