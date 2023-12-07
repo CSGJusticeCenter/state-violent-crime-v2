@@ -105,7 +105,7 @@ df_nibrs_violent_unsolved_by_year_county_2010_2022 <- df_nibrs_kaplan_2010_2022 
             by = "ori") |> 
  dplyr::group_by(year,
                  county_with_nyc,
-                 # county_fips,
+                 county_fips,
                  state_name,
                  state_abbr) |> 
   summarize(n_reported = sum(n_reported,
@@ -126,7 +126,7 @@ df_nibrs_violent_unsolved_by_county_to_map <- df_nibrs_violent_unsolved_by_year_
   filter(year%in%c(2019,
                    2022)) |> 
   group_by(county_with_nyc,
-           # county_fips,
+           county_fips,
            state_name,
            state_abbr) |> 
   mutate(unsolved_rate_percent_change_2019_2022 = (unsolved_rate[year==2019] - unsolved_rate[year==2022])/unsolved_rate[year==2019]) |> 
@@ -136,7 +136,7 @@ df_nibrs_violent_unsolved_by_county_to_map <- df_nibrs_violent_unsolved_by_year_
   filter(year==2022) |> 
   ### now we can de-dup by county
   dplyr::select(county_with_nyc,
-                # county_fips,
+                county_fips,
                 state_name,
                 state_abbr,
                 unsolved_rate_2022 = unsolved_rate,

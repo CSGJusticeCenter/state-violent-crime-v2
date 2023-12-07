@@ -29,7 +29,6 @@ library(reactable)
 source("R/utils.R")
 
 # path to data folder on sharepoint
-
 sp_data_to_plot_path <- csg_sp_path("ad_hoc_requests/state_violent_crime_marshall/data")
 
 state <- csg_state_convert(params$state, from = "abbr", "name")
@@ -408,14 +407,14 @@ cat("## Mapping unsolved violent crime by county in", state_name_text)
 ```
 
 ```{r, eval=state != "Illinois"}
-total_agencies <- comma(n_distinct(srs_unsolved_by_agency_to_table$Agency))
+total_agencies <- comma(n_distinct(srs_unsolved_by_agency_to_table$agency_name))
 
-counties_represented <- comma(n_distinct(srs_unsolved_by_county_to_map$county_fips))
+counties_represented <- comma(n_distinct(srs_unsolved_by_agency_to_table$county_with_nyc))
 ```
 
 ```{r, eval=state != "Illinois", results='asis'}
 cat(paste0(
-  "In the map below,", total_agencies, " law enforcement agencies and", counties_represented, " counties are represented."))
+  "In the map below, ", total_agencies, " law enforcement agencies and ", counties_represented, " counties are represented."))
 ```
 
 
@@ -452,8 +451,7 @@ cat("## Unsolved violent crime by agency in", state_name_text)
 
 
 ```{r, eval=state != "Illinois"}
-df_nibrs_violent_unsolved_by_agency_to_table_2022 |> 
-  filter(!is_nibrs) |> 
+srs_unsolved_by_agency_to_table |> 
   ### remove state name
   ### we just needed it to filter on param
   select(-state_name) |> 
@@ -463,7 +461,7 @@ df_nibrs_violent_unsolved_by_agency_to_table_2022 |>
     columns = list(
       agency_name = colDef(name = "Agency", minWidth = 250),
       agency_type = colDef(name = "Agency Type"),
-      county_name = colDef(name = "County"),
+      county_with_nyc = colDef(name = "County"),
       population = colDef(name = "Population"), 
       n_reported = colDef(name = "Count of Violent Index Crimes"), 
       n_reported_rate = colDef(name = "Violent Index Crime Rate (per 100k)"), 
