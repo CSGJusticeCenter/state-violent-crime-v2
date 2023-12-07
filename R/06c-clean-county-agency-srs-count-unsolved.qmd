@@ -143,59 +143,63 @@ df_nibrs_violent_unsolved_by_county_to_map <- df_nibrs_violent_unsolved_by_year_
                 unsolved_rate_percent_change_2019_2022) |> 
   distinct() 
 
-############################################
-### finally, we need to add geometry to file
-### in order to make it ready to map
-###########################################
+### additional work to add geo that joins NYC is temp commented out
+### until we decide on whether to include given that it makes hc 
+### a bit more complicated and that they are missing 2022 clearance data
 
-### county-level file
-### pulling in population data in case we want to use it as tooltip
-us_county_shoreline_clipped <- get_acs(
-  geography = "county",
-  variables = "S0101_C01_001",
-  year = 2021,
-  geometry = TRUE,
-  cb = TRUE,
-  resolution = "20m") |> 
-  clean_names() |> 
-  mutate(state_geoid = substr(geoid, 1, 2)) |> 
-  ### extract county and state name and trim any leading/trailing whitespace
-  mutate(acs_county_name = trimws(str_extract(name,  ".+?(?=County)")),
-         acs_county_state_name = trimws(str_extract(name, '\\b[^,]+$'))) |> 
-  ### join 5 nyc counties together
-  ### and assign geo to nypd
-  mutate(county_with_nyc = ifelse(acs_county_state_name=="New York" & acs_county_name%in%c("Bronx",
-                                                                                           "New York",
-                                                                                           "Queens",
-                                                                                           "Kings",
-                                                                                           "Richmond"),
-                                  "New York City",acs_county_name))  |>  ### just keeping geo for now
-  dplyr::select(county_fips = geoid,
-                county_with_nyc,
-                acs_county_state_name,
-                geometry) |> 
-  distinct()
-
-
-### then left join us_county_shoreline_clipped to df_nibrs_violent_unsolved_by_county_to_map (we want all counties represented regardless of nibrs data)
-### because this file already has geometry, it'll then be ready to map
-### joining on state/county name instead of fips because nyc doesn't have a fips
-### if worried about match, could create custom fips that accounts for nyc
-df_nibrs_by_county_to_map_state_geo <- left_join(us_county_shoreline_clipped,
-                                                 df_nibrs_violent_unsolved_by_county_to_map,
-                                                 by = c("acs_county_state_name"="state_name",
-                                                        "county_with_nyc")) |> 
-  ### join geo for 5 nyc counties together
-  ### group by state and county_with_nyc
-  ### county_with_nyc is duplicated for the 5 nyc counties
-  group_by(acs_county_state_name,
-           county_with_nyc) |> 
-  mutate(geometry = sf::st_union(geometry)) |> 
-  ungroup()
+# ############################################
+# ### finally, we need to add geometry to file
+# ### in order to make it ready to map
+# ###########################################
+# 
+# ### county-level file
+# ### pulling in population data in case we want to use it as tooltip
+# us_county_shoreline_clipped <- get_acs(
+#   geography = "county",
+#   variables = "S0101_C01_001",
+#   year = 2021,
+#   geometry = TRUE,
+#   cb = TRUE,
+#   resolution = "20m") |> 
+#   clean_names() |> 
+#   mutate(state_geoid = substr(geoid, 1, 2)) |> 
+#   ### extract county and state name and trim any leading/trailing whitespace
+#   mutate(acs_county_name = trimws(str_extract(name,  ".+?(?=County)")),
+#          acs_county_state_name = trimws(str_extract(name, '\\b[^,]+$'))) |> 
+#   ### join 5 nyc counties together
+#   ### and assign geo to nypd
+#   mutate(county_with_nyc = ifelse(acs_county_state_name=="New York" & acs_county_name%in%c("Bronx",
+#                                                                                            "New York",
+#                                                                                            "Queens",
+#                                                                                            "Kings",
+#                                                                                            "Richmond"),
+#                                   "New York City",acs_county_name))  |>  ### just keeping geo for now
+#   dplyr::select(county_fips = geoid,
+#                 county_with_nyc,
+#                 acs_county_state_name,
+#                 geometry) |> 
+#   distinct()
+# 
+# 
+# ### then left join us_county_shoreline_clipped to df_nibrs_violent_unsolved_by_county_to_map (we want all counties represented regardless of nibrs data)
+# ### because this file already has geometry, it'll then be ready to map
+# ### joining on state/county name instead of fips because nyc doesn't have a fips
+# ### if worried about match, could create custom fips that accounts for nyc
+# df_nibrs_by_county_to_map_state_geo <- left_join(us_county_shoreline_clipped,
+#                                                  df_nibrs_violent_unsolved_by_county_to_map,
+#                                                  by = c("acs_county_state_name"="state_name",
+#                                                         "county_with_nyc")) |> 
+#   ### join geo for 5 nyc counties together
+#   ### group by state and county_with_nyc
+#   ### county_with_nyc is duplicated for the 5 nyc counties
+#   group_by(acs_county_state_name,
+#            county_with_nyc) |> 
+#   mutate(geometry = sf::st_union(geometry)) |> 
+#   ungroup()
 
 ### write out
-write_rds(df_nibrs_by_county_to_map_state_geo,
-          file.path(sp_data_to_plot_path,"viol_crime_unsolved_by_county_to_map_geo.rds"))
+write_rds(df_nibrs_violent_unsolved_by_county_to_map,
+          file.path(sp_data_to_plot_path,"df_nibrs_violent_unsolved_by_county_to_map.rds"))
 
 ```
 

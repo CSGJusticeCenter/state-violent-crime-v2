@@ -25,7 +25,6 @@ library(csgjcr)
 library(highcharter)
 library(htmlwidgets)
 library(reactable)
-library(geojsonio)
 
 source("R/utils.R")
 
@@ -46,7 +45,7 @@ srs_by_cat_us <- read_rds(file.path(sp_data_to_plot_path, "srs_by_cat_us.rds")) 
   filter(crime_cat == "Violent", year >= 2012)
 
 srs_unsolved_by_county_to_map <- read_rds(file.path(sp_data_to_plot_path, 
-                                             "viol_crime_unsolved_by_county_to_map_geo.rds")) |>  
+                                             "df_nibrs_violent_unsolved_by_county_to_map.rds")) |>  
   filter(state_name == state) |> 
   ### currently multiplying rate by 100 instead of using scales::percent 
   ### may be better way to format within hc
