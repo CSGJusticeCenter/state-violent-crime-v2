@@ -199,7 +199,7 @@ df_nibrs_violent_unsolved_by_county_to_map <- df_nibrs_violent_unsolved_by_year_
 
 ### write out
 write_rds(df_nibrs_violent_unsolved_by_county_to_map,
-          file.path(sp_data_to_plot_path,"df_nibrs_violent_unsolved_by_county_to_map.rds"))
+          file.path(sp_data_to_plot_path,"viol_crime_unsolved_by_county_to_map.rds"))
 
 ```
 

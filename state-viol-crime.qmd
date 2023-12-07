@@ -29,6 +29,7 @@ library(reactable)
 source("R/utils.R")
 
 # path to data folder on sharepoint
+
 sp_data_to_plot_path <- csg_sp_path("ad_hoc_requests/state_violent_crime_marshall/data")
 
 state <- csg_state_convert(params$state, from = "abbr", "name")
@@ -45,14 +46,14 @@ srs_by_cat_us <- read_rds(file.path(sp_data_to_plot_path, "srs_by_cat_us.rds")) 
   filter(crime_cat == "Violent", year >= 2012)
 
 srs_unsolved_by_county_to_map <- read_rds(file.path(sp_data_to_plot_path, 
-                                             "df_nibrs_violent_unsolved_by_county_to_map.rds")) |>  
+                                             "viol_crime_unsolved_by_county_to_map.rds")) |>  
   filter(state_name == state) |> 
   ### currently multiplying rate by 100 instead of using scales::percent 
   ### may be better way to format within hc
   mutate(unsolved_rate_2022 = unsolved_rate_2022*100)
   
 srs_unsolved_by_agency_to_table <- read_rds(file.path(sp_data_to_plot_path, 
-                                             "viol_crime_unsolved_by_county_to_map.rds")) |>  
+                                             "viol_crime_unsolved_by_agency_to_table.rds")) |>  
   filter(state_name == state)
 
 # create title of page
