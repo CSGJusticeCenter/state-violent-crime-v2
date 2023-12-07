@@ -117,12 +117,12 @@ srs_by_cat_us |>
 ```{r}
 to_plot <- srs_us |> 
   left_join(offense_pal, by = c("group" = "crime")) |> 
+  group_by(year) |> 
+  mutate(tot_crime = sum(incidents_reported)) |> 
+  ungroup() |> 
   mutate(
-    tot_crime = sum(incidents_reported),
     pct = incidents_reported / tot_crime,
-    incidents_reported_rate_total = incidents_reported_rate_total * 1e5
-    ) |> 
-  mutate(
+    incidents_reported_rate_total = incidents_reported_rate_total * 1e5,
     group = fct_reorder(group, incidents_reported_rate_total),
     tooltip = paste0(
       "<b>", group, " – ", year, "</b></br>",

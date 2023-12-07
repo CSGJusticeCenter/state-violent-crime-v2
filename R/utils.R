@@ -26,7 +26,7 @@ hc_theme_jc <- hc_theme_merge(
     subtitle = list(style = list(fontFamily = default_fonts, fontSize = "16px",
                                  color = "#666666")),
     legend = list(align = "center", verticalAlign = "bottom"),
-    caption = list(align = "left"),
+    caption = list(align = "right"),
     plotOptions = list(
       series = list(states = list(inactive = list(opacity = 1))),
       line = list(marker = list(enabled = TRUE)),
