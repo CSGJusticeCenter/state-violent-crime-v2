@@ -1,0 +1,255 @@
+---
+title: "clean-county_srs_count_unsolved"
+format: html
+---
+
+
+```{r }
+### call libraries
+library(easypackages)
+libraries("tidyverse","csgjcr","httr2","janitor","reactable","reactablefmtr")
+```
+
+```{r }
+### set project path for jr data library
+
+## andrew
+csg_set_project_path(project = "JR_DATA_LIBRARY", sp_folder = "C:/Users/abyrum/OneDrive/The Council of State Governments/JC Research - Documents/JR_DATA_LIBRARY", force = TRUE)
+
+## pull correct project path
+sp_jr_data_library_path <- csg_get_project_path("JR_DATA_LIBRARY")
+
+### set sharepoint path for data to pull in
+sp_data_analysis_path <- file.path(sp_jr_data_library_path, "data", "analysis")
+
+
+### set project path for ad hoc request folder
+
+## andrew
+csg_set_project_path(project = "ad_hoc_requests", sp_folder = "C:/Users/abyrum/OneDrive/The Council of State Governments/JC Research - Documents/ad_hoc_requests", force = TRUE)
+
+## pull correct project path
+sp_ad_hoc_requests_path <- csg_get_project_path("ad_hoc_requests")
+
+### set sharepoint for data to export
+sp_data_to_plot_path <- file.path(sp_ad_hoc_requests_path,"state_violent_crime_marshall","data")
+
+```
+
+```{r }
+### import nibrs file that matt developed for 50 state snapshots
+### file is unique by lea, index crime, and year
+### to use for state-specific pages, we need to do the following
+# add county (and handle agencies whose jurisdictions include multiple counties? remove? divide by count of counties?)
+# create county-level violent index unsolved rate (both 2022 and 2019-2022 change)
+df_nibrs_kaplan_2010_2022 <- read_rds(file.path(sp_data_analysis_path,"fbi","kaplan","fbi_kaplan_okca_agency.rds")) %>% 
+  clean_names() 
+```
+
+
+```{r }
+### next we will pull in a law enforcement agency lookup table in order to add a few more columns
+### namely, we want county and cleaned up agency name 
+
+### for Andrew
+csg_set_project_path(project = "clearance_rates",
+                     sp_folder = "C:/Users/abyrum/OneDrive/The Council of State Governments/JC Research - Documents/JR_Clearance_Rates/Data",
+                     force = TRUE)
+
+### set path for use in combination with additional subfolder names
+sp_clearance_rate_data_path <- csg_get_project_path("clearance_rates")
+
+### set sharepoint paths to pull in cleaned files 
+sharepoint_jr_clearance_le_agency_crosswalk <- file.path(sp_clearance_rate_data_path,"Law Enforcement Crosswalk")
+
+### import fbi law enforcement agency crosswalk from icpsr download
+### downloaded from: https://www.icpsr.umich.edu/web/NACJD/studies/35158#
+### we'll use this crosswalk to join county to each agency
+
+### import 2012 raw le_agency_crosswalk.rda from icpsr download
+load(file=file.path(sharepoint_jr_clearance_le_agency_crosswalk, "le_agency_crosswalk.rda"))
+
+### rename and clean dataframe
+df_le_agency_crosswalk <- da35158.0001 |> 
+  clean_names() |> 
+  ### concatenate fips_state_code and fips_county_code 
+  ### clean names
+  mutate(county_fips = paste0(fips_st,
+                              fips_county),
+         county = trimws(str_to_title(countyname),
+                         which = "both"),
+         state_name = trimws(str_to_title(as.character(statename)),
+                             which = "both"),
+         name = str_to_title(name)) |> 
+  ### add nyc as county for nypd + all city departments with reporting agencies
+  mutate(county_with_nyc = if_else(county=="New York" & state_name=="New York",
+                         "New York City",county)) |> 
+  dplyr::select(agency_name_lookup = name,
+                ori = ori9,
+                county_with_nyc,
+                county_fips) 
+
+### remove original file
+rm(da35158.0001)
+
+```
+
+
+```{r }
+###########################################
+### create county-level file with all years
+###########################################
+df_nibrs_violent_unsolved_by_year_county_2010_2022 <- df_nibrs_kaplan_2010_2022 |> 
+  ### add county from agency lookup
+  left_join(df_le_agency_crosswalk,
+            by = "ori") |> 
+ dplyr::group_by(year,
+                 county_with_nyc,
+                 # county_fips,
+                 state_name,
+                 state_abbr) |> 
+  summarize(n_reported = sum(n_reported,
+                             na.rm = TRUE),
+            n_cleared = sum(n_cleared,
+                             na.rm = TRUE),
+            n_unsolved = sum(n_unsolved,
+                             na.rm = TRUE)) |> 
+  ungroup() |> 
+  mutate(unsolved_rate = n_unsolved/n_reported)
+
+########################################
+### create county-level file for mapping
+### two measures: 2022 unsolved rate 
+### and 2019-2022 percent change
+########################################
+df_nibrs_violent_unsolved_by_county_to_map <- df_nibrs_violent_unsolved_by_year_county_2010_2022 |> 
+  filter(year%in%c(2019,
+                   2022)) |> 
+  group_by(county_with_nyc,
+           # county_fips,
+           state_name,
+           state_abbr) |> 
+  mutate(unsolved_rate_percent_change_2019_2022 = (unsolved_rate[year==2019] - unsolved_rate[year==2022])/unsolved_rate[year==2019]) |> 
+  ungroup() |> 
+  ### now drop 2019
+  ### and keep unsolved rate from 2022
+  filter(year==2022) |> 
+  ### now we can de-dup by county
+  dplyr::select(county_with_nyc,
+                # county_fips,
+                state_name,
+                state_abbr,
+                unsolved_rate_2022 = unsolved_rate,
+                unsolved_rate_percent_change_2019_2022) |> 
+  distinct() 
+
+############################################
+### finally, we need to add geometry to file
+### in order to make it ready to map
+###########################################
+
+### county-level file
+### pulling in population data in case we want to use it as tooltip
+us_county_shoreline_clipped <- get_acs(
+  geography = "county",
+  variables = "S0101_C01_001",
+  year = 2021,
+  geometry = TRUE,
+  cb = TRUE,
+  resolution = "20m") |> 
+  clean_names() |> 
+  mutate(state_geoid = substr(geoid, 1, 2)) |> 
+  ### extract county and state name and trim any leading/trailing whitespace
+  mutate(acs_county_name = trimws(str_extract(name,  ".+?(?=County)")),
+         acs_county_state_name = trimws(str_extract(name, '\\b[^,]+$'))) |> 
+  ### join 5 nyc counties together
+  ### and assign geo to nypd
+  mutate(county_with_nyc = ifelse(acs_county_state_name=="New York" & acs_county_name%in%c("Bronx",
+                                                                                           "New York",
+                                                                                           "Queens",
+                                                                                           "Kings",
+                                                                                           "Richmond"),
+                                  "New York City",acs_county_name))  |>  ### just keeping geo for now
+  dplyr::select(county_fips = geoid,
+                county_with_nyc,
+                acs_county_state_name,
+                geometry) |> 
+  distinct()
+
+
+### then left join us_county_shoreline_clipped to df_nibrs_violent_unsolved_by_county_to_map (we want all counties represented regardless of nibrs data)
+### because this file already has geometry, it'll then be ready to map
+### joining on state/county name instead of fips because nyc doesn't have a fips
+### if worried about match, could create custom fips that accounts for nyc
+df_nibrs_by_county_to_map_state_geo <- left_join(us_county_shoreline_clipped,
+                                                 df_nibrs_violent_unsolved_by_county_to_map,
+                                                 by = c("acs_county_state_name"="state_name",
+                                                        "county_with_nyc")) |> 
+  ### join geo for 5 nyc counties together
+  ### group by state and county_with_nyc
+  ### county_with_nyc is duplicated for the 5 nyc counties
+  group_by(acs_county_state_name,
+           county_with_nyc) |> 
+  mutate(geometry = sf::st_union(geometry)) |> 
+  ungroup()
+
+### write out
+write_rds(df_nibrs_by_county_to_map_state_geo,
+          file.path(sp_data_to_plot_path,"viol_crime_unsolved_by_county_to_map_geo.rds"))
+
+```
+
+```{r }
+########################################
+### create agency-level file for table
+### two measures: 2022 unsolved rate 
+### and 2019-2022 percent change
+########################################
+df_nibrs_violent_unsolved_by_year_agency_2010_2022 <- df_nibrs_kaplan_2010_2022 |> 
+  ### add county from lookup
+  left_join(df_le_agency_crosswalk,
+            by = "ori") |> 
+  dplyr::group_by(year,
+                  county_with_nyc,
+                  agency_name,
+                  agency_type,
+                  ori,
+                  pop_jurisdiction,
+                  state_name,
+                  state_abbr) |> 
+  summarize(n_reported = sum(n_reported,
+                             na.rm = TRUE),
+            n_cleared = sum(n_cleared,
+                             na.rm = TRUE),
+            n_unsolved = sum(n_unsolved,
+                             na.rm = TRUE)) |> 
+  ungroup() |> 
+  mutate(unsolved_rate = n_unsolved/n_reported,
+         n_reported_rate = n_reported/pop_jurisdiction*100000)
+
+### prep df for agency-level table
+df_nibrs_violent_unsolved_by_agency_to_table_2022 <- df_nibrs_violent_unsolved_by_year_agency_2010_2022 |> 
+  filter(year==2022) |> 
+  ### calculate and clean other counts/rates
+    mutate(unsolved_rate_rounded = format(round(unsolved_rate*100,
+                                                                       digits = .1),
+                                                                 nsmall = 1),
+         n_reported_rate = scales::comma(n_reported_rate,
+                                                                accuracy = .1),
+         n_reported = scales::comma(n_reported)) |> 
+  dplyr::select(agency_name,
+                agency_type,
+                county_with_nyc,
+                population = pop_jurisdiction,
+                n_reported, 
+                n_reported_rate,
+                unsolved_rate_rounded,
+                state_name) |> 
+  distinct() 
+
+### write out
+write_rds(df_nibrs_violent_unsolved_by_agency_to_table_2022,
+          file.path(sp_data_to_plot_path,"viol_crime_unsolved_by_agency_to_table.rds"))
+
+```
+

@@ -25,6 +25,7 @@ library(csgjcr)
 library(highcharter)
 library(htmlwidgets)
 library(reactable)
+library(geojsonio)
 
 source("R/utils.R")
 
@@ -43,6 +44,17 @@ srs_us <- read_rds(file.path(sp_data_to_plot_path, "srs_us.rds")) |>
   filter(crime_cat == "Violent", year >= 2012)
 srs_by_cat_us <- read_rds(file.path(sp_data_to_plot_path, "srs_by_cat_us.rds")) |> 
   filter(crime_cat == "Violent", year >= 2012)
+
+srs_unsolved_by_county_to_map <- read_rds(file.path(sp_data_to_plot_path, 
+                                             "viol_crime_unsolved_by_county_to_map_geo.rds")) |>  
+  filter(state_name == state) |> 
+  ### currently multiplying rate by 100 instead of using scales::percent 
+  ### may be better way to format within hc
+  mutate(unsolved_rate_2022 = unsolved_rate_2022*100)
+  
+srs_unsolved_by_agency_to_table <- read_rds(file.path(sp_data_to_plot_path, 
+                                             "viol_crime_unsolved_by_county_to_map.rds")) |>  
+  filter(state_name == state)
 
 # create title of page
 # we don't have IL clearance rate data so take that out of title
@@ -388,5 +400,86 @@ State-level clearance rates are estimated by aggregating agency-level data from 
 National rates of crime and clearances come from the FBI's annual report, [_Crime in the U.S._](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019){target="_parent"}
 
 State-level crime and clearance data for 2021 come from the FBI's National Incident-Based Reporting System [state estimation program](https://bjs.ojp.gov/library/publications/estimation-procedures-crimes-united-states-based-nibrs-data){target="_parent"}. Crime data for 2021 are included in these pages for states in which law enforcement agencies covering at least 90 percent of the population reported NIBRS data.
+
+:::
+
+```{r, eval=state != "Illinois", results='asis'}
+cat("## Mapping unsolved violent crime by county in", state_name_text)
+```
+
+```{r, eval=state != "Illinois"}
+total_agencies <- comma(n_distinct(srs_unsolved_by_agency_to_table$Agency))
+
+counties_represented <- comma(n_distinct(srs_unsolved_by_county_to_map$county_fips))
+```
+
+```{r, eval=state != "Illinois", results='asis'}
+cat(paste0(
+  "In the map below,", total_agencies, " law enforcement agencies and", counties_represented, " counties are represented."))
+```
+
+
+```{r, eval=state != "Illinois"}
+### pull only state geo that we want for each param iteration
+### to do: add legend title, additional info in tooltip, accessiblity? 
+hcmap(
+  paste0("countries/us/us-",tolower(head(srs_unsolved_by_county_to_map$state_abbr,1)),"-all"),
+  data = srs_unsolved_by_county_to_map,
+  value = "unsolved_rate_2022",
+  joinBy = c("fips","county_fips"),
+  name = "2022 Unsolved Violent Crime Rate",
+  borderColor = "#FAFAFA",
+  borderWidth = 0.1,
+  tooltip = list(valueDecimals = 0,
+    valueSuffix = "%")) 
+
+```
+
+
+::: {.callout-note icon=false collapse=true}
+
+## Data sources
+
+#### Crime and clearance rates
+
+TBD -- copy some text from above and include notes on limitations of county-level aggregation.
+
+:::
+
+```{r, eval=state != "Illinois", results='asis'}
+cat("## Unsolved violent crime by agency in", state_name_text)
+```
+
+
+```{r, eval=state != "Illinois"}
+df_nibrs_violent_unsolved_by_agency_to_table_2022 |> 
+  filter(!is_nibrs) |> 
+  ### remove state name
+  ### we just needed it to filter on param
+  select(-state_name) |> 
+  arrange(desc(population)) |>
+  reactable_template(
+    sort_col = list("population" = "desc"),
+    columns = list(
+      agency_name = colDef(name = "Agency", minWidth = 250),
+      agency_type = colDef(name = "Agency Type"),
+      county_name = colDef(name = "County"),
+      population = colDef(name = "Population"), 
+      n_reported = colDef(name = "Count of Violent Index Crimes"), 
+      n_reported_rate = colDef(name = "Violent Index Crime Rate (per 100k)"), 
+      unsolved_rate_rounded = colDef(name = "Unsolved Violent Index Crime Rate (%)"), 
+      style = list(
+        fontFamily = "Source Sans Pro",
+        fontWeight = 600)))
+
+```
+
+::: {.callout-note icon=false collapse=true}
+
+## Data sources
+
+#### Crime and clearance rates
+
+TBD 
 
 :::
