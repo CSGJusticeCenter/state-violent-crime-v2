@@ -391,24 +391,6 @@ cat("
 ")
 ```
 
-::: {.callout-note icon=false collapse=true}
-
-## Data sources
-
-#### Crime and clearance rates
-
-Data regarding crime and clearance rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr){target="_parent"}. State-level counts of reported violent crime incidents between 2010 and 2020 are derived from the Summary Reporting System (SRS) in which law enforcement agencies submitted monthly counts of the four violent Part 1 Index Crimes (murder, aggravated assault, rape, and robbery). The FBI generated state-level estimates for reported crime from 1979 to 2020 based on agency-level reports, and these estimates are used on this page for counts of crime. These estimates can be downloaded from the [FBI's Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/downloads){target="_parent"}.
-
-State-level crime rates are calculated by dividing the number of estimated incidents by the total state population. Population data come from the U.S. Census Bureau [American Community Survey 1-year estimates (table B01003)](https://www.census.gov/programs-surveys/acs/data.html){target="_parent"} and the [2020 Decennial Census Redistricting Data (table P1)](https://www.census.gov/programs-surveys/decennial-census/about/rdo/summary-files.html){target="_parent"}.
-
-State-level clearance rates are estimated by aggregating agency-level data from the SRS Offenses Known and Clearances by Arrest (Return A) dataset. The clearance rates reported here are the number of incidents cleared by arrest plus the number of incidents exceptionally cleared divided by the total number of incidents known.
-
-National rates of crime and clearances come from the FBI's annual report, [_Crime in the U.S._](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019){target="_parent"}
-
-State-level crime and clearance data for 2021 come from the FBI's National Incident-Based Reporting System [state estimation program](https://bjs.ojp.gov/library/publications/estimation-procedures-crimes-united-states-based-nibrs-data){target="_parent"}. Crime data for 2021 are included in these pages for states in which law enforcement agencies covering at least 90 percent of the population reported NIBRS data.
-
-:::
-
 ```{r, eval=state != "Illinois", results='asis'}
 cat("## Mapping unsolved violent crime by county in", state_name_text)
 ```
@@ -440,17 +422,6 @@ hcmap(
     valueSuffix = "%")) 
 
 ```
-
-
-::: {.callout-note icon=false collapse=true}
-
-## Data sources
-
-#### Crime and clearance rates
-
-TBD -- copy some text from above and include notes on limitations of county-level aggregation.
-
-:::
 
 ```{r, eval=state != "Illinois", results='asis'}
 cat("## Unsolved violent crime by agency in", state_name_text)
@@ -485,6 +456,14 @@ srs_unsolved_by_agency_to_table |>
 
 #### Crime and clearance rates
 
-TBD 
+Data regarding crime and clearance rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr){target="_parent"}. State-level counts of reported violent crime incidents between 2010 and 2020 are derived from the Summary Reporting System (SRS) in which law enforcement agencies submitted monthly counts of the four violent Part 1 Index Crimes (murder, aggravated assault, rape, and robbery). The FBI generated state-level estimates for reported crime from 1979 to 2020 based on agency-level reports, and these estimates are used on this page for counts of crime. These estimates can be downloaded from the [FBI's Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/downloads){target="_parent"}.
+
+State-level crime rates are calculated by dividing the number of estimated incidents by the total state population. Population data come from the U.S. Census Bureau [American Community Survey 1-year estimates (table B01003)](https://www.census.gov/programs-surveys/acs/data.html){target="_parent"} and the [2020 Decennial Census Redistricting Data (table P1)](https://www.census.gov/programs-surveys/decennial-census/about/rdo/summary-files.html){target="_parent"}.
+
+State-level clearance rates are estimated by aggregating agency-level data from the SRS Offenses Known and Clearances by Arrest (Return A) dataset. The clearance rates reported here are the number of incidents cleared by arrest plus the number of incidents exceptionally cleared divided by the total number of incidents known.
+
+National rates of crime and clearances come from the FBI's annual report, [_Crime in the U.S._](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019){target="_parent"}
+
+State-level crime and clearance data for 2021 come from the FBI's National Incident-Based Reporting System [state estimation program](https://bjs.ojp.gov/library/publications/estimation-procedures-crimes-united-states-based-nibrs-data){target="_parent"}. Crime data for 2021 are included in these pages for states in which law enforcement agencies covering at least 90 percent of the population reported NIBRS data.
 
 :::
