@@ -6,33 +6,17 @@ format: html
 
 ```{r }
 ### call libraries
-library(easypackages)
-libraries("tidyverse","csgjcr","httr2","janitor","reactable","reactablefmtr")
+library(tidyverse)
+library(csgjcr)
+library(janitor)
 ```
 
 ```{r }
-### set project path for jr data library
+### set project path for jr data library for data we want to import
+sp_data_analysis_path <- csg_sp_path("JR_DATA_LIBRARY/data/analysis")
 
-## andrew
-csg_set_project_path(project = "JR_DATA_LIBRARY", sp_folder = "C:/Users/abyrum/OneDrive/The Council of State Governments/JC Research - Documents/JR_DATA_LIBRARY", force = TRUE)
-
-## pull correct project path
-sp_jr_data_library_path <- csg_get_project_path("JR_DATA_LIBRARY")
-
-### set sharepoint path for data to pull in
-sp_data_analysis_path <- file.path(sp_jr_data_library_path, "data", "analysis")
-
-
-### set project path for ad hoc request folder
-
-## andrew
-csg_set_project_path(project = "ad_hoc_requests", sp_folder = "C:/Users/abyrum/OneDrive/The Council of State Governments/JC Research - Documents/ad_hoc_requests", force = TRUE)
-
-## pull correct project path
-sp_ad_hoc_requests_path <- csg_get_project_path("ad_hoc_requests")
-
-### set sharepoint for data to export
-sp_data_to_plot_path <- file.path(sp_ad_hoc_requests_path,"state_violent_crime_marshall","data")
+### set project path for ad hoc request folder for data we'll export
+sp_data_to_plot_path <- csg_sp_path("ad_hoc_requests/state_violent_crime_marshall/data")
 
 ```
 
@@ -43,7 +27,7 @@ sp_data_to_plot_path <- file.path(sp_ad_hoc_requests_path,"state_violent_crime_m
 # add county (and handle agencies whose jurisdictions include multiple counties? remove? divide by count of counties?)
 # create county-level violent index unsolved rate (both 2022 and 2019-2022 change)
 df_nibrs_kaplan_2010_2022 <- read_rds(file.path(sp_data_analysis_path,"fbi","kaplan","fbi_kaplan_okca_agency.rds")) %>% 
-  clean_names() 
+  janitor::clean_names() 
 ```
 
 

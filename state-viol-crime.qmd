@@ -28,14 +28,7 @@ library(reactable)
 
 source("R/utils.R")
 
-# path to data folder on sharepoint
-
-### for andrew
-csg_set_project_path(project = "ad_hoc_requests", sp_folder = "C:/Users/abyrum/OneDrive/The Council of State Governments/JC Research - Documents/Ad_Hoc_Requests/state_violent_crime_marshall/data", force = TRUE)
-
-sp_data_to_plot_path <- csg_get_project_path("ad_hoc_requests")
-
-## original path set
+# set path to data folder on sharepoint
 sp_data_to_plot_path <- csg_sp_path("ad_hoc_requests/state_violent_crime_marshall/data")
 
 state <- csg_state_convert(params$state, from = "abbr", "name")
@@ -409,7 +402,7 @@ cat(paste0(
 
 ```{r, eval=state != "Illinois"}
 ### pull only state geo that we want for each param iteration
-### to do: add legend title, additional info in tooltip, accessiblity? 
+### to do: add legend title, additional info in tooltip, accessibility? 
 hcmap(
   paste0("countries/us/us-",tolower(head(srs_unsolved_by_county_to_map$state_abbr,1)),"-all"),
   data = srs_unsolved_by_county_to_map,

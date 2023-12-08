@@ -39,6 +39,43 @@ srs_us <- read_rds(file.path(sp_data_to_plot_path, "srs_us.rds")) |>
 srs_by_cat_us <- read_rds(file.path(sp_data_to_plot_path, "srs_by_cat_us.rds")) |> 
   filter(crime_cat == "Violent", year >= 2012)
 
+### import state-level file for mapping
+### aggregate counts and create rates
+### only need 2019 and 2022 (to calculate change between the two)
+### QUESTION: should i use this file (which seems to use estimates or the agency-level file)
+### TO DO: use agency-level file and remove NYPD -- their reporting of incidents and not clearances
+### appears to be shifting ny unsolved rate from ~40% in 2019 to ~90% in 2022
+srs_state_to_map <- read_rds(file.path(sp_data_to_plot_path, "srs_state.rds")) |> 
+  filter(crime_cat == "Violent", 
+         year%in%c(2019,2022)) |> 
+   dplyr::group_by(state_name,
+                   state_abbr,
+                   pop_total,
+                   year) |> 
+  summarize(n_reported = sum(incidents_reported,
+                             na.rm = TRUE),
+         n_cleared = sum(incidents_cleared,
+                             na.rm = TRUE),
+         n_unsolved = sum(incidents_unsolved,
+                             na.rm = TRUE)) |> 
+  ### calculate rates
+  mutate(unsolved_rate = n_unsolved/n_reported,
+         viol_crime_rate_100k = (n_reported/pop_total)*100000) |> 
+  ungroup() |> 
+  group_by(state_name) |> 
+  ### calculate change over time
+  mutate(unsolved_rate_percent_change_2019_2022 = (unsolved_rate[year==2019] - unsolved_rate[year==2022])/unsolved_rate[year==2019],
+         viol_crime_rate_percent_change_2019_2022 = (viol_crime_rate_100k[year==2019] - viol_crime_rate_100k[year==2022])/viol_crime_rate_100k[year==2019]) |> 
+    ungroup() |> 
+  ### now drop 2019
+  ### and keep counts/rates from 2022
+  filter(year==2022)  |> 
+  ### currently multiplying rate by 100 instead of using scales::percent 
+  ### may be better way to format within hc
+  mutate(unsolved_rate = unsolved_rate*100,
+         unsolved_rate_percent_change_2019_2022 = unsolved_rate_percent_change_2019_2022*100,
+         viol_crime_rate_percent_change_2019_2022 = viol_crime_rate_percent_change_2019_2022*100)
+
 min_max_viol_crime <- srs_by_cat_us |> 
   filter(year %in% c(min(year), max(year))) |> 
   arrange(year)
@@ -81,6 +118,151 @@ max_viol_crime_off <- srs_us |>
 ---
 title: "United States data on violent crime and arrests"
 ---
+
+## Mapping violent crime rates
+
+
+::: {.panel-tabset}
+
+## 2022 Violent crime rate 
+
+```{r}
+### to do: add legend title, additional info in tooltip, accessibility? 
+hcmap(
+  paste0("countries/us/us-all"),
+  data = srs_state_to_map,
+  value = "viol_crime_rate_100k",
+  joinBy = c("hc-a2","state_abbr"),
+  name = "2022 Violent Crime Rate",
+  borderColor = "#FAFAFA",
+  borderWidth = 0.1,
+  tooltip = list(valueDecimals = 1,
+    valueSuffix = " incidents reported per 100k")) 
+
+```
+
+
+## Change in violent crime rate 2019 to 2022 by state
+
+```{r}
+### to do: add legend label, additional data in tooltip, colors?
+
+
+### add diverging scale to hc map
+### reference: https://stackoverflow.com/questions/54143215/setting-heat-map-color-range-as-per-given-sequence-in-hcharter
+
+p <- (0 - min(srs_state_to_map$viol_crime_rate_percent_change_2019_2022)) / (max(srs_state_to_map$viol_crime_rate_percent_change_2019_2022) - min(srs_state_to_map$viol_crime_rate_percent_change_2019_2022))
+
+stops <- data.frame(q = c(0, p, 1),
+                    c = c("#00475d", "#FFFFFF","#f89c1b"),
+                    stringsAsFactors = FALSE)
+
+
+stops <- list_parse2(stops)
+
+
+### to do: add legend title, additional info in tooltip, accessibility? 
+### fix diverging scale (set 0 as middle point)
+hcmap(
+  paste0("countries/us/us-all"),
+  data = srs_state_to_map,
+  value = "viol_crime_rate_percent_change_2019_2022",
+  joinBy = c("hc-a2","state_abbr"),
+  name = "Percent Change in Violent Crime Rate, 2019 to 2022",
+  borderColor = "#000000",
+  borderWidth = 0.15,
+  tooltip = list(valueDecimals = 1,
+    valueSuffix = "% change")) |> 
+  hc_colorAxis(stops = stops)
+
+
+```
+
+:::
+
+::: {.callout-note icon=false collapse=true}
+
+## Background on crime data reporting (edit)
+
+Beginning with data year 2021, the FBI discontinued collecting Uniform Crime Reporting data via the Summary Reporting System and required law enforcement agencies to use the [National Incident-Based Reporting System (NIBRS)](https://bjs.ojp.gov/national-incident-based-reporting-system-nibrs){target="_parent"} to report crime statistics to the FBI. Because many states did not have full NIBRS reporting coverage in 2021, the FBI and Bureau of Justice Statistics [generated estimated crime statistics](https://bjs.ojp.gov/library/publications/estimation-procedures-crimes-united-states-based-nibrs-data){target="_parent"} based on the agencies that reported data to the FBI. The reported crime and clearance rates for 2021 have a level of uncertainty represented by a margin of error for each estimate because not all agencies reported data to the FBI.
+
+:::
+
+## Mapping unsolved violent crime rates
+
+
+::: {.panel-tabset}
+
+## 2022 Violent crime unsolved rate 
+
+```{r}
+### remove illinois
+srs_state_to_map_unsolved <- srs_state_to_map |> 
+  filter(state_abbr!="IL")
+
+### to do: add legend title, additional info in tooltip, accessibility? 
+hcmap(
+  paste0("countries/us/us-all"),
+  data = srs_state_to_map_unsolved,
+  value = "unsolved_rate",
+  joinBy = c("hc-a2","state_abbr"),
+  name = "2022 Unsolved Violent Crime Rate",
+  borderColor = "#FAFAFA",
+  borderWidth = 0.1,
+  tooltip = list(valueDecimals = 1,
+    valueSuffix = "%")) 
+
+```
+
+
+## Change in violent crime unsolved rate 2019 to 2022
+
+**to do:** filter out illinois and remove nypd?
+```{r}
+### to do: add legend label, additional data in tooltip, colors?
+
+
+### add diverging scale to hc map
+### reference: https://stackoverflow.com/questions/54143215/setting-heat-map-color-range-as-per-given-sequence-in-hcharter
+
+p <- (0 - min(srs_state_to_map_unsolved$unsolved_rate_percent_change_2019_2022)) / (max(srs_state_to_map_unsolved$unsolved_rate_percent_change_2019_2022) - min(srs_state_to_map_unsolved$unsolved_rate_percent_change_2019_2022))
+
+stops <- data.frame(q = c(0, p, 1),
+                    c = c("#00475d", "#FFFFFF","#f89c1b"),
+                    stringsAsFactors = FALSE)
+
+
+stops <- list_parse2(stops)
+
+
+### to do: add legend title, additional info in tooltip, accessibility? 
+### fix diverging scale (set 0 as middle point)
+hcmap(
+  paste0("countries/us/us-all"),
+  data = srs_state_to_map_unsolved,
+  value = "unsolved_rate_percent_change_2019_2022",
+  joinBy = c("hc-a2","state_abbr"),
+  name = "Percent Change in Unsolved Violent Crime Rate, 2019 to 2022",
+  borderColor = "#000000",
+  borderWidth = 0.15,
+  tooltip = list(valueDecimals = 1,
+    valueSuffix = "% change")) |> 
+  hc_colorAxis(stops = stops)
+```
+
+:::
+
+::: {.callout-note icon=false collapse=true}
+
+## Background on crime data reporting (edit)
+
+Beginning with data year 2021, the FBI discontinued collecting Uniform Crime Reporting data via the Summary Reporting System and required law enforcement agencies to use the [National Incident-Based Reporting System (NIBRS)](https://bjs.ojp.gov/national-incident-based-reporting-system-nibrs){target="_parent"} to report crime statistics to the FBI. Because many states did not have full NIBRS reporting coverage in 2021, the FBI and Bureau of Justice Statistics [generated estimated crime statistics](https://bjs.ojp.gov/library/publications/estimation-procedures-crimes-united-states-based-nibrs-data){target="_parent"} based on the agencies that reported data to the FBI. The reported crime and clearance rates for 2021 have a level of uncertainty represented by a margin of error for each estimate because not all agencies reported data to the FBI.
+
+:::
+
+
+
+## Violent crime in the United States (temp section header)
 
 ::: {.panel-tabset}
 
