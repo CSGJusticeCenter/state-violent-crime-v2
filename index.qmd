@@ -25,10 +25,11 @@ library(htmlwidgets)
 library(reactable)
 
 source("R/utils.R")
+```
 
+```{r}
 # path to data folder on sharepoint
 sp_data_to_plot_path <- csg_sp_path("ad_hoc_requests/state_violent_crime_marshall/data")
-sp_path <- csg_sp_path("ad_hoc_requests/state_violent_crime_marshall/data")
 
 state_name <- "United States"
 state_name_text <- "the United States"
@@ -43,8 +44,10 @@ srs_by_cat_us <- read_rds(file.path(sp_data_to_plot_path, "srs_by_cat_us.rds")) 
 ### aggregate counts and create rates
 ### only need 2019 and 2022 (to calculate change between the two)
 ### QUESTION: should i use this file (which seems to use estimates or the agency-level file)
+### do we need a pop covered filter for 2022?
 ### TO DO: use agency-level file and remove NYPD -- their reporting of incidents and not clearances
 ### appears to be shifting ny unsolved rate from ~40% in 2019 to ~90% in 2022
+### perhaps florida, as well 
 srs_state_to_map <- read_rds(file.path(sp_data_to_plot_path, "srs_state.rds")) |> 
   filter(crime_cat == "Violent", 
          year%in%c(2019,2022)) |> 
@@ -115,9 +118,168 @@ max_viol_crime_off <- srs_us |>
   mutate(pct = incidents_reported / sum(incidents_reported))
 ```
 
----
-title: "United States data on violent crime and arrests"
----
+
+```{r}
+# set up hex map functions
+
+map_colors <- list(
+  list(name = "Increase",     from = 1, to = 1, color = jr_pal[2]),
+  list(name = "Decrease",     from = 2, to = 2, color = jr_pal[3]),
+  list(name = "No 2022 data", from = 3, to = 3, color = "darkgray")
+)
+
+map_colors_rev <- list(
+  list(name = "Increase",     from = 1, to = 1, color = jr_pal[1]),
+  list(name = "Decrease",     from = 2, to = 2, color = jr_pal[4]),
+  list(name = "No 2022 data", from = 3, to = 3, color = "darkgray")
+)
+
+make_hex_map <- function(df, colors) {
+  highchart()  |>
+    hc_add_series_map(
+      map = hex_gj,
+      df = df,
+      joinBy = "state_abb",
+      value = "status",
+      dataLabels = list(enabled = TRUE, format = "{point.state_abb}",
+                        style = list(fontSize = "13px",
+                                     fontFamily = "GT America",
+                                     fontWeight = 700,
+                                     textOutline = 0))
+    )  |>
+    hc_colorAxis(
+      dataClassColor = "category",
+      dataClasses = colors
+    ) |>
+    hc_legend(
+      itemStyle = list(fontSize = "14px",
+                       fontFamily = "GT America",
+                       fontWeight = 400)
+    ) |>
+    hc_tooltip(enabled = FALSE) |>
+    hc_plotOptions(
+      series = list(
+        animation = FALSE,
+        states = list(inactive = list(opacity = 1)),
+        cursor = "pointer",
+        accessibility = list(
+          enabled = TRUE,
+          keyboardNavigation = list(enabled = TRUE)
+        ),
+        point = list(
+          events = list(
+            click = JS("function(){parent.document.location.href = this.options.url}"))
+        )
+      )
+    ) |>
+    hc_add_dependency(name = "modules/accessibility.js")
+}
+
+hex <- sf::read_sf("us_states_hexgrid.geojson") |>
+  select(state_abb = iso3166_2)
+
+hex_gj <- hex |>
+  sf::st_transform(3857) |>
+  geojsonsf::sf_geojson() |>
+  jsonlite::fromJSON(simplifyVector = FALSE)
+
+```
+
+```{r}
+### prep df for hex map
+
+# viol_crime_change <- viol_crime_2021_state |>
+#   # filter(pop_cov >= 0.9) |>
+#   transmute(
+#     state,
+#     viol_crime_21 = actual_est,
+#     viol_crime_rate_21 = actual_est / pop_total,
+#     viol_crime_clear_21 = clearance_rate
+#     ) |>
+#   full_join(filter(viol_crime_by_state, year == 2019), by = "state") |>
+#   transmute(state, state_abb, viol_crime_21, viol_crime_rate_21, viol_crime_clear_21,
+#             viol_crime_19 = actual_est, viol_crime_rate_19 = actual_est / pop_total,
+#             viol_crime_clear_19 = clearance_rate)
+
+
+to_map_viol_crime <- srs_state_to_map |>
+  dplyr::select(state=state_name,
+                state_abb=state_abbr,
+                pct_change=viol_crime_rate_percent_change_2019_2022) |> 
+  mutate(status = case_when(
+      pct_change > 0 ~ 1,
+      pct_change <= 0 ~ 2,
+      is.na(pct_change) ~ 3,
+    ),
+    url = paste0("https://projects.csgjusticecenter.org/tools-for-states-to-address-crime/50-state-crime-data/?state=", tolower(state_abb)))
+
+# to_map_viol_crime_clear <- viol_crime_change |>
+#   mutate(
+#     change = viol_crime_clear_21 - viol_crime_clear_19,
+#     pct_change = change / viol_crime_clear_19,
+#     status = case_when(
+#       pct_change > 0 ~ 1,
+#       pct_change <= 0 ~ 2,
+#       is.na(pct_change) ~ 3,
+#     ),
+#     url = paste0("https://projects.csgjusticecenter.org/tools-for-states-to-address-crime/50-state-crime-data/?state=", tolower(state_abb))
+#   )
+# 
+# hom_change <- viol_crime_2021_by_off_state |>
+#   filter(pop_cov >= 0.9, crime == "Homicide") |>
+#   transmute(
+#     state,
+#     hom_21 = actual,
+#     hom_rate_21 = actual / pop_total,
+#     hom_clear_21 = clearance_rate
+#     ) |>
+#   full_join(filter(viol_crime_by_off_state, year == 2019, crime == "Homicide"), by = "state") |>
+#   transmute(state, state_abb, hom_21, hom_rate_21, hom_clear_21,
+#             hom_19 = actual, hom_rate_19 = actual / pop_total, hom_clear_19 = clearance_rate)
+# 
+# to_map_hom <- hom_change |>
+#   mutate(
+#     change = hom_rate_21 - hom_rate_19,
+#     pct_change = change / hom_rate_19,
+#     status = case_when(
+#       pct_change > 0 ~ 1,
+#       pct_change <= 0 ~ 2,
+#       is.na(pct_change) ~ 3,
+#     ),
+#     url = paste0("https://projects.csgjusticecenter.org/tools-for-states-to-address-crime/50-state-crime-data/?state=", tolower(state_abb))
+#   )
+# 
+# to_map_hom_clear <- hom_change |>
+#   mutate(
+#     change = hom_clear_21 - hom_clear_19,
+#     pct_change = change / hom_clear_19,
+#     status = case_when(
+#       pct_change > 0 ~ 1,
+#       pct_change <= 0 ~ 2,
+#       is.na(pct_change) ~ 3,
+#     ),
+#     url = paste0("https://projects.csgjusticecenter.org/tools-for-states-to-address-crime/50-state-crime-data/?state=", tolower(state_abb))
+#   )
+
+make_hex_map(to_map_viol_crime, map_colors)
+
+# hom_hex <- make_hex_map(to_map_hom, map_colors)
+
+# viol_crime_clear_hex <- make_hex_map(to_map_viol_crime_clear, map_colors_rev)
+# hom_clear_hex <- make_hex_map(to_map_hom_clear, map_colors_rev)
+# 
+# 
+# saveWidget(viol_crime_hex, "viol-crime-hex-map.html", selfcontained = FALSE, libdir = "map-libs")
+# saveWidget(hom_hex, "hom-hex-map.html", selfcontained = FALSE, libdir = "map-libs")
+# 
+# saveWidget(viol_crime_clear_hex, "viol-crime-clear-hex-map.html", selfcontained = FALSE, libdir = "map-libs")
+# saveWidget(hom_clear_hex, "hom-clear-hex-map.html", selfcontained = FALSE, libdir = "map-libs")
+```
+
+
+
+# United States data on violent crime and arrests
+
 
 ## Mapping violent crime rates
 
@@ -217,7 +379,8 @@ hcmap(
 
 ## Change in violent crime unsolved rate 2019 to 2022
 
-**to do:** filter out illinois and remove nypd?
+**to do:** remove nypd? other outliers in florida?
+
 ```{r}
 ### to do: add legend label, additional data in tooltip, colors?
 
@@ -225,9 +388,11 @@ hcmap(
 ### add diverging scale to hc map
 ### reference: https://stackoverflow.com/questions/54143215/setting-heat-map-color-range-as-per-given-sequence-in-hcharter
 
-p <- (0 - min(srs_state_to_map_unsolved$unsolved_rate_percent_change_2019_2022)) / (max(srs_state_to_map_unsolved$unsolved_rate_percent_change_2019_2022) - min(srs_state_to_map_unsolved$unsolved_rate_percent_change_2019_2022))
+### first, find where the position where zero is located
+position_zero <- (0 - min(srs_state_to_map_unsolved$unsolved_rate_percent_change_2019_2022)) / (max(srs_state_to_map_unsolved$unsolved_rate_percent_change_2019_2022) - min(srs_state_to_map_unsolved$unsolved_rate_percent_change_2019_2022))
 
-stops <- data.frame(q = c(0, p, 1),
+### then create a list where we set min/max colors and white as our color for zero
+stops <- data.frame(q = c(0, position_zero, 1),
                     c = c("#00475d", "#FFFFFF","#f89c1b"),
                     stringsAsFactors = FALSE)
 
@@ -236,7 +401,7 @@ stops <- list_parse2(stops)
 
 
 ### to do: add legend title, additional info in tooltip, accessibility? 
-### fix diverging scale (set 0 as middle point)
+### fix diverging scale 
 hcmap(
   paste0("countries/us/us-all"),
   data = srs_state_to_map_unsolved,
@@ -262,7 +427,7 @@ Beginning with data year 2021, the FBI discontinued collecting Uniform Crime Rep
 
 
 
-## Violent crime in the United States (temp section header)
+## Violent crime in the United States
 
 ::: {.panel-tabset}
 
