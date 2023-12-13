@@ -7,7 +7,7 @@ mainfont: "GT-America"
 linkcolor: "#00355a"
 anchor-sections: false
 params:
-  state: "NY"
+  state: "GA"
 execute:
   echo: false
   warning: false
