@@ -7,7 +7,7 @@ mainfont: "GT-America"
 linkcolor: "#00355a"
 anchor-sections: false
 params:
-  state: "MI"
+  state: "NY"
 execute:
   echo: false
   warning: false
@@ -46,22 +46,24 @@ srs_by_cat_us <- read_rds(file.path(sp_data_to_plot_path, "srs_by_cat_us.rds")) 
 
 srs_unsolved_by_county_to_map <- read_rds(file.path(sp_data_to_plot_path, 
                                              "viol_crime_unsolved_by_county_to_map.rds")) |>  
-  filter(state_name == state) |> 
-  ### currently multiplying rate by 100 instead of using scales::percent 
-  ### may be better way to format within hc
-  mutate(unsolved_rate_2022 = unsolved_rate_2022*100)
+  filter(state_name == state) 
   
 srs_unsolved_by_agency_to_table <- read_rds(file.path(sp_data_to_plot_path, 
                                              "viol_crime_unsolved_by_agency_to_table.rds")) |>  
   filter(state_name == state)
 
+### create object with states to exclude
+states_to_exclude_from_unsolved_rate_viz <- c("Illinois",
+                                              "New York")
+
 # create title of page
-# we don't have IL clearance rate data so take that out of title
+# we don't have IL or NY clearance rate data so take that out of title
 doc_title <- case_when(
-  state == "Illinois" ~ paste(state, "data on violent crime"),
+  state %in% states_to_exclude_from_unsolved_rate_viz ~ paste(state, "data on violent crime"),
   state == "District of Columbia" ~ paste(state, "data on violent crime and arrests"),
   TRUE ~ paste(state, "data on violent crime and arrests"),
   )
+
 ```
 
 ---
@@ -287,21 +289,21 @@ Beginning with data year 2021, the FBI discontinued collecting Uniform Crime Rep
 
 :::
 
-```{r, eval=state != "Illinois", results='asis'}
+```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz, results='asis'}
 cat("## Unsolved violent crime in", state_name_text)
 ```
 
-```{r, eval=state != "Illinois"}
+```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz}
 unsolved_rate_max <- paste0(comma(min_max_viol_crime$pct_unsolved[2] * 100, 1), " percent")
 ```
 
-```{r, eval=state != "Illinois", results='asis'}
+```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz, results='asis'}
 cat(paste0(
   "In ", max_year, ", ", unsolved_rate_max, " of violent crimes reported to police were not solved. This is ", change_text_clear, " the unsolved rate in ", min_year, "."
 ))
 ```
 
-```{r, eval=state != "Illinois", results='asis'}
+```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz, results='asis'}
 cat("
 ::: {.panel-tabset}
 
@@ -309,7 +311,7 @@ cat("
 ")
 ```
 
-```{r, eval=state != "Illinois"}
+```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz}
 srs_by_cat_state |> 
   bind_rows(srs_by_cat_us) |> 
   mutate(
@@ -340,13 +342,13 @@ srs_by_cat_state |>
   hc_yAxis(labels = list(format = "{value:,.0f}%"))
 ```
 
-```{r, eval=state != "Illinois", results='asis'}
+```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz, results='asis'}
 cat("
 ## By offense
 ")
 ```
 
-```{r, eval=state != "Illinois"}
+```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz}
 to_plot <- srs_state |> 
   left_join(offense_pal, by = c("group" = "crime")) |> 
   mutate(
@@ -378,50 +380,110 @@ to_plot |>
   hc_yAxis(labels = list(format = "{value:,.0f}%"))
 ```
 
-```{r, eval=state != "Illinois", results='asis'}
+```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz, results='asis'}
 cat("
 :::
 ")
 ```
 
-```{r, eval=state != "Illinois", results='asis'}
+```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz, results='asis'}
 cat("## Mapping unsolved violent crime by county in", state_name_text)
 ```
 
-```{r, eval=state != "Illinois"}
+```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz}
 total_agencies <- comma(n_distinct(srs_unsolved_by_agency_to_table$agency_name))
 
 counties_represented <- comma(n_distinct(srs_unsolved_by_agency_to_table$county_with_nyc))
 ```
 
-```{r, eval=state != "Illinois", results='asis'}
+```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz, results='asis'}
 cat(paste0(
   "In the map below, ", total_agencies, " law enforcement agencies and ", counties_represented, " counties are represented."))
 ```
 
 
-```{r, eval=state != "Illinois"}
+```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz}
+### choose blues from csgjcr for now
+blue1 <- "#d4e9f8"
+blue2 <- "#9ed4ef"
+blue4 <- "#007392"
+blue5 <- "#00475d"
+
+### add tooltip
+srs_unsolved_by_county_to_map_tooltip <- srs_unsolved_by_county_to_map |> 
+  ### add '+" in front of positive numbers and 0
+  ### only for value we'll include in tooltip
+  mutate(unsolved_rate_percent_change_2019_2022_clean = as.numeric(comma(unsolved_rate_percent_change_2019_2022,1)),
+         unsolved_rate_percent_change_2019_2022_clean = sprintf("%+3d%%", unsolved_rate_percent_change_2019_2022_clean),
+         tooltip = paste0(
+    "<b>", state_name,"</b><br>",
+      "Agencies reporting data (2022): ", comma(n_agencies, 1), "<br>",
+      "Incidents unsolved (2019): ", comma(n_unsolved_2019, 1), "<br>",
+      "Incidents unsolved (2022): ", comma(n_unsolved_2022, 1), "<br>",
+      "Unsolved rate (2019): ", comma(unsolved_rate_2019, 1),"%", "<br>",
+      "Unsolved rate (2022): ", comma(unsolved_rate_2022, 1),"%", "<br>",
+      "Change in unsolved rate (2019 to 2022): ", unsolved_rate_percent_change_2019_2022_clean))
+
 ### pull only state geo that we want for each param iteration
 ### to do: add legend title, additional info in tooltip, accessibility? 
 hcmap(
-  paste0("countries/us/us-",tolower(head(srs_unsolved_by_county_to_map$state_abbr,1)),"-all"),
-  data = srs_unsolved_by_county_to_map,
+  paste0("countries/us/us-",tolower(head(srs_unsolved_by_county_to_map_tooltip$state_abbr,1)),"-all"),
+  data = srs_unsolved_by_county_to_map_tooltip,
   value = "unsolved_rate_2022",
   joinBy = c("fips","county_fips"),
-  name = "2022 Unsolved Violent Crime Rate",
-  borderColor = "#FAFAFA",
-  borderWidth = 0.1,
-  tooltip = list(valueDecimals = 0,
-    valueSuffix = "%")) 
+  nullColor = "#E8E8E8",
+  borderWidth = 0.1) |> 
+  hc_colorAxis(endOnTick = TRUE,
+               startOnTick = TRUE,
+               stops = color_stops(4, c(blue1,
+                                        blue2,
+                                        blue4,
+                                        blue5)),
+               labels = list(format = "{value}%",
+                             style = list(fontSize = "12px"))) |> 
+  hc_legend(align = "center",
+            horizontalAlign = "bottom",
+            layout = "horizontal",
+            # title = list(text = "Percent Change"),
+            symbolHeight = 25,
+            symbolWidth = 225,
+            x = 0,
+            y = 0,
+            itemStyle = list(fontSize = "14px",
+                       fontFamily = "GT America",
+                       fontWeight = 400)) |> 
+     hc_tooltip(
+        formatter = JS("function() {
+        return '<div style=\"background-color: #FFFFFF; opacity: 1; padding: 8px; border: none;\">' +
+        this.point.tooltip +
+        '</div>';}"),
+        useHTML = TRUE
+      )  |>
+    hc_plotOptions(
+      series = list(
+        animation = FALSE,
+        cursor = "pointer",
+        accessibility = list(
+          enabled = TRUE,
+          keyboardNavigation = list(enabled = TRUE)
+        ),
+        point = list(
+          events = list(
+            click = JS("function(){parent.document.location.href = this.options.url}"))
+        )
+      )
+    ) |>
+    hc_add_dependency(name = "modules/accessibility.js")
+
 
 ```
 
-```{r, eval=state != "Illinois", results='asis'}
+```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz, results='asis'}
 cat("## Unsolved violent crime by agency in", state_name_text)
 ```
 
 
-```{r, eval=state != "Illinois"}
+```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz}
 srs_unsolved_by_agency_to_table |> 
   ### remove state name
   ### we just needed it to filter on param
@@ -433,7 +495,7 @@ srs_unsolved_by_agency_to_table |>
       agency_name = colDef(name = "Agency", minWidth = 250),
       agency_type = colDef(name = "Agency Type"),
       county_with_nyc = colDef(name = "County"),
-      population = colDef(name = "Population"), 
+      population = colDef(name = "Population", minWidth = 115), 
       n_reported = colDef(name = "Count of Violent Index Crimes"), 
       n_reported_rate = colDef(name = "Violent Index Crime Rate (per 100k)"), 
       unsolved_rate_rounded = colDef(name = "Unsolved Violent Index Crime Rate (%)"), 

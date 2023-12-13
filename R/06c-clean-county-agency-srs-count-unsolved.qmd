@@ -97,7 +97,9 @@ df_nibrs_violent_unsolved_by_year_county_2010_2022 <- df_nibrs_kaplan_2010_2022 
             n_cleared = sum(n_cleared,
                              na.rm = TRUE),
             n_unsolved = sum(n_unsolved,
-                             na.rm = TRUE)) |> 
+                             na.rm = TRUE),
+            n_agencies = n_distinct(ori,
+                                    na.rm = TRUE)) |> 
   ungroup() |> 
   mutate(unsolved_rate = n_unsolved/n_reported)
 
@@ -106,6 +108,13 @@ df_nibrs_violent_unsolved_by_year_county_2010_2022 <- df_nibrs_kaplan_2010_2022 
 ### two measures: 2022 unsolved rate 
 ### and 2019-2022 percent change
 ########################################
+
+### here -- add tooltip data
+### agencies per county
+### unsolved 2019 rate
+### unsolved 2022 rate
+### reported incidents 2022
+### reported incidents 2019
 df_nibrs_violent_unsolved_by_county_to_map <- df_nibrs_violent_unsolved_by_year_county_2010_2022 |> 
   filter(year%in%c(2019,
                    2022)) |> 
@@ -113,7 +122,15 @@ df_nibrs_violent_unsolved_by_county_to_map <- df_nibrs_violent_unsolved_by_year_
            county_fips,
            state_name,
            state_abbr) |> 
-  mutate(unsolved_rate_percent_change_2019_2022 = (unsolved_rate[year==2019] - unsolved_rate[year==2022])/unsolved_rate[year==2019]) |> 
+  ### currently multiplying rate by 100 instead of using scales::percent 
+  ### may be better way to format within hc
+  mutate(n_reported_2019 = n_reported[year==2019],
+         n_reported_2022 = n_reported[year==2022],
+         n_unsolved_2019 = n_unsolved[year==2019],
+         n_unsolved_2022 = n_unsolved[year==2022],
+         unsolved_rate_2019 = unsolved_rate[year==2019]*100,
+         unsolved_rate_2022 = unsolved_rate[year==2022]*100,
+         unsolved_rate_percent_change_2019_2022 = (unsolved_rate[year==2019] - unsolved_rate[year==2022])/unsolved_rate[year==2019]) |> 
   ungroup() |> 
   ### now drop 2019
   ### and keep unsolved rate from 2022
@@ -123,7 +140,8 @@ df_nibrs_violent_unsolved_by_county_to_map <- df_nibrs_violent_unsolved_by_year_
                 county_fips,
                 state_name,
                 state_abbr,
-                unsolved_rate_2022 = unsolved_rate,
+                n_agencies,
+                n_reported_2019:unsolved_rate_2022,
                 unsolved_rate_percent_change_2019_2022) |> 
   distinct() 
 
@@ -219,12 +237,9 @@ df_nibrs_violent_unsolved_by_year_agency_2010_2022 <- df_nibrs_kaplan_2010_2022 
 df_nibrs_violent_unsolved_by_agency_to_table_2022 <- df_nibrs_violent_unsolved_by_year_agency_2010_2022 |> 
   filter(year==2022) |> 
   ### calculate and clean other counts/rates
-    mutate(unsolved_rate_rounded = format(round(unsolved_rate*100,
-                                                                       digits = .1),
-                                                                 nsmall = 1),
-         n_reported_rate = scales::comma(n_reported_rate,
-                                                                accuracy = .1),
-         n_reported = scales::comma(n_reported)) |> 
+    mutate(unsolved_rate_rounded = scales::comma(unsolved_rate*100,accuracy = .1),
+         n_reported_rate = scales::comma(n_reported_rate,accuracy = .1),
+         n_reported = scales::comma(n_reported,accuracy = 1)) |> 
   dplyr::select(agency_name,
                 agency_type,
                 county_with_nyc,
