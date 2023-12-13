@@ -7,7 +7,7 @@ mainfont: "GT-America"
 linkcolor: "#00355a"
 anchor-sections: false
 params:
-  state: "NY"
+  state: "GA"
 execute:
   echo: false
   warning: false
@@ -416,8 +416,11 @@ srs_unsolved_by_county_to_map_tooltip <- srs_unsolved_by_county_to_map |>
                 ~ ifelse(is.infinite(.x) | is.nan(.x), NA, .x))) |> 
   ### add '+" in front of positive numbers and 0
   ### only for value we'll include in tooltip
-  mutate(unsolved_rate_percent_change_2019_2022_clean = as.numeric(comma(unsolved_rate_percent_change_2019_2022,1)),
-         unsolved_rate_percent_change_2019_2022_clean =sprintf("%+3d%%", unsolved_rate_percent_change_2019_2022_clean),
+  mutate(
+    # unsolved_rate_percent_change_2019_2022_clean = as.numeric(comma(unsolved_rate_percent_change_2019_2022,1)),
+    #      unsolved_rate_percent_change_2019_2022_clean =sprintf("%+3d%%", unsolved_rate_percent_change_2019_2022_clean),
+         unsolved_rate_percent_change_2019_2022_clean = paste0(number(unsolved_rate_percent_change_2019_2022, 1, suffix = "%", style_positive = "plus",
+                               style_negative = "minus")),
          tooltip = paste0(
     "<b>", county_with_nyc,"</b><br>",
       "Agencies reporting data (2022): ", comma(n_agencies, 1), "<br>",
