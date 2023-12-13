@@ -130,7 +130,7 @@ df_nibrs_violent_unsolved_by_county_to_map <- df_nibrs_violent_unsolved_by_year_
          n_unsolved_2022 = n_unsolved[year==2022],
          unsolved_rate_2019 = unsolved_rate[year==2019]*100,
          unsolved_rate_2022 = unsolved_rate[year==2022]*100,
-         unsolved_rate_percent_change_2019_2022 = (unsolved_rate[year==2019] - unsolved_rate[year==2022])/unsolved_rate[year==2019]) |> 
+         unsolved_rate_percent_change_2019_2022 = ((unsolved_rate[year==2019] - unsolved_rate[year==2022])/unsolved_rate[year==2019])*100) |> 
   ungroup() |> 
   ### now drop 2019
   ### and keep unsolved rate from 2022
