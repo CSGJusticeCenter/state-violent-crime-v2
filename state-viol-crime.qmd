@@ -418,7 +418,7 @@ srs_unsolved_by_county_to_map_tooltip <- srs_unsolved_by_county_to_map |>
          tooltip = paste0(
     "<b>", state_name,"</b><br>",
       "Agencies reporting data (2022): ", comma(n_agencies, 1), "<br>",
-      "Incidents unsolved (2019): ", comma(n_unsolved_2019, 1), "<br>",
+      "Incidents reported (2022): ", comma(n_reported_2022, 1), "<br>",
       "Incidents unsolved (2022): ", comma(n_unsolved_2022, 1), "<br>",
       "Unsolved rate (2019): ", comma(unsolved_rate_2019, 1),"%", "<br>",
       "Unsolved rate (2022): ", comma(unsolved_rate_2022, 1),"%", "<br>",
