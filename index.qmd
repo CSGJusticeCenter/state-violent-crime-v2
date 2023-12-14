@@ -188,15 +188,13 @@ hex_gj <- hex |>
 ```
 
 
-# United States data on violent crime and arrests
-
+# United States data on reported and unsolved violent crime
 
 ## Mapping violent crime rates
 
-
 ::: {.panel-tabset}
 
-## 2022 Violent crime rate 
+## 2022 Violent crime incidents per 100k
 
 ```{r}
 ### choose blues from csgjcr for now
@@ -278,7 +276,7 @@ highchart() |>
 ```
 
 
-## Change in violent crime rate 2019 to 2022 by state
+## Change in violent crime rate 2019 to 2022
 
 ```{r}
 # Assign colors
@@ -308,12 +306,12 @@ srs_state_to_map_2 <- srs_state_to_map |>
 data_range <- range(srs_state_to_map_2$viol_crime_rate_percent_change_2019_2022, na.rm = TRUE)
 min <- data_range[1]
 max <- data_range[2]
-print(min); print(max)
+# print(min); print(max)
 
 # Adjust extremes so they are balanced at zero
 new_min <- min(-abs(min), -abs(max))
 new_max <- max(abs(min), abs(max))
-print(new_min); print(new_max)
+# print(new_min); print(new_max)
 
 ### highchart 
 highchart() |> 
@@ -381,20 +379,11 @@ highchart() |>
 
 :::
 
-::: {.callout-note icon=false collapse=true}
-
-## Background on crime data reporting (edit)
-
-Beginning with data year 2021, the FBI discontinued collecting Uniform Crime Reporting data via the Summary Reporting System and required law enforcement agencies to use the [National Incident-Based Reporting System (NIBRS)](https://bjs.ojp.gov/national-incident-based-reporting-system-nibrs){target="_parent"} to report crime statistics to the FBI. Because many states did not have full NIBRS reporting coverage in 2021, the FBI and Bureau of Justice Statistics [generated estimated crime statistics](https://bjs.ojp.gov/library/publications/estimation-procedures-crimes-united-states-based-nibrs-data){target="_parent"} based on the agencies that reported data to the FBI. The reported crime and clearance rates for 2021 have a level of uncertainty represented by a margin of error for each estimate because not all agencies reported data to the FBI.
-
-:::
-
-## Mapping unsolved violent crime rates
-
+## Mapping unsolved violent crime
 
 ::: {.panel-tabset}
 
-## 2022 Violent crime unsolved rate 
+## 2022 unsolved rate of violent crime
 
 ```{r}
 ### create object with states to exclude
@@ -478,7 +467,7 @@ highchart() |>
 ```
 
 
-## Change in violent crime unsolved rate 2019 to 2022
+## Change in unsolved rate of violent crime 2019 to 2022
 
 ```{r}
 ### add tooltip
@@ -501,12 +490,12 @@ srs_state_to_map_4 <- srs_state_to_map |>
 data_range <- range(srs_state_to_map_4$unsolved_rate_percent_change_2019_2022, na.rm = TRUE)
 min <- data_range[1]
 max <- data_range[2]
-print(min); print(max)
+# print(min); print(max)
 
 # Adjust extremes so they are balanced at zero
 new_min <- min(-abs(min), -abs(max))
 new_max <- max(abs(min), abs(max))
-print(new_min); print(new_max)
+# print(new_min); print(new_max)
 
 ### highchart 
 highchart() |> 
@@ -573,17 +562,7 @@ highchart() |>
 
 :::
 
-::: {.callout-note icon=false collapse=true}
-
-## Background on crime data reporting (edit)
-
-Beginning with data year 2021, the FBI discontinued collecting Uniform Crime Reporting data via the Summary Reporting System and required law enforcement agencies to use the [National Incident-Based Reporting System (NIBRS)](https://bjs.ojp.gov/national-incident-based-reporting-system-nibrs){target="_parent"} to report crime statistics to the FBI. Because many states did not have full NIBRS reporting coverage in 2021, the FBI and Bureau of Justice Statistics [generated estimated crime statistics](https://bjs.ojp.gov/library/publications/estimation-procedures-crimes-united-states-based-nibrs-data){target="_parent"} based on the agencies that reported data to the FBI. The reported crime and clearance rates for 2021 have a level of uncertainty represented by a margin of error for each estimate because not all agencies reported data to the FBI.
-
-:::
-
-
-
-## Violent crime in the United States
+## Violent crime trends
 
 ::: {.panel-tabset}
 
@@ -759,15 +738,7 @@ to_plot |>
 
 :::
 
-::: {.callout-note icon=false collapse=true}
-
-## Background on crime data reporting
-
-Beginning with data year 2021, the FBI discontinued collecting Uniform Crime Reporting data via the Summary Reporting System and required law enforcement agencies to use the [National Incident-Based Reporting System (NIBRS)](https://bjs.ojp.gov/national-incident-based-reporting-system-nibrs){target="_parent"} to report crime statistics to the FBI. Because many states did not have full NIBRS reporting coverage in 2021, the FBI and Bureau of Justice Statistics [generated estimated crime statistics](https://bjs.ojp.gov/library/publications/estimation-procedures-crimes-united-states-based-nibrs-data){target="_parent"} based on the agencies that reported data to the FBI. The reported crime and clearance rates for 2021 have a level of uncertainty represented by a margin of error for each estimate because not all agencies reported data to the FBI.
-
-:::
-
-## Unsolved violent crime in `r state_name_text`
+## Unsolved violent crime
 
 ```{r}
 unsolved_rate_max <- paste0(comma(min_max_viol_crime$pct_unsolved[2] * 100, 1), " percent")
@@ -842,19 +813,7 @@ to_plot |>
 
 :::
 
-::: {.callout-note icon=false collapse=true}
-
-## Data sources
-
-#### Crime and clearance rates
-
-Data regarding crime and clearance rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr){target="_parent"}. Counts of reported violent crime between 2010 and 2020 are derived from the Summary Reporting System (SRS) in which law enforcement agencies submitted monthly counts of the four violent Part 1 Index Crimes (murder, aggravated assault, rape, and robbery). The FBI generated national estimates for reported crime and clearances based on agency-level reports, and these estimates were published through 2020 in the FBI's annual report, [_Crime in the U.S._](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019){target="_parent"}
-
-National crime rates are calculated by dividing the number of estimated incidents by the total U.S. population. Population data come from the U.S. Census Bureau [American Community Survey 1-year estimates (table B01003)](https://www.census.gov/programs-surveys/acs/data.html){target="_parent"} and the [2020 Decennial Census Redistricting Data (table P1)](https://www.census.gov/programs-surveys/decennial-census/about/rdo/summary-files.html){target="_parent"}
-
-:::
-
-## Violent incidents and unsolved crime reported by state
+## Violent crime and unsolved crime by state
 
 ```{r}
 ### create state-level table
@@ -903,5 +862,13 @@ srs_state_to_map |>
 Data regarding crime and clearance rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr){target="_parent"}. Counts of reported violent crime between 2010 and 2020 are derived from the Summary Reporting System (SRS) in which law enforcement agencies submitted monthly counts of the four violent Part 1 Index Crimes (murder, aggravated assault, rape, and robbery). The FBI generated national estimates for reported crime and clearances based on agency-level reports, and these estimates were published through 2020 in the FBI's annual report, [_Crime in the U.S._](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019){target="_parent"}
 
 National crime rates are calculated by dividing the number of estimated incidents by the total U.S. population. Population data come from the U.S. Census Bureau [American Community Survey 1-year estimates (table B01003)](https://www.census.gov/programs-surveys/acs/data.html){target="_parent"} and the [2020 Decennial Census Redistricting Data (table P1)](https://www.census.gov/programs-surveys/decennial-census/about/rdo/summary-files.html){target="_parent"}
+
+:::
+
+::: {.callout-note icon=false collapse=true}
+
+## Background on crime data reporting
+
+Beginning with data year 2021, the FBI discontinued collecting Uniform Crime Reporting data via the Summary Reporting System and required law enforcement agencies to use the [National Incident-Based Reporting System (NIBRS)](https://bjs.ojp.gov/national-incident-based-reporting-system-nibrs){target="_parent"} to report crime statistics to the FBI. Because many states did not have full NIBRS reporting coverage in 2021, the FBI and Bureau of Justice Statistics [generated estimated crime statistics](https://bjs.ojp.gov/library/publications/estimation-procedures-crimes-united-states-based-nibrs-data){target="_parent"} based on the agencies that reported data to the FBI. The reported crime and clearance rates for 2021 have a level of uncertainty represented by a margin of error for each estimate because not all agencies reported data to the FBI.
 
 :::
