@@ -47,7 +47,7 @@ srs_by_cat_us <- read_rds(file.path(sp_data_to_plot_path, "srs_by_cat_us.rds")) 
 srs_unsolved_by_county_to_map <- read_rds(file.path(sp_data_to_plot_path, 
                                              "viol_crime_unsolved_by_county_to_map.rds")) |>  
   filter(state_name == state) 
-  
+
 srs_unsolved_by_agency_to_table <- read_rds(file.path(sp_data_to_plot_path, 
                                              "viol_crime_unsolved_by_agency_to_table.rds")) |>  
   filter(state_name == state)
@@ -281,13 +281,6 @@ to_plot |>
 
 :::
 
-::: {.callout-note icon=false collapse=true}
-
-## Background on crime data reporting
-
-Beginning with data year 2021, the FBI discontinued collecting Uniform Crime Reporting data via the Summary Reporting System and required law enforcement agencies to use the [National Incident-Based Reporting System (NIBRS)](https://bjs.ojp.gov/national-incident-based-reporting-system-nibrs){target="_parent"} to report crime statistics to the FBI. Because many states did not have full NIBRS reporting coverage in 2021, the FBI and Bureau of Justice Statistics [generated estimated crime statistics](https://bjs.ojp.gov/library/publications/estimation-procedures-crimes-united-states-based-nibrs-data){target="_parent"} based on the agencies that reported data to the FBI. The reported crime and clearance rates for 2021 have a level of uncertainty represented by a margin of error for each estimate because not all agencies reported data to the FBI.
-
-:::
 
 ```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz, results='asis'}
 cat("## Unsolved violent crime in", state_name_text)
@@ -393,12 +386,12 @@ cat("## Mapping unsolved violent crime by county in", state_name_text)
 ```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz}
 total_agencies <- comma(n_distinct(srs_unsolved_by_agency_to_table$agency_name))
 
-counties_represented <- comma(n_distinct(srs_unsolved_by_agency_to_table$county_with_nyc))
+counties_represented <- comma(n_distinct(srs_unsolved_by_agency_to_table$county_clean))
 ```
 
 ```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz, results='asis'}
 cat(paste0(
-  "In the map below, ", total_agencies, " law enforcement agencies and ", counties_represented, " counties are represented."))
+  total_agencies, " law enforcement agencies and ", counties_represented, " counties are represented in the map below."))
 ```
 
 
@@ -411,19 +404,17 @@ blue5 <- "#00475d"
 
 ### add tooltip
 srs_unsolved_by_county_to_map_tooltip <- srs_unsolved_by_county_to_map |> 
-  # ### recode NaN and Inf values as NA
+  ### recode NaN and Inf values as NA
   mutate(across(.cols = unsolved_rate_percent_change_2019_2022, 
                 ~ ifelse(is.infinite(.x) | is.nan(.x), NA, .x))) |> 
   ### add '+" in front of positive numbers and 0
   ### only for value we'll include in tooltip
-  mutate(
-    # unsolved_rate_percent_change_2019_2022_clean = as.numeric(comma(unsolved_rate_percent_change_2019_2022,1)),
-    #      unsolved_rate_percent_change_2019_2022_clean =sprintf("%+3d%%", unsolved_rate_percent_change_2019_2022_clean),
-         unsolved_rate_percent_change_2019_2022_clean = paste0(number(unsolved_rate_percent_change_2019_2022, 1, suffix = "%", style_positive = "plus",
+  mutate(unsolved_rate_percent_change_2019_2022_clean = paste0(number(unsolved_rate_percent_change_2019_2022, 1, suffix = "%", style_positive = "plus",
                                style_negative = "minus")),
          tooltip = paste0(
-    "<b>", county_with_nyc,"</b><br>",
+    "<b>", county_clean,"</b><br>",
       "Agencies reporting data (2022): ", comma(n_agencies, 1), "<br>",
+      "Percentage of population covered by agencies (2022): ", comma(nibrs_reported_pop_coverage_pct,1), "%", "<br>",
       "Incidents reported (2022): ", comma(n_reported_2022, 1), "<br>",
       "Incidents unsolved (2022): ", comma(n_unsolved_2022, 1), "<br>",
       "Unsolved rate (2019): ", comma(unsolved_rate_2019, 1),"%", "<br>",
@@ -438,7 +429,7 @@ hcmap(
   value = "unsolved_rate_2022",
   joinBy = c("fips","county_fips"),
   nullColor = "#E8E8E8",
-  borderWidth = 0.2,
+  borderWidth = 0.45,
   borderColor = "black") |> 
   hc_colorAxis(endOnTick = TRUE,
                startOnTick = TRUE,
@@ -489,9 +480,18 @@ hcmap(
 cat("## Unsolved violent crime by agency in", state_name_text)
 ```
 
+```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz, results='asis'}
+cat(paste0(
+  "In the following table, violent crime incident rates as well as unsolved violent crime rates are included for each of the ", total_agencies, " law enforcement agencies that reported data in ",state_name_text," for 2022. Please note that rates calculated for agencies with smaller jurisdiction populations as well as fewer overall incidents are less reliable than those for larger jurisdictions and should be interpreted with caution."))
+```
 
 ```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz}
 srs_unsolved_by_agency_to_table |> 
+  ### recode Inf values as blank
+  ### this appears to be the result of calculating rates for jurisdictions of 0
+  ### replacing with blanks to align with how missing data appear in other columns
+  mutate(n_reported_rate = ifelse(population==0,
+                                  "",n_reported_rate)) |> 
   ### remove state name
   ### we just needed it to filter on param
   select(-state_name) |> 
@@ -501,8 +501,8 @@ srs_unsolved_by_agency_to_table |>
     columns = list(
       agency_name = colDef(name = "Agency", minWidth = 250),
       agency_type = colDef(name = "Agency Type"),
-      county_with_nyc = colDef(name = "County"),
-      population = colDef(name = "Population", minWidth = 115), 
+      county_clean = colDef(name = "County"),
+      population = colDef(name = "Jurisdiction Population", minWidth = 115), 
       n_reported = colDef(name = "Count of Violent Index Crimes"), 
       n_reported_rate = colDef(name = "Violent Index Crime Rate (per 100k)"), 
       unsolved_rate_rounded = colDef(name = "Unsolved Violent Index Crime Rate (%)"), 
@@ -512,20 +512,26 @@ srs_unsolved_by_agency_to_table |>
 
 ```
 
+
 ::: {.callout-note icon=false collapse=true}
 
-## Data sources
+## Data sources and methodology
 
-#### Crime and clearance rates
+Data regarding crime and unsolved rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr){target="_parent"}. Counts of reported violent crime between 2012 and 2022 are derived from the Summary Reporting System (SRS) and the National Incident-Based Reporting System (NIBRS). The FBI generated national estimates for reported crime and clearances based on agency-level reports, and these estimates were published through 2022 in the FBI's annual report, [_Crime in the U.S._](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019){target="_parent"}
 
-Data regarding crime and clearance rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr){target="_parent"}. State-level counts of reported violent crime incidents between 2010 and 2020 are derived from the Summary Reporting System (SRS) in which law enforcement agencies submitted monthly counts of the four violent Part 1 Index Crimes (murder, aggravated assault, rape, and robbery). The FBI generated state-level estimates for reported crime from 1979 to 2020 based on agency-level reports, and these estimates are used on this page for counts of crime. These estimates can be downloaded from the [FBI's Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/downloads){target="_parent"}.
+The FBI stopped SRS data collection after data year 2020 and required law enforcement agencies to use NIBRS to report crime statistics to the FBI. This change decreased the number of agencies that submitted their crime data and thus reduced the reliability of state estimates in 2021. Because many law enforcement agencies did report 2021 NIBRS data, the FBI was unable to produce national estimates of reported crime in 2021.
 
-State-level crime rates are calculated by dividing the number of estimated incidents by the total state population. Population data come from the U.S. Census Bureau [American Community Survey 1-year estimates (table B01003)](https://www.census.gov/programs-surveys/acs/data.html){target="_parent"} and the [2020 Decennial Census Redistricting Data (table P1)](https://www.census.gov/programs-surveys/decennial-census/about/rdo/summary-files.html){target="_parent"}.
+In 2022, the FBI allowed agencies who were unable to submit NIBRS data to submit SRS data again. 94 percent of the U.S. population was covered in the 2022 crime data submissions to the FBI, with most states providing close to complete data. However, the population upon which the estimates were derived decreased by over 10 percent in three states: Florida, Hawaii, and Illinois, so conclusions about crime changes in those states should be interpreted with additional caution.
 
-State-level clearance rates are estimated by aggregating agency-level data from the SRS Offenses Known and Clearances by Arrest (Return A) dataset. The clearance rates reported here are the number of incidents cleared by arrest plus the number of incidents exceptionally cleared divided by the total number of incidents known.
+Crime rates are calculated by dividing the number of estimated incidents by the total U.S. population. Population data come from the U.S. Census Bureau [American Community Survey 1-year estimates (table B01003)](https://www.census.gov/programs-surveys/acs/data.html){target="_parent"} and the [2020 Decennial Census Redistricting Data (table P1)](https://www.census.gov/programs-surveys/decennial-census/about/rdo/summary-files.html){target="_parent"}
 
-National rates of crime and clearances come from the FBI's annual report, [_Crime in the U.S._](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019){target="_parent"}
-
-State-level crime and clearance data for 2021 come from the FBI's National Incident-Based Reporting System [state estimation program](https://bjs.ojp.gov/library/publications/estimation-procedures-crimes-united-states-based-nibrs-data){target="_parent"}. Crime data for 2021 are included in these pages for states in which law enforcement agencies covering at least 90 percent of the population reported NIBRS data.
-
+Unsolved rates are the number of reported crimes not cleared by arrest or by exceptional means divided by the number reported crimes. A reported crime incident is [cleared by exceptional means](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019/topic-pages/clearances){target='_parent'} if a law enforcement agency is unable to arrest or formally charge a person with a crime, but the agency has met the following conditions:
+    
+a) Identified the person who committed the crime
+b) Gathered enough evidence to support an arrest, make a charge, and turn over the person to the court for prosecution
+c) Identified the suspect’s exact location so that the person could be taken into custody immediately
+d) Encountered a circumstance outside the control of law enforcement that prohibits the agency from arresting, charging, and prosecuting the person
+    
+Examples of exceptional clearances include the death of the person who committed the crime; the victim’s refusal to cooperate with the prosecution after the person who committed the crime has been identified; or the denial of extradition.
 :::
+

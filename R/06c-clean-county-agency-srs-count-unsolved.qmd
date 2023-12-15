@@ -9,6 +9,7 @@ format: html
 library(tidyverse)
 library(csgjcr)
 library(janitor)
+library(tidycensus)
 ```
 
 ```{r }
@@ -17,6 +18,9 @@ sp_data_analysis_path <- csg_sp_path("JR_DATA_LIBRARY/data/analysis")
 
 ### set project path for ad hoc request folder for data we'll export
 sp_data_to_plot_path <- csg_sp_path("ad_hoc_requests/state_violent_crime_marshall/data")
+
+### set project path for lea crosswalk downloaded from icpsr
+sharepoint_jr_clearance_le_agency_crosswalk <- csg_sp_path("JR_Clearance_Rates/Data/Law Enforcement Crosswalk")
 
 ```
 
@@ -35,16 +39,6 @@ df_nibrs_kaplan_2010_2022 <- read_rds(file.path(sp_data_analysis_path,"fbi","kap
 ### next we will pull in a law enforcement agency lookup table in order to add a few more columns
 ### namely, we want county and cleaned up agency name 
 
-### for Andrew
-csg_set_project_path(project = "clearance_rates",
-                     sp_folder = "C:/Users/abyrum/OneDrive/The Council of State Governments/JC Research - Documents/JR_Clearance_Rates/Data",
-                     force = TRUE)
-
-### set path for use in combination with additional subfolder names
-sp_clearance_rate_data_path <- csg_get_project_path("clearance_rates")
-
-### set sharepoint paths to pull in cleaned files 
-sharepoint_jr_clearance_le_agency_crosswalk <- file.path(sp_clearance_rate_data_path,"Law Enforcement Crosswalk")
 
 ### import fbi law enforcement agency crosswalk from icpsr download
 ### downloaded from: https://www.icpsr.umich.edu/web/NACJD/studies/35158#
@@ -65,13 +59,22 @@ df_le_agency_crosswalk <- da35158.0001 |>
          state_name = trimws(str_to_title(as.character(statename)),
                              which = "both"),
          name = str_to_title(name)) |> 
-  ### add nyc as county for nypd + all city departments with reporting agencies
-  mutate(county_with_nyc = if_else(county=="New York" & state_name=="New York",
-                         "New York City",county)) |> 
+  # ### add nyc as county for nypd + all city departments with reporting agencies
+  # mutate(county_with_nyc = if_else(county=="New York" & state_name=="New York",
+  #                        "New York City",county)) |> 
   dplyr::select(agency_name_lookup = name,
                 ori = ori9,
-                county_with_nyc,
-                county_fips) 
+                county,
+                county_fips) |> 
+  ### NOTE: SOME AGENCIES APPEAR TO HAVE WRONG ORI ID
+  ### BIGGEST EXAMPLE IS PHILADELPHIA PD
+  ### BASED ON ORI IN THIS CROSSWALK
+  ### WE JOIN TO INDIANA COUNTY INSTEAD
+  ### OF PHILADELPHIA COUNTY
+  ### hard code fix for philly
+  ### is this just due to the 2012 file being outdated?
+  mutate(ori = if_else(ori=="PAPEP0000",
+                      "PAPEP0100",ori))
 
 ### remove original file
 rm(da35158.0001)
@@ -83,12 +86,31 @@ rm(da35158.0001)
 ###########################################
 ### create county-level file with all years
 ###########################################
+
+### create county-level file with df_nibrs_kaplan_2010_2022
+### pop_jurisdiction is duplicated across crime type
+### so we only want the sum across agencies within county
+### we'll join this to df_nibrs_violent_unsolved_by_year_county_2010_2022
+df_nibrs_reported_pop_jursidiction_2022 <- df_nibrs_kaplan_2010_2022 |> 
+  ### add county from agency lookup
+  left_join(df_le_agency_crosswalk,
+            by = "ori") |> 
+  ### only need one row per agency
+  ### and only 2022
+  filter(year==2022) |> 
+  distinct(ori,
+           .keep_all = TRUE) |> 
+  dplyr::group_by(county_fips) |> 
+  summarize(nibrs_reported_pop_jursidiction = sum(pop_jurisdiction, na.rm = TRUE)) |> 
+  ungroup()
+
+### create county-level file with other data we need for mapping
 df_nibrs_violent_unsolved_by_year_county_2010_2022 <- df_nibrs_kaplan_2010_2022 |> 
   ### add county from agency lookup
   left_join(df_le_agency_crosswalk,
             by = "ori") |> 
  dplyr::group_by(year,
-                 county_with_nyc,
+                 county,
                  county_fips,
                  state_name,
                  state_abbr) |> 
@@ -101,15 +123,19 @@ df_nibrs_violent_unsolved_by_year_county_2010_2022 <- df_nibrs_kaplan_2010_2022 
             n_agencies = n_distinct(ori,
                                     na.rm = TRUE)) |> 
   ungroup() |> 
-  mutate(unsolved_rate = n_unsolved/n_reported)
+  mutate(unsolved_rate = n_unsolved/n_reported) |> 
+  left_join(df_nibrs_reported_pop_jursidiction_2022,
+            by = "county_fips")
 
+
+  
 ########################################
 ### create county-level file for mapping
 ### two measures: 2022 unsolved rate 
 ### and 2019-2022 percent change
 ########################################
 
-### here -- add tooltip data
+### add tooltip data:
 ### agencies per county
 ### unsolved 2019 rate
 ### unsolved 2022 rate
@@ -118,7 +144,7 @@ df_nibrs_violent_unsolved_by_year_county_2010_2022 <- df_nibrs_kaplan_2010_2022 
 df_nibrs_violent_unsolved_by_county_to_map <- df_nibrs_violent_unsolved_by_year_county_2010_2022 |> 
   filter(year%in%c(2019,
                    2022)) |> 
-  group_by(county_with_nyc,
+  group_by(county,
            county_fips,
            state_name,
            state_abbr) |> 
@@ -136,8 +162,9 @@ df_nibrs_violent_unsolved_by_county_to_map <- df_nibrs_violent_unsolved_by_year_
   ### and keep unsolved rate from 2022
   filter(year==2022) |> 
   ### now we can de-dup by county
-  dplyr::select(county_with_nyc,
+  dplyr::select(county,
                 county_fips,
+                nibrs_reported_pop_jursidiction,
                 state_name,
                 state_abbr,
                 n_agencies,
@@ -150,13 +177,12 @@ df_nibrs_violent_unsolved_by_county_to_map <- df_nibrs_violent_unsolved_by_year_
 ### a bit more complicated and that they are missing 2022 clearance data
 
 ############################################
-### finally, we need to add geometry to file
-### in order to make it ready to map
+### pull in county-level population estimates
 ###########################################
 
 ### county-level file
 ### pulling in population data in case we want to use it as tooltip
-us_county_shoreline_clipped <- get_acs(
+us_county_population <- get_acs(
   geography = "county",
   variables = "S0101_C01_001",
   year = 2021,
@@ -168,40 +194,50 @@ us_county_shoreline_clipped <- get_acs(
   ### extract county and state name and trim any leading/trailing whitespace
   mutate(acs_county_name = trimws(str_extract(name,  ".+?(?=County)")),
          acs_county_state_name = trimws(str_extract(name, '\\b[^,]+$'))) |>
-  ### join 5 nyc counties together
-  ### and assign geo to nypd
-  mutate(county_with_nyc = ifelse(acs_county_state_name=="New York" & acs_county_name%in%c("Bronx",
-                                                                                           "New York",
-                                                                                           "Queens",
-                                                                                           "Kings",
-                                                                                           "Richmond"),
-                                  "New York City",acs_county_name))  |>  ### just keeping geo for now
+  # ### join 5 nyc counties together
+  # ### and assign geo to nypd
+  # mutate(county_with_nyc = ifelse(acs_county_state_name=="New York" & acs_county_name%in%c("Bronx",
+  #                                                                                          "New York",
+  #                                                                                          "Queens",
+  #                                                                                          "Kings",
+  #                                                                                          "Richmond"),
+  #                                 "New York City",acs_county_name))  |>  ### just keeping geo for now
   dplyr::select(county_fips = geoid,
-                county_with_nyc,
-                acs_pop=estimate,
-                acs_county_state_name,
-                geometry) |>
+                acs_county_name,
+                acs_county_pop=estimate,
+                acs_county_state_name) |>
   distinct()
-# 
-# 
-# ### then left join us_county_shoreline_clipped to df_nibrs_violent_unsolved_by_county_to_map (we want all counties represented regardless of nibrs data)
-# ### because this file already has geometry, it'll then be ready to map
-# ### joining on state/county name instead of fips because nyc doesn't have a fips
-# ### if worried about match, could create custom fips that accounts for nyc
-# df_nibrs_by_county_to_map_state_geo <- left_join(us_county_shoreline_clipped,
-#                                                  df_nibrs_violent_unsolved_by_county_to_map,
-#                                                  by = c("acs_county_state_name"="state_name",
-#                                                         "county_with_nyc")) |> 
-#   ### join geo for 5 nyc counties together
-#   ### group by state and county_with_nyc
-#   ### county_with_nyc is duplicated for the 5 nyc counties
-#   group_by(acs_county_state_name,
-#            county_with_nyc) |> 
-#   mutate(geometry = sf::st_union(geometry)) |> 
-#   ungroup()
+
+
+
+### then join us_county_population to df_nibrs_violent_unsolved_by_county_to_map 
+df_nibrs_by_county_to_map_state_acs <- left_join(df_nibrs_violent_unsolved_by_county_to_map,
+                                                 us_county_population,
+                                                 by = "county_fips") |>
+  ### calculate population covered by reporting agencies by county
+  ### using pop_jurisdiction from the kaplan agency-level file to sum the numerator by county and then pull acs county population for the denominator
+  ### currently multiplying rate by 100 instead of using scales::percent 
+  ### NOTE: SOME VALUES ARE OVER 100 -- RECODING TO 100
+  ### MIGHT WANT TO EXPLORE MORE
+  ### BIGGEST EXAMPLE OF ERROR IS PHILLY
+  mutate(nibrs_reported_pop_coverage_pct = (nibrs_reported_pop_jursidiction/acs_county_pop)*100,
+         nibrs_reported_pop_coverage_pct = ifelse(nibrs_reported_pop_coverage_pct>100 & !is.na(nibrs_reported_pop_coverage_pct),
+                                                  100,nibrs_reported_pop_coverage_pct)) |> 
+  ### county name from ACS appears cleaner than from lea lookup table
+  ### so we'll clean up `county` -- using the acs version when not missing
+  mutate(county_clean = ifelse(!is.na(acs_county_name),
+                               acs_county_name,county))
+  
+  # ### join geo for 5 nyc counties together
+  # ### group by state and county_with_nyc
+  # ### county_with_nyc is duplicated for the 5 nyc counties
+  # group_by(acs_county_state_name,
+  #          county_with_nyc) |>
+  # mutate(geometry = sf::st_union(geometry)) |>
+  # ungroup()
 
 ### write out
-write_rds(df_nibrs_violent_unsolved_by_county_to_map,
+write_rds(df_nibrs_by_county_to_map_state_acs,
           file.path(sp_data_to_plot_path,"viol_crime_unsolved_by_county_to_map.rds"))
 
 ```
@@ -217,7 +253,8 @@ df_nibrs_violent_unsolved_by_year_agency_2010_2022 <- df_nibrs_kaplan_2010_2022 
   left_join(df_le_agency_crosswalk,
             by = "ori") |> 
   dplyr::group_by(year,
-                  county_with_nyc,
+                  county,
+                  county_fips,
                   agency_name,
                   agency_type,
                   ori,
@@ -241,15 +278,24 @@ df_nibrs_violent_unsolved_by_agency_to_table_2022 <- df_nibrs_violent_unsolved_b
     mutate(unsolved_rate_rounded = scales::comma(unsolved_rate*100,accuracy = .1),
          n_reported_rate = scales::comma(n_reported_rate,accuracy = .1),
          n_reported = scales::comma(n_reported,accuracy = 1)) |> 
-  dplyr::select(agency_name,
+  distinct() |> 
+  ### join acs county level file to clean up county name
+  ### similar to mapping df
+  left_join(us_county_population,
+            by = "county_fips") |> 
+  ### county name from ACS appears cleaner than from lea lookup table
+  ### so we'll clean up `county` -- using the acs version when not missing
+  mutate(county_clean = ifelse(!is.na(acs_county_name),
+                               acs_county_name,county)) |> 
+    dplyr::select(agency_name,
                 agency_type,
-                county_with_nyc,
+                county_clean,
                 population = pop_jurisdiction,
                 n_reported, 
                 n_reported_rate,
                 unsolved_rate_rounded,
-                state_name) |> 
-  distinct() 
+                state_name)
+  
 
 ### write out
 write_rds(df_nibrs_violent_unsolved_by_agency_to_table_2022,
