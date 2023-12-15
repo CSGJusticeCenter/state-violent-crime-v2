@@ -29,94 +29,118 @@ source("R/utils.R")
 
 ```{r}
 # path to data folder on sharepoint
-sp_data_to_plot_path <- csg_sp_path("ad_hoc_requests/state_violent_crime_marshall/data")
+sp_data_to_plot_path <-
+  csg_sp_path("ad_hoc_requests/state_violent_crime_marshall/data")
 
 state_name <- "United States"
 state_name_text <- "the United States"
 
 # read in crime data
-srs_us <- read_rds(file.path(sp_data_to_plot_path, "srs_us.rds")) |> 
+srs_us <-
+  read_rds(file.path(sp_data_to_plot_path, "srs_us.rds")) |>
   filter(crime_cat == "Violent", year >= 2012)
-srs_by_cat_us <- read_rds(file.path(sp_data_to_plot_path, "srs_by_cat_us.rds")) |> 
+srs_by_cat_us <-
+  read_rds(file.path(sp_data_to_plot_path, "srs_by_cat_us.rds")) |>
   filter(crime_cat == "Violent", year >= 2012)
 
 ### import state-level file for mapping
 ### aggregate counts and create rates
 ### only need 2019 and 2022 (to calculate change between the two)
 ### keeping values from each year for tooltips
-srs_state_to_map <- read_rds(file.path(sp_data_to_plot_path, "srs_state.rds")) |> 
-  filter(crime_cat == "Violent", 
-         year%in%c(2019,2022)) |> 
-   dplyr::group_by(state_name,
-                   state_abbr,
-                   pop_total,
-                   year) |> 
-  summarize(n_reported = sum(incidents_reported,
-                             na.rm = TRUE),
-         n_cleared = sum(incidents_cleared,
-                             na.rm = TRUE),
-         n_unsolved = sum(incidents_unsolved,
-                             na.rm = TRUE)) |> 
+srs_state_to_map <-
+  read_rds(file.path(sp_data_to_plot_path, "srs_state.rds")) |>
+  filter(crime_cat == "Violent",
+         year %in% c(2019, 2022)) |>
+  dplyr::group_by(state_name,
+                  state_abbr,
+                  pop_total,
+                  year) |>
+  summarize(
+    n_reported = sum(incidents_reported,
+                     na.rm = TRUE),
+    n_cleared = sum(incidents_cleared,
+                    na.rm = TRUE),
+    n_unsolved = sum(incidents_unsolved,
+                     na.rm = TRUE)
+  ) |>
   ### calculate rates
-  mutate(unsolved_rate = n_unsolved/n_reported,
-         viol_crime_rate_100k = (n_reported/pop_total)*100000) |> 
-  ungroup() |> 
-  group_by(state_name) |> 
-  ### currently multiplying rate by 100 instead of using scales::percent 
+  mutate(
+    unsolved_rate = n_unsolved / n_reported,
+    viol_crime_rate_100k = (n_reported / pop_total) * 100000
+  ) |>
+  ungroup() |>
+  group_by(state_name) |>
+  ### currently multiplying rate by 100 instead of using scales::percent
   ### may be better way to format within hc
   ### calculate change over time
-  mutate(n_reported_2019 = n_reported[year==2019],
-         n_reported_2022 = n_reported[year==2022],
-         n_unsolved_2019 = n_unsolved[year==2019],
-         n_unsolved_2022 = n_unsolved[year==2022],
-         viol_crime_rate_100k_2019 = viol_crime_rate_100k[year==2019],
-         viol_crime_rate_100k_2022 = viol_crime_rate_100k[year==2022],
-         unsolved_rate_2019 = unsolved_rate[year==2019]*100,
-         unsolved_rate_2022 = unsolved_rate[year==2022]*100,
-         unsolved_rate_percent_change_2019_2022 = ((unsolved_rate[year==2022] - unsolved_rate[year==2019])/unsolved_rate[year==2019])*100,
-         viol_crime_rate_percent_change_2019_2022 = ((viol_crime_rate_100k[year==2022] - viol_crime_rate_100k[year==2019])/viol_crime_rate_100k[year==2019])*100) |> 
-    ungroup() |> 
+  mutate(
+    n_reported_2019 = n_reported[year == 2019],
+    n_reported_2022 = n_reported[year == 2022],
+    n_unsolved_2019 = n_unsolved[year == 2019],
+    n_unsolved_2022 = n_unsolved[year == 2022],
+    viol_crime_rate_100k_2019 = viol_crime_rate_100k[year == 2019],
+    viol_crime_rate_100k_2022 = viol_crime_rate_100k[year == 2022],
+    unsolved_rate_2019 = unsolved_rate[year == 2019] * 100,
+    unsolved_rate_2022 = unsolved_rate[year == 2022] * 100,
+    unsolved_rate_percent_change_2019_2022 = ((unsolved_rate[year ==
+                                                               2022] - unsolved_rate[year == 2019]) / unsolved_rate[year == 2019]) * 100,
+    viol_crime_rate_percent_change_2019_2022 = ((viol_crime_rate_100k[year ==
+                                                                        2022] - viol_crime_rate_100k[year == 2019]) / viol_crime_rate_100k[year ==
+                                                                                                                                             2019]
+    ) * 100
+  ) |>
+  ungroup() |>
   ### now drop 2019
   ### and keep population from 2022
-  filter(year==2022)
+  filter(year == 2022)
 
 
-min_max_viol_crime <- srs_by_cat_us |> 
-  filter(year %in% c(min(year), max(year))) |> 
+min_max_viol_crime <- srs_by_cat_us |>
+  filter(year %in% c(min(year), max(year))) |>
   arrange(year)
 
 max_year <- min_max_viol_crime$year[2]
-min_year <- min_max_viol_crime$year[1] 
+min_year <- min_max_viol_crime$year[1]
 
-pct_change <- (min_max_viol_crime$incidents_reported[2] - min_max_viol_crime$incidents_reported[1]) / min_max_viol_crime$incidents_reported[1]
+pct_change <-
+  (min_max_viol_crime$incidents_reported[2] - min_max_viol_crime$incidents_reported[1]) / min_max_viol_crime$incidents_reported[1]
 
 change_text <- case_when(
   pct_change > 0.005  ~ paste0(percent(abs(pct_change), 1),
-                                    " more"),
+                               " more"),
   pct_change < -0.005 ~ paste0(percent(abs(pct_change), 1),
-                                    " fewer"),
+                               " fewer"),
   TRUE                ~ "nearly the same number of"
-  )
+)
 
-pct_change_unsolved <- min_max_viol_crime$pct_unsolved[2] - min_max_viol_crime$pct_unsolved[1]
+pct_change_unsolved <-
+  min_max_viol_crime$pct_unsolved[2] - min_max_viol_crime$pct_unsolved[1]
 
 change_text_unsolved <- case_when(
   pct_change_unsolved > 0.005 &
-    pct_change_unsolved < 0.015 ~ paste0(comma(abs(pct_change_unsolved * 100), 1),
-                                    " percentage point worse than"),
-  pct_change_unsolved >= 0.015  ~ paste0(comma(abs(pct_change_unsolved * 100), 1),
-                                    " percentage points worse than"),
+    pct_change_unsolved < 0.015 ~ paste0(comma(abs(
+      pct_change_unsolved * 100
+    ), 1),
+    " percentage point worse than"),
+  pct_change_unsolved >= 0.015  ~ paste0(comma(abs(
+    pct_change_unsolved * 100
+  ), 1),
+  " percentage points worse than"),
   pct_change_unsolved < -0.005 &
-    pct_change_unsolved > -0.015 ~ paste0(comma(abs(pct_change_unsolved * 100), 1),
-                                    " percentage point better than"),
-  pct_change_unsolved <= -0.015 ~ paste0(comma(abs(pct_change_unsolved * 100), 1),
-                                    " percentage points better than"),
+    pct_change_unsolved > -0.015 ~ paste0(comma(abs(
+      pct_change_unsolved * 100
+    ), 1),
+    " percentage point better than"),
+  pct_change_unsolved <= -0.015 ~ paste0(comma(abs(
+    pct_change_unsolved * 100
+  ), 1),
+  " percentage points better than"),
   TRUE                      ~ "nearly the same as"
-  )
+)
 
-max_viol_crime_off <- srs_us |> 
-  filter(year == max(year)) |> 
-  arrange(desc(incidents_reported)) |> 
+max_viol_crime_off <- srs_us |>
+  filter(year == max(year)) |>
+  arrange(desc(incidents_reported)) |>
   mutate(pct = incidents_reported / sum(incidents_reported))
 ```
 
@@ -238,16 +262,23 @@ highchart() |>
       )
     ) |>
   hc_title(
-    text = "Violent crime reported to police per 100k residents, 2022",
+    text = "Violent crime in the United States",
     align = "left",
     style = list(fontFamily = header_font, color = "#004270",
-                              fontSize = "24px")
+                              fontSize = "24px", fontWeight = "bold")
     ) |> 
+  hc_subtitle(
+    text = "Crime reported to police per 100,000 residents",
+    align = "left",
+    style = list(fontFamily = default_fonts, fontSize = "16px",
+                                 color = "#666666")
+  ) |> 
   hc_colorAxis(
     endOnTick = TRUE,
     startOnTick = TRUE,
     stops = color_stops(4, c(blue1, blue2, blue4, blue5)),
-    labels = list(style = list(fontSize = "12px"))
+    labels = list(style = list(fontSize = "12px",
+                               fontFamily = "GT America"))
     ) |>
   hc_legend(
     align = "center",
@@ -257,21 +288,12 @@ highchart() |>
     symbolHeight = 25,
     symbolWidth = 250,
     x = 0,
-    y = 0,
-    itemStyle = list(
-      fontSize = "14px",
-      fontFamily = "GT America",
-      fontWeight = 400
-      )
+    y = 0
     ) |>
   hc_tooltip(
     style = list(fontFamily = default_fonts),
-    formatter = JS("function() {
-        return '<div style=\"background-color: #FFFFFF; opacity: 1; padding: 8px; border: none;\">' +
-        this.point.tooltip +
-        '</div>';}"),
-        useHTML = TRUE
-      )  |>
+    formatter = JS("function(){return(this.point.tooltip)}")
+    )  |>
     hc_plotOptions(
       series = list(
         animation = FALSE,
@@ -280,10 +302,6 @@ highchart() |>
         accessibility = list(
           enabled = TRUE,
           keyboardNavigation = list(enabled = TRUE)
-        ),
-        point = list(
-          events = list(
-            click = JS("function(){parent.document.location.href = this.options.url}"))
         )
       )
     ) |>
@@ -304,21 +322,39 @@ regblue     <- "#007392"
 darkblue    <- "#00475d"
 
 ### add tooltip
-srs_state_to_map_2 <- srs_state_to_map |> 
+srs_state_to_map_2 <- srs_state_to_map |>
   ### add '+" in front of positive numbers and 0
   ### only for value we'll include in tooltip
-  mutate(viol_crime_rate_percent_change_2019_2022_clean = as.numeric(comma(viol_crime_rate_percent_change_2019_2022,1)),
-         viol_crime_rate_percent_change_2019_2022_clean = sprintf("%+3d%%", viol_crime_rate_percent_change_2019_2022_clean),
-          tooltip = paste0(
-    "<b>", state_name,"</b><br>",
-      "Incidents reported (2019): ", comma(n_reported_2019, 1), "<br>",
-      "Incidents reported (2022): ", comma(n_reported_2022, 1), "<br>",
-      "Incidents reported per 100k (2019): ", comma(viol_crime_rate_100k_2019, 1), "<br>",
-      "Incidents reported per 100k (2022): ", comma(viol_crime_rate_100k_2022, 1), "<br>",
-      "Change in incident rate (2019 to 2022): ", viol_crime_rate_percent_change_2019_2022_clean))
+  mutate(
+    viol_crime_rate_percent_change_2019_2022_clean = as.numeric(comma(
+      viol_crime_rate_percent_change_2019_2022, 1
+    )),
+    viol_crime_rate_percent_change_2019_2022_clean = sprintf("%+3d%%", viol_crime_rate_percent_change_2019_2022_clean),
+    tooltip = paste0(
+      "<b>",
+      state_name,
+      "</b><br>",
+      "Incidents reported (2019): ",
+      comma(n_reported_2019, 1),
+      "<br>",
+      "Incidents reported (2022): ",
+      comma(n_reported_2022, 1),
+      "<br>",
+      "Incidents reported per 100k (2019): ",
+      comma(viol_crime_rate_100k_2019, 1),
+      "<br>",
+      "Incidents reported per 100k (2022): ",
+      comma(viol_crime_rate_100k_2022, 1),
+      "<br>",
+      "Change in incident rate (2019 to 2022): ",
+      viol_crime_rate_percent_change_2019_2022_clean
+    )
+  )
 
 # Get data range
-data_range <- range(srs_state_to_map_2$viol_crime_rate_percent_change_2019_2022, na.rm = TRUE)
+data_range <-
+  range(srs_state_to_map_2$viol_crime_rate_percent_change_2019_2022,
+        na.rm = TRUE)
 min <- data_range[1]
 max <- data_range[2]
 # print(min); print(max)
@@ -328,267 +364,90 @@ new_min <- min(-abs(min), -abs(max))
 new_max <- max(abs(min), abs(max))
 # print(new_min); print(new_max)
 
-### highchart 
-highchart() |> 
+### highchart
+highchart() |>
   hc_add_series_map(
     map = hex_gj,
     df = srs_state_to_map_2,
-    joinBy = c("state_abb","state_abbr"),
+    joinBy = c("state_abb", "state_abbr"),
     value = "viol_crime_rate_percent_change_2019_2022",
     nullColor = "#E8E8E8",
-    dataLabels = list(enabled = TRUE, format = "{point.state_abb}",
-                        style = list(fontSize = "13px",
-                                     fontFamily = "GT America",
-                                     fontWeight = 700,
-                                     textOutline = 0))) |>
-    hc_title(
-    text = "Change in violent crime per 100k residents, 2019 to 2022",
-    align = "left",
-    style = list(fontFamily = header_font, color = "#004270",
-                              fontSize = "24px")
-    ) |> 
-  hc_colorAxis(min = new_min,
-               max = new_max,
-               endOnTick = TRUE,
-               startOnTick = TRUE,
-               stops = color_stops(7, c(darkblue,
-                                        regblue,
-                                        lightblue,
-                                        white,
-                                        lightorange,
-                                        orange,
-                                        darkorange)),
-               labels = list(format = "{value}%",
-                             style = list(fontSize = "12px"))) |>
-  hc_legend(align = "center",
-            horizontalAlign = "bottom",
-            layout = "horizontal",
-            # title = list(text = "Percent Change"),
-            symbolHeight = 25,
-            symbolWidth = 250,
-            x = 0,
-            y = 0,
-            itemStyle = list(fontSize = "14px",
-                       fontFamily = "GT America",
-                       fontWeight = 400)) |> 
-     hc_tooltip(
-        formatter = JS("function() {
-        return '<div style=\"background-color: #FFFFFF; opacity: 1; padding: 8px; border: none;\">' +
-        this.point.tooltip +
-        '</div>';}"),
-        useHTML = TRUE
-      )  |>
-    hc_plotOptions(
-      series = list(
-        animation = FALSE,
-        states = list(inactive = list(opacity = 1)),
-        cursor = "pointer",
-        accessibility = list(
-          enabled = TRUE,
-          keyboardNavigation = list(enabled = TRUE)
-        ),
-        point = list(
-          events = list(
-            click = JS("function(){parent.document.location.href = this.options.url}"))
-        )
+    dataLabels = list(
+      enabled = TRUE,
+      format = "{point.state_abb}",
+      style = list(
+        fontSize = "13px",
+        fontFamily = "GT America",
+        fontWeight = 700,
+        textOutline = 0
       )
-    ) |>
-    hc_add_dependency(name = "modules/accessibility.js")
-```
-
-:::
-
-## Unsolved violent crime by state
-
-::: {.panel-tabset}
-
-## 2022 unsolved rate
-
-```{r}
-### create object with states to exclude
-states_to_exclude_from_unsolved_rate_viz <- c("Illinois",
-                                              "New York")
-
-### add tooltip
-srs_state_to_map_3 <- srs_state_to_map |> 
-  ### filter out states in states_to_exclude_from_unsolved_rate_viz
-  filter(!state_name%in%states_to_exclude_from_unsolved_rate_viz) |> 
-  ### add '+" in front of positive numbers and 0
-  ### only for value we'll include in tooltip
-  mutate(unsolved_rate_percent_change_2019_2022_clean = as.numeric(comma(unsolved_rate_percent_change_2019_2022,1)),
-         unsolved_rate_percent_change_2019_2022_clean = sprintf("%+3d%%", unsolved_rate_percent_change_2019_2022_clean),
-          tooltip = paste0(
-    "<b>", state_name,"</b><br>",
-      "Incidents reported (2022): ", comma(n_reported_2022, 1), "<br>",
-      "Incidents unsolved (2022): ", comma(n_unsolved_2022, 1), "<br>",
-      "Unsolved rate (2019): ", comma(unsolved_rate_2019, 1),"%", "<br>",
-      "Unsolved rate (2022): ", comma(unsolved_rate_2022, 1),"%", "<br>",
-      "Change in unsolved rate (2019 to 2022): ", unsolved_rate_percent_change_2019_2022_clean))
-
-
-### highchart 
-highchart() |> 
-  hc_add_series_map(
-    map = hex_gj,
-    df = srs_state_to_map_3,
-    joinBy = c("state_abb","state_abbr"),
-    value = "unsolved_rate_2022",
-    nullColor = "#E8E8E8",
-    dataLabels = list(enabled = TRUE, format = "{point.state_abb}",
-                        style = list(fontSize = "13px",
-                                     fontFamily = "GT America",
-                                     fontWeight = 700,
-                                     textOutline = 0))) |>
+    )
+  ) |>
   hc_title(
-    text = "Unsolved rate of violent crime reported to police, 2022",
+    text = "Change in violent crime 2019 to 2022",
     align = "left",
-    style = list(fontFamily = header_font, color = "#004270",
-                              fontSize = "24px")
-    ) |>   
-  hc_colorAxis(endOnTick = TRUE,
-               startOnTick = TRUE,
-               stops = color_stops(4, c(blue1,
-                                        blue2,
-                                        blue4,
-                                        blue5)),
-               labels = list(format = "{value}%",
-                             style = list(fontSize = "12px"))) |>
-  hc_legend(align = "center",
-            horizontalAlign = "bottom",
-            layout = "horizontal",
-            # title = list(text = "Percent Change"),
-            symbolHeight = 25,
-            symbolWidth = 375,
-            x = 0,
-            y = 0,
-            itemStyle = list(fontSize = "14px",
-                       fontFamily = "GT America",
-                       fontWeight = 400)) |> 
-     hc_tooltip(
-        formatter = JS("function() {
-        return '<div style=\"background-color: #FFFFFF; opacity: 1; padding: 8px; border: none;\">' +
-        this.point.tooltip +
-        '</div>';}"),
-        useHTML = TRUE
-      )  |>
-    hc_plotOptions(
-      series = list(
-        animation = FALSE,
-        states = list(inactive = list(opacity = 1)),
-        cursor = "pointer",
-        accessibility = list(
-          enabled = TRUE,
-          keyboardNavigation = list(enabled = TRUE)
-        ),
-        point = list(
-          events = list(
-            click = JS("function(){parent.document.location.href = this.options.url}"))
-        )
-      )
-    ) |>
-    hc_add_dependency(name = "modules/accessibility.js")
-
-
-```
-
-
-## 2019 to 2022 change
-
-```{r}
-### add tooltip
-srs_state_to_map_4 <- srs_state_to_map |> 
-  ### filter out states in states_to_exclude_from_unsolved_rate_viz
-  filter(!state_name%in%states_to_exclude_from_unsolved_rate_viz) |>
-  ### add '+" in front of positive numbers and 0
-  ### only for value we'll include in tooltip
-  mutate(unsolved_rate_percent_change_2019_2022_clean = as.numeric(comma(unsolved_rate_percent_change_2019_2022,1)),
-         unsolved_rate_percent_change_2019_2022_clean = sprintf("%+3d%%", unsolved_rate_percent_change_2019_2022_clean),
-         tooltip = paste0(
-    "<b>", state_name,"</b><br>",
-      "Incidents reported (2022): ", comma(n_reported_2022, 1), "<br>",
-      "Incidents unsolved (2022): ", comma(n_unsolved_2022, 1), "<br>",
-      "Unsolved rate (2019): ", comma(unsolved_rate_2019, 1),"%", "<br>",
-      "Unsolved rate (2022): ", comma(unsolved_rate_2022, 1),"%", "<br>",
-      "Change in unsolved rate (2019 to 2022): ", unsolved_rate_percent_change_2019_2022_clean))
-
-# Get data range
-data_range <- range(srs_state_to_map_4$unsolved_rate_percent_change_2019_2022, na.rm = TRUE)
-min <- data_range[1]
-max <- data_range[2]
-# print(min); print(max)
-
-# Adjust extremes so they are balanced at zero
-new_min <- min(-abs(min), -abs(max))
-new_max <- max(abs(min), abs(max))
-# print(new_min); print(new_max)
-
-### highchart 
-highchart() |> 
-  hc_add_series_map(
-    map = hex_gj,
-    df = srs_state_to_map_4,
-    joinBy = c("state_abb","state_abbr"),
-    value = "unsolved_rate_percent_change_2019_2022",
-    nullColor = "#E8E8E8",
-    dataLabels = list(enabled = TRUE, format = "{point.state_abb}",
-                        style = list(fontSize = "13px",
-                                     fontFamily = "GT America",
-                                     fontWeight = 700,
-                                     textOutline = 0))) |>
-  hc_title(
-    text = "Change in unsolved rate of violent crime, 2019 to 2022",
+    style = list(
+      fontFamily = header_font,
+      color = "#004270",
+      fontSize = "24px",
+      fontWeight = "bold"
+    )
+  ) |>
+  hc_subtitle(
+    text = "Percent change in crime reported to police per 100,000 residents",
     align = "left",
-    style = list(fontFamily = header_font, color = "#004270",
-                              fontSize = "24px")
-    ) |>     
-  hc_colorAxis(min = new_min,
-               max = new_max,
-               endOnTick = TRUE,
-               startOnTick = TRUE,
-               stops = color_stops(7, c(darkblue,
-                                        regblue,
-                                        lightblue,
-                                        white,
-                                        lightorange,
-                                        orange,
-                                        darkorange)),
-               labels = list(format = "{value}%",
-                             style = list(fontSize = "12px"))) |>
-  hc_legend(align = "center",
-            horizontalAlign = "bottom",
-            layout = "horizontal",
-            # title = list(text = "Percent Change"),
-            symbolHeight = 25,
-            symbolWidth = 375,
-            x = 0,
-            y = 0,
-            itemStyle = list(fontSize = "14px",
-                       fontFamily = "GT America",
-                       fontWeight = 400)) |> 
-     hc_tooltip(
-        formatter = JS("function() {
-        return '<div style=\"background-color: #FFFFFF; opacity: 1; padding: 8px; border: none;\">' +
-        this.point.tooltip +
-        '</div>';}"),
-        useHTML = TRUE
-      )  |>
-    hc_plotOptions(
-      series = list(
-        animation = FALSE,
-        states = list(inactive = list(opacity = 1)),
-        cursor = "pointer",
-        accessibility = list(
-          enabled = TRUE,
-          keyboardNavigation = list(enabled = TRUE)
-        ),
-        point = list(
-          events = list(
-            click = JS("function(){parent.document.location.href = this.options.url}"))
-        )
+    style = list(fontFamily = default_fonts, fontSize = "16px",
+                                 color = "#666666")
+  ) |> 
+  hc_colorAxis(
+    min = new_min,
+    max = new_max,
+    endOnTick = TRUE,
+    startOnTick = TRUE,
+    stops = color_stops(
+      7,
+      c(
+        darkblue,
+        regblue,
+        lightblue,
+        white,
+        lightorange,
+        orange,
+        darkorange
       )
-    ) |>
-    hc_add_dependency(name = "modules/accessibility.js")
-
+    ),
+    labels = list(
+      format = "{value}%",
+      style = list(fontSize = "12px",
+                  fontFamily = "GT America")
+    )
+  ) |>
+  hc_legend(
+    align = "center",
+    horizontalAlign = "bottom",
+    layout = "horizontal",
+    # title = list(text = "Percent Change"),
+    symbolHeight = 25,
+    symbolWidth = 250,
+    x = 0,
+    y = 0
+  ) |>
+  hc_tooltip(
+    style = list(fontFamily = default_fonts),
+    formatter = JS("function(){return(this.point.tooltip)}")
+  )  |>
+  hc_plotOptions(
+    series = list(
+      animation = FALSE,
+      states = list(inactive = list(opacity = 1)),
+      cursor = "pointer",
+      accessibility = list(
+        enabled = TRUE,
+        keyboardNavigation = list(enabled = TRUE)
+      )
+    )
+  ) |>
+  hc_add_dependency(name = "modules/accessibility.js")
 ```
 
 :::
@@ -761,10 +620,219 @@ to_plot |>
       )    
   ) |> 
   hc_colors(unique(to_plot$color)) |> 
-  hc_title(text = paste0("Violent crime in ", state_name_text, ", by offense")) |>
+  hc_title(text = paste0("Violent crime in ", state_name_text, " by offense")) |>
   hc_subtitle(text = "Crime reported to police per 100,000 residents") |> 
   hc_caption(text = "FBI <em>Crime in the U.S.</em>") |> 
   hc_setup()
+```
+
+:::
+
+## Unsolved violent crime by state
+
+::: {.panel-tabset}
+
+## 2022 unsolved rate
+
+```{r}
+### create object with states to exclude
+states_to_exclude_from_unsolved_rate_viz <- c("Illinois",
+                                              "New York")
+
+### add tooltip
+srs_state_to_map_3 <- srs_state_to_map |> 
+  ### filter out states in states_to_exclude_from_unsolved_rate_viz
+  filter(!state_name%in%states_to_exclude_from_unsolved_rate_viz) |> 
+  ### add '+" in front of positive numbers and 0
+  ### only for value we'll include in tooltip
+  mutate(unsolved_rate_percent_change_2019_2022_clean = as.numeric(comma(unsolved_rate_percent_change_2019_2022,1)),
+         unsolved_rate_percent_change_2019_2022_clean = sprintf("%+3d%%", unsolved_rate_percent_change_2019_2022_clean),
+          tooltip = paste0(
+    "<b>", state_name,"</b><br>",
+      "Incidents reported (2022): ", comma(n_reported_2022, 1), "<br>",
+      "Incidents unsolved (2022): ", comma(n_unsolved_2022, 1), "<br>",
+      "Unsolved rate (2019): ", comma(unsolved_rate_2019, 1),"%", "<br>",
+      "Unsolved rate (2022): ", comma(unsolved_rate_2022, 1),"%", "<br>",
+      "Change in unsolved rate (2019 to 2022): ", unsolved_rate_percent_change_2019_2022_clean))
+
+
+### highchart 
+highchart() |> 
+  hc_add_series_map(
+    map = hex_gj,
+    df = srs_state_to_map_3,
+    joinBy = c("state_abb","state_abbr"),
+    value = "unsolved_rate_2022",
+    nullColor = "#E8E8E8",
+    dataLabels = list(enabled = TRUE, format = "{point.state_abb}",
+                        style = list(fontSize = "13px",
+                                     fontFamily = "GT America",
+                                     fontWeight = 700,
+                                     textOutline = 0))) |>
+  hc_title(
+    text = "Unsolved violent crime rate, 2022",
+    align = "left",
+    style = list(fontFamily = header_font, color = "#004270",
+                              fontSize = "24px", fontWeight = "bold")
+    ) |>   
+  hc_colorAxis(endOnTick = TRUE,
+               startOnTick = TRUE,
+               stops = color_stops(4, c(blue1,
+                                        blue2,
+                                        blue4,
+                                        blue5)),
+               labels = list(format = "{value}%",
+                             style = list(fontSize = "12px",
+                                          fontFamily = "GT America"))
+                             ) |>
+  hc_legend(align = "center",
+            horizontalAlign = "bottom",
+            layout = "horizontal",
+            # title = list(text = "Percent Change"),
+            symbolHeight = 25,
+            symbolWidth = 375,
+            x = 0,
+            y = 0) |> 
+     hc_tooltip(
+    style = list(fontFamily = default_fonts),
+    formatter = JS("function(){return(this.point.tooltip)}")
+
+      )  |>
+    hc_plotOptions(
+      series = list(
+        animation = FALSE,
+        states = list(inactive = list(opacity = 1)),
+        cursor = "pointer",
+        accessibility = list(
+          enabled = TRUE,
+          keyboardNavigation = list(enabled = TRUE)
+        )
+      )
+    ) |>
+    hc_add_dependency(name = "modules/accessibility.js")
+```
+
+
+## 2019 to 2022 change
+
+```{r}
+### add tooltip
+srs_state_to_map_4 <- srs_state_to_map |>
+  ### filter out states in states_to_exclude_from_unsolved_rate_viz
+  filter(!state_name %in% states_to_exclude_from_unsolved_rate_viz) |>
+  ### add '+" in front of positive numbers and 0
+  ### only for value we'll include in tooltip
+  mutate(
+    unsolved_rate_percent_change_2019_2022_clean = as.numeric(comma(
+      unsolved_rate_percent_change_2019_2022, 1
+    )),
+    unsolved_rate_percent_change_2019_2022_clean = sprintf("%+3d%%", unsolved_rate_percent_change_2019_2022_clean),
+    tooltip = paste0(
+      "<b>",
+      state_name,
+      "</b><br>",
+      "Incidents reported (2022): ",
+      comma(n_reported_2022, 1),
+      "<br>",
+      "Incidents unsolved (2022): ",
+      comma(n_unsolved_2022, 1),
+      "<br>",
+      "Unsolved rate (2019): ",
+      comma(unsolved_rate_2019, 1),
+      "%",
+      "<br>",
+      "Unsolved rate (2022): ",
+      comma(unsolved_rate_2022, 1),
+      "%",
+      "<br>",
+      "Change in unsolved rate (2019 to 2022): ",
+      unsolved_rate_percent_change_2019_2022_clean
+    )
+  )
+
+# Get data range
+data_range <-
+  range(srs_state_to_map_4$unsolved_rate_percent_change_2019_2022,
+        na.rm = TRUE)
+min <- data_range[1]
+max <- data_range[2]
+# print(min); print(max)
+
+# Adjust extremes so they are balanced at zero
+new_min <- min(-abs(min), -abs(max))
+new_max <- max(abs(min), abs(max))
+# print(new_min); print(new_max)
+
+### highchart
+highchart() |>
+  hc_add_series_map(
+    map = hex_gj,
+    df = srs_state_to_map_4,
+    joinBy = c("state_abb", "state_abbr"),
+    value = "unsolved_rate_percent_change_2019_2022",
+    nullColor = "#E8E8E8",
+    dataLabels = list(
+      enabled = TRUE,
+      format = "{point.state_abb}",
+      style = list(
+        fontSize = "13px",
+        fontFamily = "GT America",
+        fontWeight = 700,
+        textOutline = 0
+      )
+    )
+  ) |>
+  hc_title(
+    text = "Change in unsolved violent crime rate, 2019 to 2022",
+    align = "left",
+    style = list(
+      fontFamily = header_font,
+      color = "#004270",
+      fontSize = "24px",
+      fontWeight = "bold"
+    )
+  ) |>
+  hc_colorAxis(
+    min = new_min,
+    max = new_max,
+    endOnTick = TRUE,
+    startOnTick = TRUE,
+    stops = color_stops(
+      7,
+      c(darkblue, regblue, lightblue, white, lightorange, orange, darkorange)
+    ),
+    labels = list(
+      format = "{value}%",
+      style = list(fontSize = "12px",
+                   fontFamily = "GT America")
+    )
+  ) |>
+  hc_legend(
+    align = "center",
+    horizontalAlign = "bottom",
+    layout = "horizontal",
+    # title = list(text = "Percent Change"),
+    symbolHeight = 25,
+    symbolWidth = 375,
+    x = 0,
+    y = 0
+  ) |>
+  hc_tooltip(
+    style = list(fontFamily = default_fonts),
+    formatter = JS("function(){return(this.point.tooltip)}")
+  )  |>
+  hc_plotOptions(
+    series = list(
+      animation = FALSE,
+      states = list(inactive = list(opacity = 1)),
+      cursor = "pointer",
+      accessibility = list(
+        enabled = TRUE,
+        keyboardNavigation = list(enabled = TRUE)
+      )
+    )
+  ) |>
+  hc_add_dependency(name = "modules/accessibility.js")
 ```
 
 :::
@@ -802,7 +870,7 @@ srs_by_cat_us |>
         )
       )     
   ) |> 
-  hc_title(text = paste("Violent crime unsolved rate in ", state_name_text)) |>
+  hc_title(text = paste("Unsolved rate of violent crime in ", state_name_text)) |>
   hc_caption(text = "FBI <em>Crime in the U.S.</em>") |> 
   hc_setup() |> 
   hc_yAxis(labels = list(format = "{value:,.0f}%"))
@@ -836,7 +904,7 @@ to_plot |>
       )     
   ) |> 
   hc_colors(unique(to_plot$color)) |> 
-  hc_title(text = paste0("Violent crime unsolved rate in ", state_name_text, ", by offense")) |>
+  hc_title(text = paste0("Unsolved rate of violent crime in ", state_name_text, " by offense")) |>
   hc_caption(text = "FBI <em>Crime in the U.S.</em>") |> 
   hc_setup() |> 
   hc_yAxis(labels = list(format = "{value:,.0f}%"))
@@ -879,27 +947,26 @@ srs_state_to_map |>
       style = list(
         fontFamily = "Source Sans Pro",
         fontWeight = 600)))
-
-
-
 ```
 
 ::: {.callout-note icon=false collapse=true}
 
-## Data sources
+## Data sources and methodology
 
-#### Crime and clearance rates
+Data regarding crime and unsolved rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr){target="_parent"}. Counts of reported violent crime between 2012 and 2022 are derived from the Summary Reporting System (SRS) and the National Incident-Based Reporting System (NIBRS). The FBI generated national estimates for reported crime and clearances based on agency-level reports, and these estimates were published through 2022 in the FBI's annual report, [_Crime in the U.S._](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019){target="_parent"}
 
-Data regarding crime and clearance rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr){target="_parent"}. Counts of reported violent crime between 2010 and 2020 are derived from the Summary Reporting System (SRS) in which law enforcement agencies submitted monthly counts of the four violent Part 1 Index Crimes (murder, aggravated assault, rape, and robbery). The FBI generated national estimates for reported crime and clearances based on agency-level reports, and these estimates were published through 2020 in the FBI's annual report, [_Crime in the U.S._](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019){target="_parent"}
+The FBI stopped SRS data collection after data year 2020 and required law enforcement agencies to use NIBRS to report crime statistics to the FBI. This change decreased the number of agencies that submitted their crime data and thus reduced the reliability of state estimates in 2021. Because many law enforcement agencies did report 2021 NIBRS data, the FBI was unable to produce national estimates of reported crime in 2021.
 
-National crime rates are calculated by dividing the number of estimated incidents by the total U.S. population. Population data come from the U.S. Census Bureau [American Community Survey 1-year estimates (table B01003)](https://www.census.gov/programs-surveys/acs/data.html){target="_parent"} and the [2020 Decennial Census Redistricting Data (table P1)](https://www.census.gov/programs-surveys/decennial-census/about/rdo/summary-files.html){target="_parent"}
+In 2022, the FBI allowed agencies who were unable to submit NIBRS data to submit SRS data again. 94 percent of the U.S. population was covered in the 2022 crime data submissions to the FBI, with most states providing close to complete data. However, the population upon which the estimates were derived decreased by over 10 percent in three states: Florida, Hawaii, and Illinois, so conclusions about crime changes in those states should be interpreted with additional caution.
 
-:::
+Crime rates are calculated by dividing the number of estimated incidents by the total U.S. population. Population data come from the U.S. Census Bureau [American Community Survey 1-year estimates (table B01003)](https://www.census.gov/programs-surveys/acs/data.html){target="_parent"} and the [2020 Decennial Census Redistricting Data (table P1)](https://www.census.gov/programs-surveys/decennial-census/about/rdo/summary-files.html){target="_parent"}
 
-::: {.callout-note icon=false collapse=true}
-
-## Background on crime data reporting
-
-Beginning with data year 2021, the FBI discontinued collecting Uniform Crime Reporting data via the Summary Reporting System and required law enforcement agencies to use the [National Incident-Based Reporting System (NIBRS)](https://bjs.ojp.gov/national-incident-based-reporting-system-nibrs){target="_parent"} to report crime statistics to the FBI. Because many states did not have full NIBRS reporting coverage in 2021, the FBI and Bureau of Justice Statistics [generated estimated crime statistics](https://bjs.ojp.gov/library/publications/estimation-procedures-crimes-united-states-based-nibrs-data){target="_parent"} based on the agencies that reported data to the FBI. The reported crime and clearance rates for 2021 have a level of uncertainty represented by a margin of error for each estimate because not all agencies reported data to the FBI.
-
+Unsolved rates are the number of reported crimes not cleared by arrest or by exceptional means divided by the number reported crimes. A reported crime incident is [cleared by exceptional means](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019/topic-pages/clearances){target='_parent'} if a law enforcement agency is unable to arrest or formally charge a person with a crime, but the agency has met the following conditions:
+    
+a) Identified the person who committed the crime
+b) Gathered enough evidence to support an arrest, make a charge, and turn over the person to the court for prosecution
+c) Identified the suspect’s exact location so that the person could be taken into custody immediately
+d) Encountered a circumstance outside the control of law enforcement that prohibits the agency from arresting, charging, and prosecuting the person
+    
+Examples of exceptional clearances include the death of the person who committed the crime; the victim’s refusal to cooperate with the prosecution after the person who committed the crime has been identified; or the denial of extradition.
 :::
