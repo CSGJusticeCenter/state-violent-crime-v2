@@ -374,7 +374,7 @@ to_plot |>
       )       
   ) |> 
   hc_colors(unique(to_plot$color)) |> 
-  hc_title(text = paste0("Violent crime clearance rate in ", state_name_text, ", by offense")) |>
+  hc_title(text = paste0("Violent crime unsolved rate in ", state_name_text, ", by offense")) |>
   hc_caption(text = "FBI Uniform Crime Reporting Program<br>Aggregated from SRS agency-level Offenses Known reports") |> 
   hc_setup() |> 
   hc_yAxis(labels = list(format = "{value:,.0f}%"))
