@@ -169,7 +169,7 @@ max_viol_crime_off <- srs_us |>
 #       value = "status",
 #       dataLabels = list(enabled = TRUE, format = "{point.state_abb}",
 #                         style = list(fontSize = "13px",
-#                                      fontFamily = "GT America",
+#                                      fontFamily = default_fonts,
 #                                      fontWeight = 700,
 #                                      textOutline = 0))
 #     )  |>
@@ -179,7 +179,7 @@ max_viol_crime_off <- srs_us |>
 #     ) |>
 #     hc_legend(
 #       itemStyle = list(fontSize = "14px",
-#                        fontFamily = "GT America",
+#                        fontFamily = default_fonts,
 #                        fontWeight = 400)
 #     ) |>
 #     hc_tooltip(enabled = FALSE) |>
@@ -256,7 +256,7 @@ highchart() |>
       format = "{point.state_abb}",
       style = list(
         fontSize = "13px",
-        fontFamily = "GT America",
+        fontFamily = default_fonts,
         fontWeight = 700,
         textOutline = 0)
       )
@@ -278,7 +278,7 @@ highchart() |>
     startOnTick = TRUE,
     stops = color_stops(4, c(blue1, blue2, blue4, blue5)),
     labels = list(style = list(fontSize = "12px",
-                               fontFamily = "GT America"))
+                               fontFamily = default_fonts))
     ) |>
   hc_legend(
     align = "center",
@@ -377,7 +377,7 @@ highchart() |>
       format = "{point.state_abb}",
       style = list(
         fontSize = "13px",
-        fontFamily = "GT America",
+        fontFamily = default_fonts,
         fontWeight = 700,
         textOutline = 0
       )
@@ -419,7 +419,7 @@ highchart() |>
     labels = list(
       format = "{value}%",
       style = list(fontSize = "12px",
-                  fontFamily = "GT America")
+                  fontFamily = default_fonts)
     )
   ) |>
   hc_legend(
@@ -666,7 +666,7 @@ highchart() |>
     nullColor = "#E8E8E8",
     dataLabels = list(enabled = TRUE, format = "{point.state_abb}",
                         style = list(fontSize = "13px",
-                                     fontFamily = "GT America",
+                                     fontFamily = default_fonts,
                                      fontWeight = 700,
                                      textOutline = 0))) |>
   hc_title(
@@ -683,7 +683,7 @@ highchart() |>
                                         blue5)),
                labels = list(format = "{value}%",
                              style = list(fontSize = "12px",
-                                          fontFamily = "GT America"))
+                                          fontFamily = default_fonts))
                              ) |>
   hc_legend(align = "center",
             horizontalAlign = "bottom",
@@ -776,7 +776,7 @@ highchart() |>
       format = "{point.state_abb}",
       style = list(
         fontSize = "13px",
-        fontFamily = "GT America",
+        fontFamily = default_fonts,
         fontWeight = 700,
         textOutline = 0
       )
@@ -804,7 +804,7 @@ highchart() |>
     labels = list(
       format = "{value}%",
       style = list(fontSize = "12px",
-                   fontFamily = "GT America")
+                   fontFamily = default_fonts)
     )
   ) |>
   hc_legend(
