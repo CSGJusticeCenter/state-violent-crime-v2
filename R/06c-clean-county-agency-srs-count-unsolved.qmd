@@ -106,6 +106,7 @@ df_nibrs_reported_pop_jursidiction_2022 <- df_nibrs_kaplan_2010_2022 |>
 
 ### create county-level file with other data we need for mapping
 df_nibrs_violent_unsolved_by_year_county_2010_2022 <- df_nibrs_kaplan_2010_2022 |> 
+    filter(group %in% c("Homicide", "Rape", "Robbery", "Aggravated assault")) |> 
   ### add county from agency lookup
   left_join(df_le_agency_crosswalk,
             by = "ori") |> 
@@ -249,6 +250,7 @@ write_rds(df_nibrs_by_county_to_map_state_acs,
 ### and 2019-2022 percent change
 ########################################
 df_nibrs_violent_unsolved_by_year_agency_2010_2022 <- df_nibrs_kaplan_2010_2022 |> 
+  filter(group %in% c("Homicide", "Rape", "Robbery", "Aggravated assault")) |> 
   ### add county from lookup
   left_join(df_le_agency_crosswalk,
             by = "ori") |> 
@@ -275,9 +277,10 @@ df_nibrs_violent_unsolved_by_year_agency_2010_2022 <- df_nibrs_kaplan_2010_2022 
 df_nibrs_violent_unsolved_by_agency_to_table_2022 <- df_nibrs_violent_unsolved_by_year_agency_2010_2022 |> 
   filter(year==2022) |> 
   ### calculate and clean other counts/rates
-    mutate(unsolved_rate_rounded = scales::comma(unsolved_rate*100,accuracy = .1),
-         n_reported_rate = scales::comma(n_reported_rate,accuracy = .1),
-         n_reported = scales::comma(n_reported,accuracy = 1)) |> 
+    # mutate(
+    #   unsolved_rate_rounded = scales::comma(unsolved_rate*100,accuracy = .1),
+    #   n_reported_rate = scales::comma(n_reported_rate,accuracy = .1),
+    #   n_reported = scales::comma(n_reported,accuracy = 1)) |> 
   distinct() |> 
   ### join acs county level file to clean up county name
   ### similar to mapping df
@@ -293,7 +296,7 @@ df_nibrs_violent_unsolved_by_agency_to_table_2022 <- df_nibrs_violent_unsolved_b
                 population = pop_jurisdiction,
                 n_reported, 
                 n_reported_rate,
-                unsolved_rate_rounded,
+                unsolved_rate,
                 state_name)
   
 

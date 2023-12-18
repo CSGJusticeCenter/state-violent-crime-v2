@@ -7,7 +7,7 @@ mainfont: "GT-America"
 linkcolor: "#00355a"
 anchor-sections: false
 params:
-  state: "GA"
+  state: "AZ"
 execute:
   echo: false
   warning: false
@@ -39,10 +39,34 @@ srs_state <- read_rds(file.path(sp_data_to_plot_path, "srs_state.rds")) |>
   filter(state_name == state, crime_cat == "Violent", year >= 2012)
 srs_by_cat_state <- read_rds(file.path(sp_data_to_plot_path, "srs_by_cat_state.rds")) |> 
   filter(state_name == state, crime_cat == "Violent", year >= 2012)
-srs_us <- read_rds(file.path(sp_data_to_plot_path, "srs_us.rds")) |> 
-  filter(crime_cat == "Violent", year >= 2012)
-srs_by_cat_us <- read_rds(file.path(sp_data_to_plot_path, "srs_by_cat_us.rds")) |> 
-  filter(crime_cat == "Violent", year >= 2012)
+
+
+srs_state_all <- read_rds(file.path(sp_data_to_plot_path, "srs_state.rds")) |> 
+    filter(crime_cat == "Violent", year >= 2012)
+
+srs_by_cat_us <- srs_state_all |>
+  group_by(year, state_name = "United States", state_abbr = "U.S.") |>
+  summarize(
+    across(c(pop_total, incidents_reported, incidents_unsolved), sum, na.rm = TRUE)
+  ) |>
+  ungroup() |> 
+  mutate(
+    pop_total = pop_total / 4,
+    incidents_reported_rate_total = incidents_reported / pop_total,
+    pct_unsolved = incidents_unsolved / incidents_reported
+  )
+
+srs_us <- srs_state_all |>
+  group_by(year, state_name = "United States", state_abbr = "U.S.", group) |>
+  summarize(
+    across(c(pop_total, incidents_reported, incidents_unsolved), sum, na.rm = TRUE)
+  ) |>
+  ungroup() |> 
+  mutate(
+    pop_total = pop_total,
+    incidents_reported_rate_total = incidents_reported / pop_total,
+    pct_unsolved = incidents_unsolved / incidents_reported
+  )
 
 srs_unsolved_by_county_to_map <- read_rds(file.path(sp_data_to_plot_path, 
                                              "viol_crime_unsolved_by_county_to_map.rds")) |>  
@@ -78,6 +102,39 @@ min_max_viol_crime <- srs_by_cat_state |>
 max_year <- min_max_viol_crime$year[2]
 min_year <- min_max_viol_crime$year[1] 
 
+pct_change_crime <- (min_max_viol_crime$incidents_reported_rate_total[2] - min_max_viol_crime$incidents_reported_rate_total[1]) / min_max_viol_crime$incidents_reported_rate_total[1]
+
+change_text_crime <- case_when(
+  pct_change_crime > 0.005 &
+    pct_change_crime < 0.015 ~ paste0(comma(abs(pct_change_crime * 100), 1),
+                                    " percent higher than"),
+  pct_change_crime >= 0.015  ~ paste0(comma(abs(pct_change_crime * 100), 1),
+                                    " percent higher than"),
+  pct_change_crime < -0.005 &
+    pct_change_crime > -0.015 ~ paste0(comma(abs(pct_change_crime * 100), 1),
+                                    " percent lower than"),
+  pct_change_crime <= -0.015 ~ paste0(comma(abs(pct_change_crime * 100), 1),
+                                    " percent lower than"),
+  TRUE                      ~ "nearly the same as"
+  )
+
+us_state_rate_comp <- (min_max_viol_crime$incidents_reported_rate_total[2] - srs_by_cat_us[srs_by_cat_us$year==2022, ]$incidents_reported_rate_total) / srs_by_cat_us[srs_by_cat_us$year==2022, ]$incidents_reported_rate_total
+
+us_state_rate_text_crime <- case_when(
+  us_state_rate_comp > 0.005 &
+    us_state_rate_comp < 0.015 ~ paste0(comma(abs(us_state_rate_comp * 100), 1),
+                                    " percent higher than"),
+  us_state_rate_comp >= 0.015  ~ paste0(comma(abs(us_state_rate_comp * 100), 1),
+                                    " percent higher than"),
+  us_state_rate_comp < -0.005 &
+    us_state_rate_comp > -0.015 ~ paste0(comma(abs(us_state_rate_comp * 100), 1),
+                                    " percent lower than"),
+  us_state_rate_comp <= -0.015 ~ paste0(comma(abs(us_state_rate_comp * 100), 1),
+                                    " percent lower than"),
+  TRUE                      ~ "nearly the same as"
+  )
+
+
 pct_change_unsolved <- min_max_viol_crime$pct_unsolved[2] - min_max_viol_crime$pct_unsolved[1]
 
 change_text_clear <- case_when(
@@ -96,6 +153,14 @@ change_text_clear <- case_when(
 ```
 
 ## Violent crime in `r state_name_text`
+
+```{r}
+crime_rate_max <- paste0(comma(min_max_viol_crime$incidents_reported_rate_total[2], 1, scale = 1e5))
+```
+
+In `r max_year`, `r crime_rate_max` violent crime incidents per 100,000 residents were reported to police in `r state_name_text`. This is `r change_text_crime` the violent crime rate in `r min_year`.
+
+The crime rate in `r state_name_text` in 2022 was `r us_state_rate_text_crime` the United States average.
 
 ::: {.panel-tabset}
 
@@ -281,7 +346,6 @@ to_plot |>
 
 :::
 
-
 ```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz, results='asis'}
 cat("## Unsolved violent crime in", state_name_text)
 ```
@@ -292,7 +356,7 @@ unsolved_rate_max <- paste0(comma(min_max_viol_crime$pct_unsolved[2] * 100, 1), 
 
 ```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz, results='asis'}
 cat(paste0(
-  "In ", max_year, ", ", unsolved_rate_max, " of violent crimes reported to police were not solved. This is ", change_text_clear, " the unsolved rate in ", min_year, "."
+  "In ", max_year, ", ", unsolved_rate_max, " of violent crimes reported to police in ", state_name_text, " were not solved. This is ", change_text_clear, " the unsolved rate in ", min_year, "."
 ))
 ```
 
@@ -307,6 +371,7 @@ cat("
 ```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz}
 srs_by_cat_state |> 
   bind_rows(srs_by_cat_us) |> 
+  filter(year != 2021) |> 
   mutate(
     pct_unsolved = pct_unsolved * 100,
     tooltip = paste0(
@@ -343,6 +408,7 @@ cat("
 
 ```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz}
 to_plot <- srs_state |> 
+  filter(year != 2021) |> 
   left_join(offense_pal, by = c("group" = "crime")) |> 
   mutate(
     pct_unsolved = pct_unsolved * 100,
@@ -380,7 +446,7 @@ cat("
 ```
 
 ```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz, results='asis'}
-cat("## Mapping unsolved violent crime by county in", state_name_text)
+cat("## Unsolved violent crime by county in", state_name_text)
 ```
 
 ```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz}
@@ -393,7 +459,6 @@ counties_represented <- comma(n_distinct(srs_unsolved_by_agency_to_table$county_
 cat(paste0(
   total_agencies, " law enforcement agencies and ", counties_represented, " counties are represented in the map below."))
 ```
-
 
 ```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz}
 ### choose blues from csgjcr for now
@@ -412,14 +477,14 @@ srs_unsolved_by_county_to_map_tooltip <- srs_unsolved_by_county_to_map |>
   mutate(unsolved_rate_percent_change_2019_2022_clean = paste0(number(unsolved_rate_percent_change_2019_2022, 1, suffix = "%", style_positive = "plus",
                                style_negative = "minus")),
          tooltip = paste0(
-    "<b>", county_clean,"</b><br>",
-      "Agencies reporting data (2022): ", comma(n_agencies, 1), "<br>",
-      "Percentage of population covered by agencies (2022): ", comma(nibrs_reported_pop_coverage_pct,1), "%", "<br>",
-      "Incidents reported (2022): ", comma(n_reported_2022, 1), "<br>",
-      "Incidents unsolved (2022): ", comma(n_unsolved_2022, 1), "<br>",
-      "Unsolved rate (2019): ", comma(unsolved_rate_2019, 1),"%", "<br>",
-      "Unsolved rate (2022): ", comma(unsolved_rate_2022, 1),"%", "<br>",
-      "Change in unsolved rate (2019 to 2022): ", unsolved_rate_percent_change_2019_2022_clean))
+    "<b>", county_clean, " – 2022", "</b><br>",
+      "Unsolved rate: ", comma(unsolved_rate_2022, 1),"%", "<br>",
+      "Violent incidents reported: ", comma(n_reported_2022, 1), "<br>",
+      "Violent incidents unsolved: ", comma(n_unsolved_2022, 1), "<br>",
+      "Agencies reporting data: ", comma(n_agencies, 1), "<br>",
+      "Population covered by reporting agencies: ", comma(nibrs_reported_pop_coverage_pct,1), "%", "<br>"
+      )
+    )
 
 ### pull only state geo that we want for each param iteration
 ### to do: add legend title, additional info in tooltip, accessibility? 
@@ -431,6 +496,12 @@ hcmap(
   nullColor = "#E8E8E8",
   borderWidth = 0.45,
   borderColor = "black") |> 
+  hc_title(
+    text = "Unsolved violent crime rate, 2022",
+    align = "left",
+    style = list(fontFamily = header_font, color = "#004270",
+                              fontSize = "24px", fontWeight = "bold")
+    ) |>   
   hc_colorAxis(endOnTick = TRUE,
                startOnTick = TRUE,
                stops = color_stops(4, c(blue1,
@@ -438,7 +509,8 @@ hcmap(
                                         blue4,
                                         blue5)),
                labels = list(format = "{value}%",
-                             style = list(fontSize = "12px"))) |> 
+                             style = list(fontSize = "12px",
+                                          fontFamily = default_fonts))) |> 
   hc_legend(align = "center",
             horizontalAlign = "bottom",
             layout = "horizontal",
@@ -446,11 +518,10 @@ hcmap(
             symbolHeight = 25,
             symbolWidth = 225,
             x = 0,
-            y = 0,
-            itemStyle = list(fontSize = "14px",
-                       fontFamily = "GT America",
-                       fontWeight = 400)) |> 
+            y = 0
+            ) |> 
      hc_tooltip(
+        style = list(fontFamily = default_fonts),
         formatter = JS("function() {
         return '<div style=\"background-color: #FFFFFF; opacity: 1; padding: 8px; border: none;\">' +
         this.point.tooltip +
@@ -472,8 +543,6 @@ hcmap(
       )
     ) |>
     hc_add_dependency(name = "modules/accessibility.js")
-
-
 ```
 
 ```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz, results='asis'}
@@ -482,7 +551,7 @@ cat("## Unsolved violent crime by agency in", state_name_text)
 
 ```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz, results='asis'}
 cat(paste0(
-  "In the following table, violent crime incident rates as well as unsolved violent crime rates are included for each of the ", total_agencies, " law enforcement agencies that reported data in ",state_name_text," for 2022. Please note that rates calculated for agencies with smaller jurisdiction populations as well as fewer overall incidents are less reliable than those for larger jurisdictions and should be interpreted with caution."))
+  "In the following table, violent crime incident rates as well as unsolved violent crime rates are included for each of the ", total_agencies, " law enforcement agencies that reported data in ",state_name_text," in 2022. Please note that rates calculated for agencies with smaller jurisdiction populations as well as fewer overall incidents are less reliable than those for larger jurisdictions and should be interpreted with caution."))
 ```
 
 ```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz}
@@ -490,26 +559,31 @@ srs_unsolved_by_agency_to_table |>
   ### recode Inf values as blank
   ### this appears to be the result of calculating rates for jurisdictions of 0
   ### replacing with blanks to align with how missing data appear in other columns
-  mutate(n_reported_rate = ifelse(population==0,
-                                  "",n_reported_rate)) |> 
-  ### remove state name
+  # mutate(n_reported_rate = ifelse(population==0,
+  #                                 "",n_reported_rate)) |> 
+  # ### remove state name
   ### we just needed it to filter on param
-  select(-state_name) |> 
+  select(-state_name, -agency_type) |> 
   arrange(desc(population)) |>
   reactable_template(
     sort_col = list("population" = "desc"),
     columns = list(
       agency_name = colDef(name = "Agency", minWidth = 250),
-      agency_type = colDef(name = "Agency Type"),
+      # agency_type = colDef(name = "Agency Type"),
       county_clean = colDef(name = "County"),
       population = colDef(name = "Jurisdiction Population", minWidth = 115), 
-      n_reported = colDef(name = "Count of Violent Index Crimes"), 
-      n_reported_rate = colDef(name = "Violent Index Crime Rate (per 100k)"), 
-      unsolved_rate_rounded = colDef(name = "Unsolved Violent Index Crime Rate (%)"), 
+      n_reported = colDef(name = "Violent Incidents Reported (2022)"), 
+      n_reported_rate = colDef(name = "Violent Incidents per 100k (2022)"), 
+      unsolved_rate = colDef(
+        name = "Unsolved Rate (2022)",
+        format = colFormat(digits = 0, percent = TRUE)
+        )
+      ),
       style = list(
         fontFamily = "Source Sans Pro",
-        fontWeight = 600)))
-
+        fontWeight = 600
+        )
+    )
 ```
 
 
