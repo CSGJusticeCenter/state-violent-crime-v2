@@ -25,7 +25,7 @@ library(csgjcr)
 library(highcharter)
 library(htmlwidgets)
 library(reactable)
-
+ 
 source("R/utils.R")
 
 # set path to data folder on sharepoint
@@ -161,6 +161,8 @@ crime_rate_max <- paste0(comma(min_max_viol_crime$incidents_reported_rate_total[
 In `r max_year`, `r crime_rate_max` violent crime incidents per 100,000 residents were reported to police in `r state_name_text`. This is `r change_text_crime` the violent crime rate in `r min_year`.
 
 The crime rate in `r state_name_text` in 2022 was `r us_state_rate_text_crime` the United States average.
+
+Data regarding crime and unsolved rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr). Violent crime includes homicide, aggravated assault, robbery, and rape. Crime rates are calculated by dividing the number of estimated incidents by the total population for a given geography. For more information, see the data sources and methods section below.
 
 ::: {.panel-tabset}
 
@@ -356,7 +358,9 @@ unsolved_rate_max <- paste0(comma(min_max_viol_crime$pct_unsolved[2] * 100, 1), 
 
 ```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz, results='asis'}
 cat(paste0(
-  "In ", max_year, ", ", unsolved_rate_max, " of violent crimes reported to police in ", state_name_text, " were not solved. This is ", change_text_clear, " the unsolved rate in ", min_year, "."
+  "In ", max_year, ", ", unsolved_rate_max, " of violent crimes reported to police in ", state_name_text, " were not solved. This is ", change_text_clear, " the unsolved rate in ", min_year, ".", '\n','\n',
+    
+    "Unsolved rates are the number of reported crimes not cleared by arrest or by exceptional means divided by the number of reported crimes. For more information, see the data sources and methods section below."
 ))
 ```
 
@@ -473,12 +477,15 @@ cat("## Unsolved violent crime by county in", state_name_text)
 ```
 
 ```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz}
-total_agencies <- comma(n_distinct(srs_unsolved_by_agency_to_table$ori[srs_unsolved_by_agency_to_table$number_of_months_missing!=12]))
+total_agencies <- comma(n_distinct(srs_unsolved_by_agency_to_table$ori))
 
 counties_represented <- comma(n_distinct(srs_unsolved_by_agency_to_table$county_clean))
 ```
 
 ```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz}
+#| fig-height: 5.5
+
+
 ### choose blues from csgjcr for now
 blue1 <- "#d4e9f8"
 blue2 <- "#9ed4ef"
@@ -578,16 +585,10 @@ cat(paste0(
 
 ```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz}
 srs_unsolved_by_agency_to_table |> 
-  ### overwrite incident data with "" if agency is missing any months
-  ### and unsolved rate if all months are missing
-  ### we still want to display the agency info, but not any counts/rates
-  mutate(n_reported = ifelse(number_of_months_missing>0,
-                                  NA,n_reported),
-         n_reported_rate = ifelse(number_of_months_missing>0,
-                                  NA,n_reported_rate),
-         unsolved_rate = ifelse(number_of_months_missing==12,
-                                  NA,unsolved_rate)) |>
-  # ### remove state name
+  ### overwrite rate  with NA if agency is missing population (current value is .inf)
+  mutate(n_reported_rate = ifelse(population==0,
+                                  NA,n_reported_rate)) |>
+  ### remove state name
   ### we just needed it to filter on param
   select(-c(state_name, 
             agency_type,

@@ -162,60 +162,7 @@ max_viol_crime_off <- srs_us |>
 
 
 ```{r}
-# set up hex map functions
-
-# map_colors <- list(
-#   list(name = "Increase",     from = 1, to = 1, color = jr_pal[2]),
-#   list(name = "Decrease",     from = 2, to = 2, color = jr_pal[3]),
-#   list(name = "No 2022 data", from = 3, to = 3, color = "darkgray")
-# )
-# 
-# map_colors_rev <- list(
-#   list(name = "Increase",     from = 1, to = 1, color = jr_pal[1]),
-#   list(name = "Decrease",     from = 2, to = 2, color = jr_pal[4]),
-#   list(name = "No 2022 data", from = 3, to = 3, color = "darkgray")
-# )
-# 
-# make_hex_map <- function(df, colors) {
-#   highchart()  |>
-#     hc_add_series_map(
-#       map = hex_gj,
-#       df = df,
-#       joinBy = "state_abb",
-#       value = "status",
-#       dataLabels = list(enabled = TRUE, format = "{point.state_abb}",
-#                         style = list(fontSize = "13px",
-#                                      fontFamily = default_fonts,
-#                                      fontWeight = 700,
-#                                      textOutline = 0))
-#     )  |>
-#     hc_colorAxis(
-#       dataClassColor = "category",
-#       dataClasses = colors
-#     ) |>
-#     hc_legend(
-#       itemStyle = list(fontSize = "14px",
-#                        fontFamily = default_fonts,
-#                        fontWeight = 400)
-#     ) |>
-#     hc_tooltip(enabled = FALSE) |>
-#     hc_plotOptions(
-#       series = list(
-#         animation = FALSE,
-#         states = list(inactive = list(opacity = 1)),
-#         cursor = "pointer",
-#         accessibility = list(
-#           enabled = TRUE,
-#           keyboardNavigation = list(enabled = TRUE)
-#         ),
-#         point = list(
-#           events = list(
-#             click = JS("function(){parent.document.location.href = this.options.url}"))
-#         )
-#       )
-#     ) |>
-#     hc_add_dependency(name = "modules/accessibility.js")
-# }
+### import and prep hex map geo
 
 hex <- sf::read_sf("us_states_hexgrid.geojson") |>
   select(state_abb = iso3166_2)
@@ -231,9 +178,11 @@ hex_gj <- hex |>
 
 ## Reported violent crime by state
 
-In 2022, 380.7 violent crime incidents per 100,000 residents were reported to police in the United States. 29 states had violent crime rates lower than the U.S. average and 21 states plus the District of Columbia had higher crime rates.
+In 2022, 380.7 violent crime incidents per 100,000 residents were reported to police in the United States. Twenty-nine states had violent crime rates lower than the U.S. average and 21 states plus the District of Columbia had higher crime rates.
 
 The national violent crime rate in 2019 (380.8 per 100,000) was nearly the same as the 2022 rate. Between 2019 and 2022, violent crime rates in 32 states and the District of Columbia decreased, while violent crime rates in 18 states increased.
+
+Data regarding crime and unsolved rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr). Violent crime includes homicide, aggravated assault, robbery, and rape. Crime rates are calculated by dividing the number of estimated incidents by the total population for a given geography. For more information, see the data sources and methods section below.
 
 ::: {.panel-tabset}
 
@@ -656,11 +605,13 @@ to_plot |>
 
 ## Unsolved violent crime by state
 
-In 2022, 63 percent of violent crime incidents reported to police in the United States were not solved. 35 states had unsolved violent crime rates better than the U.S. average and 13 states plus the District of Columbia had worse unsolved violent crime rates.
+In 2022, 63 percent of violent crime incidents reported to police in the United States were not solved. Thirty-five states had unsolved violent crime rates better than the U.S. average, and 13 states plus the District of Columbia had worse unsolved violent crime rates.
 
 The unsolved violent crime rate in 2019 (57 percent) was 6 percentage points better than the 2022 rate. Between 2019 and 2022, unsolved violent crime rates in 12 states improved, while unsolved crime rates in 36 states and the District of Columbia increased.
 
 Illinois and New York did not report enough data on unsolved crime to the FBI to make reliable estimates.
+
+Unsolved rates are the number of reported crimes not cleared by arrest or by exceptional means divided by the number of reported crimes. For more information, see the data sources and methods section below.
 
 ::: {.panel-tabset}
 
