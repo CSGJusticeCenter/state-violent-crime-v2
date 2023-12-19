@@ -286,7 +286,8 @@ df_nibrs_violent_unsolved_by_agency_to_table_2022 <- df_nibrs_violent_unsolved_b
     #   unsolved_rate_rounded = scales::comma(unsolved_rate*100,accuracy = .1),
     #   n_reported_rate = scales::comma(n_reported_rate,accuracy = .1),
     #   n_reported = scales::comma(n_reported,accuracy = 1)) |> 
-  distinct() |> 
+  distinct(ori,
+           .keep_all = TRUE) |> 
   ### join acs county level file to clean up county name
   ### similar to mapping df
   left_join(us_county_population,
@@ -297,6 +298,7 @@ df_nibrs_violent_unsolved_by_agency_to_table_2022 <- df_nibrs_violent_unsolved_b
                                acs_county_name,county)) |> 
     dplyr::select(agency_name,
                 agency_type,
+                ori,
                 county_clean,
                 population = pop_jurisdiction,
                 n_reported, 
