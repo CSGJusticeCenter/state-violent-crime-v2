@@ -137,20 +137,20 @@ change_text_unsolved <- case_when(
     pct_change_unsolved < 0.015 ~ paste0(comma(abs(
       pct_change_unsolved * 100
     ), 1),
-    " percentage point worse than"),
+    " percentage point higher than"),
   pct_change_unsolved >= 0.015  ~ paste0(comma(abs(
     pct_change_unsolved * 100
   ), 1),
-  " percentage points worse than"),
+  " percentage points higher than"),
   pct_change_unsolved < -0.005 &
     pct_change_unsolved > -0.015 ~ paste0(comma(abs(
       pct_change_unsolved * 100
     ), 1),
-    " percentage point better than"),
+    " percentage point lower than"),
   pct_change_unsolved <= -0.015 ~ paste0(comma(abs(
     pct_change_unsolved * 100
   ), 1),
-  " percentage points better than"),
+  " percentage points lower than"),
   TRUE                      ~ "nearly the same as"
 )
 
@@ -605,9 +605,9 @@ to_plot |>
 
 ## Unsolved violent crime by state
 
-In 2022, 63 percent of violent crime incidents reported to police in the United States were not solved. Thirty-five states had unsolved violent crime rates better than the U.S. average, and 13 states plus the District of Columbia had worse unsolved violent crime rates.
+In 2022, 63 percent of violent crime incidents reported to police in the United States were not solved. Thirty-five states had unsolved violent crime rates lower than the U.S. average, and 13 states plus the District of Columbia had higher unsolved violent crime rates.
 
-The unsolved violent crime rate in 2019 (57 percent) was 6 percentage points better than the 2022 rate. Between 2019 and 2022, unsolved violent crime rates in 12 states improved, while unsolved crime rates in 36 states and the District of Columbia increased.
+The unsolved violent crime rate in 2019 (57 percent) was 6 percentage points lower than the 2022 rate. Between 2019 and 2022, unsolved violent crime rates in 12 states decreased, while unsolved crime rates in 36 states and the District of Columbia increased.
 
 Illinois and New York did not report enough data on unsolved crime to the FBI to make reliable estimates.
 
