@@ -373,18 +373,29 @@ srs_by_cat_state |>
   bind_rows(srs_by_cat_us) |> 
   filter(year != 2021) |> 
   mutate(
-    pct_unsolved = pct_unsolved * 100,
+    ### shouldn't be an issue for overall viz
+    ### but just in case, recoding any unsolved rate below 0 to 0
+    pct_unsolved_clean = ifelse(pct_unsolved<0 & !is.na(pct_unsolved),
+                          0,pct_unsolved),
+    pct_unsolved_clean = pct_unsolved_clean * 100,
+    ### create pct_unsolved and incidents_unsolved for tooltip
+    ### where if value is below 0, explanatory text is displayed
+    ### instead of number
+    pct_unsolved_tooltip = ifelse(pct_unsolved<0 & !is.na(pct_unsolved),
+                                  "Less than 0%",as.character(percent(pct_unsolved_clean / 100, 1))),
+    incidents_unsolved_tooltip = ifelse(incidents_unsolved<0 & !is.na(incidents_unsolved),
+                                  "Fewer than 0",as.character(comma(incidents_unsolved))),
     tooltip = paste0(
       "<b>", state_name, " – ", year, "</b><br>",
-      "Unsolved rate: ", percent(pct_unsolved / 100, 1), "<br>",
+      "Unsolved rate: ", pct_unsolved_tooltip, "<br>",
       "Violent incidents reported: ", comma(incidents_reported, 1), "<br>",
-      "Violent incidents unsolved: ", comma(incidents_unsolved, 1)
+      "Violent incidents unsolved: ", incidents_unsolved_tooltip
       ),
     state_name = fct_relevel(state_name, "United States", after = Inf)
     ) |> 
   hchart(
     "spline",
-    hcaes(year, pct_unsolved, group = state_name),
+    hcaes(year, pct_unsolved_clean, group = state_name),
     color = jr_pal[c(1, 7)],
     dashStyle = c("solid", "dash"),
     opacity = c(1, 0.75),
@@ -411,21 +422,32 @@ to_plot <- srs_state |>
   filter(year != 2021) |> 
   left_join(offense_pal, by = c("group" = "crime")) |> 
   mutate(
-    pct_unsolved = pct_unsolved * 100,
+    ### recode any unsolved rate below 0 to 0
+    pct_unsolved_clean = ifelse(pct_unsolved<0 & !is.na(pct_unsolved),
+                          0,pct_unsolved),
+    pct_unsolved_clean = pct_unsolved_clean * 100,
+    ### create pct_unsolved and incidents_unsolved for tooltip
+    ### where if value is below 0, explanatory text is displayed
+    ### instead of number
+    pct_unsolved_tooltip = ifelse(pct_unsolved<0 & !is.na(pct_unsolved),
+                                  "Less than 0%",as.character(percent(pct_unsolved_clean / 100, 1))),
+    incidents_unsolved_tooltip = ifelse(incidents_unsolved<0 & !is.na(incidents_unsolved),
+                                  "Fewer than 0",as.character(comma(incidents_unsolved)))) |> 
+  mutate(
     group = fct_reorder(group, pct_unsolved, last),
     tooltip = paste0(
       "<b>", group, " – ", year, "</b></br>",
-      "Unsolved rate: ", percent(pct_unsolved / 100, 1), "<br>",
+      "Unsolved rate: ", pct_unsolved_tooltip, "<br>",
       "Incidents reported: ", comma(incidents_reported, 1), "<br>",
-      "Incidents unsolved: ", comma(incidents_unsolved, 1)
+      "Incidents unsolved: ", incidents_unsolved_tooltip
       )
     ) |> 
-  arrange(desc(year), pct_unsolved)
+  arrange(desc(year), pct_unsolved_clean)
 
 to_plot |>   
   hchart(
     "spline",
-    hcaes(year, pct_unsolved, group = group),
+    hcaes(year, pct_unsolved_clean, group = group),
     accessibility = list(
       point = list(
         valueDescriptionFormat = "{point.state}, year: {point.x:.0f}, unsolved rate: {point.y:.1f}%"
@@ -437,6 +459,7 @@ to_plot |>
   hc_caption(text = "FBI Uniform Crime Reporting Program<br>Aggregated from SRS agency-level Offenses Known reports") |> 
   hc_setup() |> 
   hc_yAxis(labels = list(format = "{value:,.0f}%"))
+
 ```
 
 ```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz, results='asis'}
@@ -450,14 +473,9 @@ cat("## Unsolved violent crime by county in", state_name_text)
 ```
 
 ```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz}
-total_agencies <- comma(n_distinct(srs_unsolved_by_agency_to_table$agency_name))
+total_agencies <- comma(nrow(srs_unsolved_by_agency_to_table))
 
 counties_represented <- comma(n_distinct(srs_unsolved_by_agency_to_table$county_clean))
-```
-
-```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz, results='asis'}
-cat(paste0(
-  total_agencies, " law enforcement agencies and ", counties_represented, " counties are represented in the map below."))
 ```
 
 ```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz}
@@ -469,13 +487,14 @@ blue5 <- "#00475d"
 
 ### add tooltip
 srs_unsolved_by_county_to_map_tooltip <- srs_unsolved_by_county_to_map |> 
-  ### recode NaN and Inf values as NA
-  mutate(across(.cols = unsolved_rate_percent_change_2019_2022, 
-                ~ ifelse(is.infinite(.x) | is.nan(.x), NA, .x))) |> 
-  ### add '+" in front of positive numbers and 0
-  ### only for value we'll include in tooltip
-  mutate(unsolved_rate_percent_change_2019_2022_clean = paste0(number(unsolved_rate_percent_change_2019_2022, 1, suffix = "%", style_positive = "plus",
-                               style_negative = "minus")),
+  # ### recode NaN and Inf values as NA
+  # mutate(across(.cols = unsolved_rate_percent_point_change_2019_2022, 
+  #               ~ ifelse(is.infinite(.x) | is.nan(.x), NA, .x))) |> 
+  # ### add '+" in front of positive numbers and 0
+  # ### only for value we'll include in tooltip
+  mutate(
+    # unsolved_rate_percent_point_change_2019_2022_clean = paste0(number(unsolved_rate_percent_point_change_2019_2022, 1, suffix = "%", style_positive = "plus",
+    #                            style_negative = "minus")),
          tooltip = paste0(
     "<b>", county_clean, " – 2022", "</b><br>",
       "Unsolved rate: ", comma(unsolved_rate_2022, 1),"%", "<br>",
@@ -484,7 +503,10 @@ srs_unsolved_by_county_to_map_tooltip <- srs_unsolved_by_county_to_map |>
       "Agencies reporting data: ", comma(n_agencies, 1), "<br>",
       "Population covered by reporting agencies: ", comma(nibrs_reported_pop_coverage_pct,1), "%", "<br>"
       )
-    )
+    ) |> 
+  ### recode any unsolved rates less than 0 to 0
+  mutate(unsolved_rate_2022 = ifelse(unsolved_rate_2022<0 & !is.na(unsolved_rate_2022),
+                                     0,unsolved_rate_2022))
 
 ### pull only state geo that we want for each param iteration
 ### to do: add legend title, additional info in tooltip, accessibility? 
@@ -516,7 +538,7 @@ hcmap(
             layout = "horizontal",
             # title = list(text = "Percent Change"),
             symbolHeight = 25,
-            symbolWidth = 225,
+            symbolWidth = 250,
             x = 0,
             y = 0
             ) |> 
@@ -556,14 +578,20 @@ cat(paste0(
 
 ```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz}
 srs_unsolved_by_agency_to_table |> 
-  ### recode Inf values as blank
-  ### this appears to be the result of calculating rates for jurisdictions of 0
-  ### replacing with blanks to align with how missing data appear in other columns
-  # mutate(n_reported_rate = ifelse(population==0,
-  #                                 "",n_reported_rate)) |> 
+  ### overwrite incident data with "" if agency is missing any months
+  ### and unsolved rate if all months are missing
+  ### we still want to display the agency info, but not any counts/rates
+  mutate(n_reported = ifelse(number_of_months_missing>0,
+                                  NA,n_reported),
+         n_reported_rate = ifelse(number_of_months_missing>0,
+                                  NA,n_reported_rate),
+         unsolved_rate = ifelse(number_of_months_missing==12,
+                                  NA,unsolved_rate)) |>
   # ### remove state name
   ### we just needed it to filter on param
-  select(-state_name, -agency_type) |> 
+  select(-c(state_name, 
+            agency_type,
+            number_of_months_missing)) |> 
   arrange(desc(population)) |>
   reactable_template(
     sort_col = list("population" = "desc"),
@@ -573,7 +601,8 @@ srs_unsolved_by_agency_to_table |>
       county_clean = colDef(name = "County"),
       population = colDef(name = "Jurisdiction Population", minWidth = 115), 
       n_reported = colDef(name = "Violent Incidents Reported (2022)"), 
-      n_reported_rate = colDef(name = "Violent Incidents per 100k (2022)"), 
+      n_reported_rate = colDef(name = "Violent Incidents per 100k (2022)",
+                               format = colFormat(digits = 0)), 
       unsolved_rate = colDef(
         name = "Unsolved Rate (2022)",
         format = colFormat(digits = 0, percent = TRUE)
@@ -584,6 +613,7 @@ srs_unsolved_by_agency_to_table |>
         fontWeight = 600
         )
     )
+
 ```
 
 
@@ -607,5 +637,10 @@ c) Identified the suspect’s exact location so that the person could be taken i
 d) Encountered a circumstance outside the control of law enforcement that prohibits the agency from arresting, charging, and prosecuting the person
     
 Examples of exceptional clearances include the death of the person who committed the crime; the victim’s refusal to cooperate with the prosecution after the person who committed the crime has been identified; or the denial of extradition.
+
+In some instances, the unsolved rate and number of unsolved crimes may be less than 0. This is due to the fact that the number of reported crimes cleared in a year can include incidents reported in prior years. For this reason, it is possible to have more cleared crimes than new reported incidents in a given year.
+
+Agency-level violent crime data were excluded for agencies without data for all 12 months in 2022. However, agency-level unsolved rates are included if the agency submitted data for at least 1 month. The calculation of population covered by reporting agencies as well as the number of reporting agencies is based on agencies with unsolved crime data for at least 1 month. 
+
 :::
 

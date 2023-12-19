@@ -100,8 +100,11 @@ df_nibrs_reported_pop_jursidiction_2022 <- df_nibrs_kaplan_2010_2022 |>
   filter(year==2022) |> 
   distinct(ori,
            .keep_all = TRUE) |> 
+  ### logic: we are only counting agencies (and their jurisdiction pop)
+  ### for the numerator in this metric if they are missing <12 months of data entry
+  ### based on `number_of_months_missing`
   dplyr::group_by(county_fips) |> 
-  summarize(nibrs_reported_pop_jursidiction = sum(pop_jurisdiction, na.rm = TRUE)) |> 
+  summarize(nibrs_reported_pop_jursidiction = sum(pop_jurisdiction[number_of_months_missing!=12], na.rm = TRUE)) |> 
   ungroup()
 
 ### create county-level file with other data we need for mapping
@@ -115,13 +118,13 @@ df_nibrs_violent_unsolved_by_year_county_2010_2022 <- df_nibrs_kaplan_2010_2022 
                  county_fips,
                  state_name,
                  state_abbr) |> 
-  summarize(n_reported = sum(n_reported,
+  summarize(n_reported = sum(n_reported[number_of_months_missing!=12],
                              na.rm = TRUE),
-            n_cleared = sum(n_cleared,
+            n_cleared = sum(n_cleared[number_of_months_missing!=12],
                              na.rm = TRUE),
-            n_unsolved = sum(n_unsolved,
+            n_unsolved = sum(n_unsolved[number_of_months_missing!=12],
                              na.rm = TRUE),
-            n_agencies = n_distinct(ori,
+            n_agencies = n_distinct(ori[number_of_months_missing!=12],
                                     na.rm = TRUE)) |> 
   ungroup() |> 
   mutate(unsolved_rate = n_unsolved/n_reported) |> 
@@ -157,7 +160,8 @@ df_nibrs_violent_unsolved_by_county_to_map <- df_nibrs_violent_unsolved_by_year_
          n_unsolved_2022 = n_unsolved[year==2022],
          unsolved_rate_2019 = unsolved_rate[year==2019]*100,
          unsolved_rate_2022 = unsolved_rate[year==2022]*100,
-         unsolved_rate_percent_change_2019_2022 = ((unsolved_rate[year==2022] - unsolved_rate[year==2019])/unsolved_rate[year==2019])*100) |> 
+         # unsolved_rate_percent_change_2019_2022 = ((unsolved_rate[year==2022] - unsolved_rate[year==2019])/unsolved_rate[year==2019])*100,
+         unsolved_rate_percent_point_change_2019_2022 = unsolved_rate_2022 - unsolved_rate_2019) |> 
   ungroup() |> 
   ### now drop 2019
   ### and keep unsolved rate from 2022
@@ -170,7 +174,7 @@ df_nibrs_violent_unsolved_by_county_to_map <- df_nibrs_violent_unsolved_by_year_
                 state_abbr,
                 n_agencies,
                 n_reported_2019:unsolved_rate_2022,
-                unsolved_rate_percent_change_2019_2022) |> 
+                unsolved_rate_percent_point_change_2019_2022) |> 
   distinct() 
 
 ### additional work to add geo that joins NYC is temp commented out
@@ -262,7 +266,8 @@ df_nibrs_violent_unsolved_by_year_agency_2010_2022 <- df_nibrs_kaplan_2010_2022 
                   ori,
                   pop_jurisdiction,
                   state_name,
-                  state_abbr) |> 
+                  state_abbr,
+                  number_of_months_missing) |> 
   summarize(n_reported = sum(n_reported,
                              na.rm = TRUE),
             n_cleared = sum(n_cleared,
@@ -297,7 +302,8 @@ df_nibrs_violent_unsolved_by_agency_to_table_2022 <- df_nibrs_violent_unsolved_b
                 n_reported, 
                 n_reported_rate,
                 unsolved_rate,
-                state_name)
+                state_name,
+                number_of_months_missing)
   
 
 ### write out
