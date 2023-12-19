@@ -361,7 +361,7 @@ srs_state_to_map_2 <- srs_state_to_map |>
     viol_crime_rate_percent_change_2019_2022_clean = sprintf("%+3d%%", viol_crime_rate_percent_change_2019_2022_clean),
     tooltip = paste0(
       "<b>", state_name, "</b><br>",
-      "Change in violent crime rate (2019 to 2022): ",
+      "Change in violent crime rate: ",
       viol_crime_rate_percent_change_2019_2022_clean,
       "<br>",
       "Violent incidents per 100k (2022): ",
@@ -553,7 +553,7 @@ to_plot_2 |>
   hc_colors(unique(to_plot_2$color)) |> 
   hc_title(text = paste0("Homicide in ", state_name_text)) |>
   hc_subtitle(text = "Homicide incidents reported to police per 100,000 residents") |> 
-  hc_caption(text = "FBI ") |>
+  hc_caption(text = "FBI Crime Data Explorer") |>
   hc_legend(enabled = FALSE) |> 
   hc_setup()
 ```
@@ -710,7 +710,7 @@ highchart() |>
                                      fontWeight = 700,
                                      textOutline = 0))) |>
   hc_title(
-    text = "Unsolved violent crime rate, 2022",
+    text = "Unsolved violent crime, 2022",
     align = "left",
     style = list(fontFamily = header_font, color = "#004270",
                               fontSize = "24px", fontWeight = "bold")
@@ -782,7 +782,7 @@ srs_state_to_map_4 <- srs_state_to_map |>
     tooltip = ifelse(!state_name%in%states_to_exclude_from_unsolved_rate_viz,
                      paste0(
       "<b>", state_name, "</b><br>",
-      "Change in unsolved rate (2019 to 2022): ",
+      "Change in unsolved rate: ",
       unsolved_rate_percent_point_change_2019_2022_clean, "<br>",
       "Unsolved rate (2022): ", comma(unsolved_rate_2022, 1), "%", "<br>",
       "Unsolved rate (2019): ", comma(unsolved_rate_2019, 1), "%", "<br>"
@@ -829,7 +829,7 @@ highchart() |>
     )
   ) |>
   hc_title(
-    text = "Change in unsolved violent crime rate, 2019 to 2022",
+    text = "Change in unsolved violent crime, 2019 to 2022",
     align = "left",
     style = list(
       fontFamily = header_font,
@@ -839,7 +839,7 @@ highchart() |>
     )
   )  |> 
   hc_subtitle(
-        text = "Change in percentage point",
+        text = "Percentage point change in rate of unsolved violent crimes from 2019 to 2022",
         align = "left",
         style = list(fontFamily = default_fonts, fontSize = "16px",
                      color = "#666666")
@@ -1005,7 +1005,7 @@ srs_state_to_map |>
         format = colFormat(suffix = "%", digits = 0)
         ),
       unsolved_rate_percent_point_change_2019_2022 = colDef(
-        name = "Change in unsolved rate percentage point (2019 to 2022)",
+        name = "Percentage point change in unsolved rate (2019 to 2022)",
         format = colFormat(digits = 0)
         ),
       style = list(
@@ -1019,13 +1019,11 @@ srs_state_to_map |>
 
 ## Data sources and methodology
 
-Data regarding crime and unsolved rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr){target="_parent"}. Counts of reported violent crime between 2012 and 2022 are derived from the Summary Reporting System (SRS) and the National Incident-Based Reporting System (NIBRS). The FBI generated national estimates for reported crime and clearances based on agency-level reports, and these estimates were published through 2022 in the FBI's annual report, [_Crime in the U.S._](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019){target="_parent"}
+Data regarding crime and unsolved rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr){target="_parent"}. Counts of reported violent crime between 2012 and 2022 are derived from the Summary Reporting System (SRS) and the National Incident-Based Reporting System (NIBRS). The FBI generated national estimates for reported crime and clearances based on agency-level reports, and these estimates were published through 2022 in the FBI's annual report, [_Crime in the U.S._](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019){target="_parent"} and on the FBI's [Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/home){target="_parent"}.
 
-The FBI stopped SRS data collection after data year 2020 and required law enforcement agencies to use NIBRS to report crime statistics to the FBI. This change decreased the number of agencies that submitted their crime data and thus reduced the reliability of state estimates in 2021. Because many law enforcement agencies did report 2021 NIBRS data, the FBI was unable to produce national estimates of reported crime in 2021.
+The FBI stopped SRS data collection after data year 2020 and required law enforcement agencies to use NIBRS to report crime statistics to the FBI. This change decreased the number of agencies that submitted their crime data and thus reduced the reliability of state estimates in 2021. In 2022, the FBI allowed agencies who were unable to submit NIBRS data to submit SRS data again. 94 percent of the U.S. population was covered in the 2022 crime data submissions to the FBI, with most states providing close to complete data. However, the population upon which the estimates were derived decreased by over 10 percent in three states: Florida, Hawaii, and Illinois, so conclusions about crime changes in those states should be interpreted with additional caution.
 
-In 2022, the FBI allowed agencies who were unable to submit NIBRS data to submit SRS data again. 94 percent of the U.S. population was covered in the 2022 crime data submissions to the FBI, with most states providing close to complete data. However, the population upon which the estimates were derived decreased by over 10 percent in three states: Florida, Hawaii, and Illinois, so conclusions about crime changes in those states should be interpreted with additional caution.
-
-Crime rates are calculated by dividing the number of estimated incidents by the total U.S. population. Population data come from the U.S. Census Bureau [American Community Survey 1-year estimates (table B01003)](https://www.census.gov/programs-surveys/acs/data.html){target="_parent"} and the [2020 Decennial Census Redistricting Data (table P1)](https://www.census.gov/programs-surveys/decennial-census/about/rdo/summary-files.html){target="_parent"}
+Crime rates are calculated by dividing the number of estimated incidents by the total U.S. population. Population data come from the U.S. Census Bureau [American Community Survey 1-year estimates (table B01003)](https://www.census.gov/programs-surveys/acs/data.html){target="_parent"} and the [2020 Decennial Census Redistricting Data (table P1)](https://www.census.gov/programs-surveys/decennial-census/about/rdo/summary-files.html){target="_parent"}.
 
 Unsolved rates are the number of reported crimes not cleared by arrest or by exceptional means divided by the number of reported crimes. A reported crime incident is [cleared by exceptional means](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019/topic-pages/clearances){target='_parent'} if a law enforcement agency is unable to arrest or formally charge a person with a crime, but the agency has met the following conditions:
     
