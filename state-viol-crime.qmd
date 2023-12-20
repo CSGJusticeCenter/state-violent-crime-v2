@@ -542,7 +542,7 @@ hcmap(
                               fontSize = "24px", fontWeight = "bold"),
     accessibility = list(
       point = list(
-        valueDescriptionFormat = "state: {point.state_name}, unsolved rate: {point.value:.1f}"
+        valueDescriptionFormat = "county: {point.acs_county_name}, unsolved rate: {point.value:.1f}"
         )
       )
     ) |>   
