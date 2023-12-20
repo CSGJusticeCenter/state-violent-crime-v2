@@ -572,30 +572,7 @@ hcmap(
         '</div>';}"),
         useHTML = TRUE
       )  |>
-    hc_plotOptions(
-      series = list(
-        animation = FALSE,
-        cursor = "pointer",
-        accessibility = list(
-          enabled = TRUE,
-          keyboardNavigation = list(enabled = TRUE)
-        )
-      )
-    ) |> 
-    hc_add_dependency(name = "modules/exporting.js") |>
-    hc_add_dependency(name = "modules/offline-exporting.js") |>
-    hc_add_dependency(name = "modules/accessibility.js") |>
-    hc_exporting(
-      enabled = TRUE,
-      buttons = list(contextButton = list(menuItems = list("downloadPNG", "printChart"))),
-      accessibility = list(enabled = TRUE)
-    ) |>
-    hc_chart(
-      events = list(
-        beforePrint = render_image_print,
-        afterPrint = render_image_remove
-      )
-    )
+  hc_setup()
 
 ```
 

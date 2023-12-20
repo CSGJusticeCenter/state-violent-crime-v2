@@ -284,22 +284,6 @@ highchart() |>
     style = list(fontFamily = default_fonts)
     ) |>
   hc_setup()
-# |> 
-#     hc_add_dependency(name = "modules/exporting.js") |>
-#     hc_add_dependency(name = "modules/offline-exporting.js") |>
-#     hc_add_dependency(name = "modules/accessibility.js") |>
-#     hc_exporting(
-#       enabled = TRUE,
-#       buttons = list(contextButton = list(menuItems = list("downloadPNG", "printChart"))),
-#       accessibility = list(enabled = TRUE)
-#     ) |>
-#     hc_add_theme(hc_theme_jc) |>
-#     hc_chart(
-#       events = list(
-#         beforePrint = render_image_print,
-#         afterPrint = render_image_remove
-#       )
-#     )
 
 ```
 
@@ -442,22 +426,8 @@ highchart() |>
     text = "FBI Crime Data Explorer",
     align = "right",
     style = list(fontFamily = default_fonts)
-    ) |> 
-    hc_add_dependency(name = "modules/exporting.js") |>
-    hc_add_dependency(name = "modules/offline-exporting.js") |>
-    hc_add_dependency(name = "modules/accessibility.js") |>
-    hc_exporting(
-      enabled = TRUE,
-      buttons = list(contextButton = list(menuItems = list("downloadPNG", "printChart"))),
-      accessibility = list(enabled = TRUE)
     ) |>
-    hc_add_theme(hc_theme_jc) |>
-    hc_chart(
-      events = list(
-        beforePrint = render_image_print,
-        afterPrint = render_image_remove
-      )
-    )
+  hc_setup()
 
 
 ```
@@ -748,21 +718,8 @@ highchart() |>
         text = "FBI Crime Data Explorer",
         align = "right",
         style = list(fontFamily = default_fonts)
-    ) |> 
-    hc_add_dependency(name = "modules/exporting.js") |>
-    hc_add_dependency(name = "modules/offline-exporting.js") |>
-    hc_add_dependency(name = "modules/accessibility.js") |>
-    hc_exporting(
-      enabled = TRUE,
-      buttons = list(contextButton = list(menuItems = list("downloadPNG", "printChart"))),
-      accessibility = list(enabled = TRUE)
     ) |>
-    hc_chart(
-      events = list(
-        beforePrint = render_image_print,
-        afterPrint = render_image_remove
-      )
-    )
+  hc_setup()
 
 
 ```
@@ -893,21 +850,8 @@ highchart() |>
         text = "FBI Crime Data Explorer",
         align = "right",
         style = list(fontFamily = default_fonts)
-    ) |> 
-    hc_add_dependency(name = "modules/exporting.js") |>
-    hc_add_dependency(name = "modules/offline-exporting.js") |>
-    hc_add_dependency(name = "modules/accessibility.js") |>
-    hc_exporting(
-      enabled = TRUE,
-      buttons = list(contextButton = list(menuItems = list("downloadPNG", "printChart"))),
-      accessibility = list(enabled = TRUE)
     ) |>
-    hc_chart(
-      events = list(
-        beforePrint = render_image_print,
-        afterPrint = render_image_remove
-      )
-    )
+  hc_setup()
 
 ```
 
