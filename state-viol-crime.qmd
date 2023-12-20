@@ -580,8 +580,22 @@ hcmap(
             click = JS("function(){parent.document.location.href = this.options.url}"))
         )
       )
+    ) |> 
+    hc_add_dependency(name = "modules/exporting.js") |>
+    hc_add_dependency(name = "modules/offline-exporting.js") |>
+    hc_add_dependency(name = "modules/accessibility.js") |>
+    hc_exporting(
+      enabled = TRUE,
+      buttons = list(contextButton = list(menuItems = list("downloadPNG", "printChart"))),
+      accessibility = list(enabled = TRUE)
     ) |>
-    hc_add_dependency(name = "modules/accessibility.js")
+    hc_chart(
+      events = list(
+        beforePrint = render_image_print,
+        afterPrint = render_image_remove
+      )
+    )
+
 ```
 
 ```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz, results='asis'}

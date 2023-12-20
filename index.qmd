@@ -228,6 +228,11 @@ highchart() |>
         fontFamily = default_fonts,
         fontWeight = 700,
         textOutline = 0)
+      ),
+    accessibility = list(
+      point = list(
+        valueDescriptionFormat = "state: {point.state}, value: {point.value}"
+        )
       )
     ) |>
   hc_title(
@@ -272,8 +277,7 @@ highchart() |>
         cursor = "pointer"),
         accessibility = list(
           enabled = TRUE,
-          keyboardNavigation = list(enabled = TRUE),
-          point = list(valueDescriptionFormat = "{point.state}, {point.value}%"))) |>
+          keyboardNavigation = list(enabled = TRUE))) |>
   hc_caption(
     text = "FBI Crime Data Explorer",
     align = "right",
@@ -363,7 +367,12 @@ highchart() |>
         fontWeight = 700,
         textOutline = 0
       )
-    )
+    ),
+    accessibility = list(
+      point = list(
+        valueDescriptionFormat = "state: {point.state}, value: {point.value}"
+        )
+      )
   ) |>
   hc_title(
     text = "Change in violent crime, 2019 to 2022",
@@ -425,8 +434,7 @@ highchart() |>
         cursor = "pointer"),
         accessibility = list(
           enabled = TRUE,
-          keyboardNavigation = list(enabled = TRUE),
-          point = list(valueDescriptionFormat = "{point.state}, {point.value}%"))) |>
+          keyboardNavigation = list(enabled = TRUE))) |>
   hc_caption(
     text = "FBI Crime Data Explorer",
     align = "right",
@@ -684,7 +692,12 @@ highchart() |>
                         style = list(fontSize = "13px",
                                      fontFamily = default_fonts,
                                      fontWeight = 700,
-                                     textOutline = 0))) |>
+                                     textOutline = 0)),
+    accessibility = list(
+      point = list(
+        valueDescriptionFormat = "state: {point.state}, value: {point.value}"
+        )
+      )) |>
   hc_title(
     text = "Unsolved violent crime, 2022",
     align = "left",
@@ -726,8 +739,7 @@ highchart() |>
         cursor = "pointer"),
         accessibility = list(
           enabled = TRUE,
-          keyboardNavigation = list(enabled = TRUE),
-          point = list(valueDescriptionFormat = "{point.state}, {point.value}%"))) |>
+          keyboardNavigation = list(enabled = TRUE))) |>
     hc_caption(
         text = "FBI Crime Data Explorer",
         align = "right",
@@ -813,7 +825,12 @@ highchart() |>
         fontWeight = 700,
         textOutline = 0
       )
-    )
+    ),
+    accessibility = list(
+      point = list(
+        valueDescriptionFormat = "state: {point.state}, value: {point.value}"
+        )
+      )
   ) |>
   hc_title(
     text = "Change in unsolved violent crime, 2019 to 2022",
@@ -867,8 +884,7 @@ highchart() |>
         cursor = "pointer"),
         accessibility = list(
           enabled = TRUE,
-          keyboardNavigation = list(enabled = TRUE),
-          point = list(valueDescriptionFormat = "{point.state}, {point.value}%"))) |>
+          keyboardNavigation = list(enabled = TRUE))) |>
     hc_caption(
         text = "FBI Crime Data Explorer",
         align = "right",
