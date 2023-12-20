@@ -231,7 +231,7 @@ highchart() |>
       ),
     accessibility = list(
       point = list(
-        valueDescriptionFormat = "state: {point.state}, value: {point.value}"
+        valueDescriptionFormat = "state: {point.state_name}, value: {point.value:.1f}"
         )
       )
     ) |>
@@ -370,7 +370,7 @@ highchart() |>
     ),
     accessibility = list(
       point = list(
-        valueDescriptionFormat = "state: {point.state}, value: {point.value}"
+        valueDescriptionFormat = "state: {point.state_name}, value: {point.value:.1f}"
         )
       )
   ) |>
@@ -695,7 +695,7 @@ highchart() |>
                                      textOutline = 0)),
     accessibility = list(
       point = list(
-        valueDescriptionFormat = "state: {point.state}, value: {point.value}"
+        valueDescriptionFormat = "state: {point.state_name}, value: {point.value:.1f}"
         )
       )) |>
   hc_title(
@@ -828,7 +828,7 @@ highchart() |>
     ),
     accessibility = list(
       point = list(
-        valueDescriptionFormat = "state: {point.state}, value: {point.value}"
+        valueDescriptionFormat = "state: {point.state_name}, value: {point.value:.1f}"
         )
       )
   ) |>
