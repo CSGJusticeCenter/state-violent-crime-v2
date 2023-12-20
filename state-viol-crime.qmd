@@ -534,17 +534,17 @@ hcmap(
   joinBy = c("fips","county_fips"),
   nullColor = "#E8E8E8",
   borderWidth = 0.45,
-  borderColor = "black") |> 
+  borderColor = "black",
+  accessibility = list(
+      point = list(
+        valueDescriptionFormat = "county: {point.acs_county_name}, unsolved rate: {point.value:.1f}"
+        )
+      )) |> 
   hc_title(
     text = "Unsolved violent crime rate, 2022",
     align = "left",
     style = list(fontFamily = header_font, color = "#004270",
-                              fontSize = "24px", fontWeight = "bold"),
-    accessibility = list(
-      point = list(
-        valueDescriptionFormat = "county: {point.acs_county_name}, unsolved rate: {point.value:.1f}"
-        )
-      )
+                              fontSize = "24px", fontWeight = "bold")
     ) |>   
   hc_colorAxis(endOnTick = TRUE,
                startOnTick = TRUE,
