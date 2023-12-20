@@ -265,23 +265,35 @@ highchart() |>
     style = list(fontFamily = default_fonts),
     formatter = JS("function(){return(this.point.tooltip)}")
     )  |>
-    hc_plotOptions(
+  hc_plotOptions(
       series = list(
         animation = FALSE,
         states = list(inactive = list(opacity = 1)),
-        cursor = "pointer",
+        cursor = "pointer"),
         accessibility = list(
           enabled = TRUE,
-          keyboardNavigation = list(enabled = TRUE)
-        )
-      )
-    ) |>
+          keyboardNavigation = list(enabled = TRUE),
+          point = list(valueDescriptionFormat = "{point.state}, {point.value}%"))) |>
   hc_caption(
     text = "FBI Crime Data Explorer",
     align = "right",
     style = list(fontFamily = default_fonts)
     ) |> 
-    hc_add_dependency(name = "modules/accessibility.js")
+    hc_add_dependency(name = "modules/exporting.js") |>
+    hc_add_dependency(name = "modules/offline-exporting.js") |>
+    hc_add_dependency(name = "modules/accessibility.js") |>
+    hc_exporting(
+      enabled = TRUE,
+      buttons = list(contextButton = list(menuItems = list("downloadPNG", "printChart"))),
+      accessibility = list(enabled = TRUE)
+    ) |>
+    hc_chart(
+      events = list(
+        beforePrint = render_image_print,
+        afterPrint = render_image_remove
+      )
+    )
+
 ```
 
 
@@ -406,23 +418,36 @@ highchart() |>
     style = list(fontFamily = default_fonts),
     formatter = JS("function(){return(this.point.tooltip)}")
   )  |>
-  hc_plotOptions(
-    series = list(
-      animation = FALSE,
-      states = list(inactive = list(opacity = 1)),
-      cursor = "pointer",
-      accessibility = list(
-        enabled = TRUE,
-        keyboardNavigation = list(enabled = TRUE)
-      )
-    )
-  ) |>
+   hc_plotOptions(
+      series = list(
+        animation = FALSE,
+        states = list(inactive = list(opacity = 1)),
+        cursor = "pointer"),
+        accessibility = list(
+          enabled = TRUE,
+          keyboardNavigation = list(enabled = TRUE),
+          point = list(valueDescriptionFormat = "{point.state}, {point.value}%"))) |>
   hc_caption(
     text = "FBI Crime Data Explorer",
     align = "right",
     style = list(fontFamily = default_fonts)
     ) |> 
-  hc_add_dependency(name = "modules/accessibility.js")
+    hc_add_dependency(name = "modules/exporting.js") |>
+    hc_add_dependency(name = "modules/offline-exporting.js") |>
+    hc_add_dependency(name = "modules/accessibility.js") |>
+    hc_exporting(
+      enabled = TRUE,
+      buttons = list(contextButton = list(menuItems = list("downloadPNG", "printChart"))),
+      accessibility = list(enabled = TRUE)
+    ) |>
+    hc_chart(
+      events = list(
+        beforePrint = render_image_print,
+        afterPrint = render_image_remove
+      )
+    )
+
+
 ```
 
 :::
@@ -694,23 +719,34 @@ highchart() |>
     style = list(fontFamily = default_fonts),
     formatter = JS("function(){return(this.point.tooltip)}")
     )  |>
-    hc_plotOptions(
+  hc_plotOptions(
       series = list(
         animation = FALSE,
         states = list(inactive = list(opacity = 1)),
-        cursor = "pointer",
+        cursor = "pointer"),
         accessibility = list(
           enabled = TRUE,
-          keyboardNavigation = list(enabled = TRUE)
-        )
-      )
-    ) |>
+          keyboardNavigation = list(enabled = TRUE),
+          point = list(valueDescriptionFormat = "{point.state}, {point.value}%"))) |>
     hc_caption(
         text = "FBI Crime Data Explorer",
         align = "right",
         style = list(fontFamily = default_fonts)
+    ) |> 
+    hc_add_dependency(name = "modules/exporting.js") |>
+    hc_add_dependency(name = "modules/offline-exporting.js") |>
+    hc_add_dependency(name = "modules/accessibility.js") |>
+    hc_exporting(
+      enabled = TRUE,
+      buttons = list(contextButton = list(menuItems = list("downloadPNG", "printChart"))),
+      accessibility = list(enabled = TRUE)
     ) |>
-    hc_add_dependency(name = "modules/accessibility.js")
+    hc_chart(
+      events = list(
+        beforePrint = render_image_print,
+        afterPrint = render_image_remove
+      )
+    )
 
 
 ```
@@ -825,22 +861,33 @@ highchart() |>
     formatter = JS("function(){return(this.point.tooltip)}")
   )  |>
   hc_plotOptions(
-    series = list(
-      animation = FALSE,
-      states = list(inactive = list(opacity = 1)),
-      cursor = "pointer",
-      accessibility = list(
-        enabled = TRUE,
-        keyboardNavigation = list(enabled = TRUE)
-      )
-    )
-  ) |>
+      series = list(
+        animation = FALSE,
+        states = list(inactive = list(opacity = 1)),
+        cursor = "pointer"),
+        accessibility = list(
+          enabled = TRUE,
+          keyboardNavigation = list(enabled = TRUE),
+          point = list(valueDescriptionFormat = "{point.state}, {point.value}%"))) |>
     hc_caption(
         text = "FBI Crime Data Explorer",
         align = "right",
         style = list(fontFamily = default_fonts)
+    ) |> 
+    hc_add_dependency(name = "modules/exporting.js") |>
+    hc_add_dependency(name = "modules/offline-exporting.js") |>
+    hc_add_dependency(name = "modules/accessibility.js") |>
+    hc_exporting(
+      enabled = TRUE,
+      buttons = list(contextButton = list(menuItems = list("downloadPNG", "printChart"))),
+      accessibility = list(enabled = TRUE)
     ) |>
-  hc_add_dependency(name = "modules/accessibility.js")
+    hc_chart(
+      events = list(
+        beforePrint = render_image_print,
+        afterPrint = render_image_remove
+      )
+    )
 
 ```
 
