@@ -7,7 +7,7 @@ mainfont: "GT-America"
 linkcolor: "#00355a"
 anchor-sections: false
 params:
-  state: "FL"
+  state: "NC"
 execute:
   echo: false
   warning: false
@@ -555,7 +555,7 @@ hcmap(
             layout = "horizontal",
             # title = list(text = "Percent Change"),
             symbolHeight = 25,
-            symbolWidth = 250,
+            symbolWidth = 315,
             x = 0,
             y = 0
             ) |> 
