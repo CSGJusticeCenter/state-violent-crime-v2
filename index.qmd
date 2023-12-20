@@ -231,7 +231,7 @@ highchart() |>
       ),
     accessibility = list(
       point = list(
-        valueDescriptionFormat = "state: {point.state_name}, value: {point.value:.1f}"
+        valueDescriptionFormat = "state: {point.state_name}, violent crime rate: {point.value:.1f}"
         )
       )
     ) |>
@@ -291,6 +291,7 @@ highchart() |>
       buttons = list(contextButton = list(menuItems = list("downloadPNG", "printChart"))),
       accessibility = list(enabled = TRUE)
     ) |>
+    hc_add_theme(hc_theme_jc) |>
     hc_chart(
       events = list(
         beforePrint = render_image_print,
@@ -370,7 +371,7 @@ highchart() |>
     ),
     accessibility = list(
       point = list(
-        valueDescriptionFormat = "state: {point.state_name}, value: {point.value:.1f}"
+        valueDescriptionFormat = "state: {point.state_name}, percent change: {point.value:.1f}"
         )
       )
   ) |>
@@ -448,6 +449,7 @@ highchart() |>
       buttons = list(contextButton = list(menuItems = list("downloadPNG", "printChart"))),
       accessibility = list(enabled = TRUE)
     ) |>
+    hc_add_theme(hc_theme_jc) |>
     hc_chart(
       events = list(
         beforePrint = render_image_print,
@@ -695,7 +697,7 @@ highchart() |>
                                      textOutline = 0)),
     accessibility = list(
       point = list(
-        valueDescriptionFormat = "state: {point.state_name}, value: {point.value:.1f}"
+        valueDescriptionFormat = "state: {point.state_name}, unsolved rate: {point.value:.1f}"
         )
       )) |>
   hc_title(
@@ -828,7 +830,7 @@ highchart() |>
     ),
     accessibility = list(
       point = list(
-        valueDescriptionFormat = "state: {point.state_name}, value: {point.value:.1f}"
+        valueDescriptionFormat = "state: {point.state_name}, percent point change: {point.value:.1f}"
         )
       )
   ) |>

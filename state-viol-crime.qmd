@@ -539,7 +539,12 @@ hcmap(
     text = "Unsolved violent crime rate, 2022",
     align = "left",
     style = list(fontFamily = header_font, color = "#004270",
-                              fontSize = "24px", fontWeight = "bold")
+                              fontSize = "24px", fontWeight = "bold"),
+    accessibility = list(
+      point = list(
+        valueDescriptionFormat = "state: {point.state_name}, unsolved rate: {point.value:.1f}"
+        )
+      )
     ) |>   
   hc_colorAxis(endOnTick = TRUE,
                startOnTick = TRUE,
@@ -574,10 +579,6 @@ hcmap(
         accessibility = list(
           enabled = TRUE,
           keyboardNavigation = list(enabled = TRUE)
-        ),
-        point = list(
-          events = list(
-            click = JS("function(){parent.document.location.href = this.options.url}"))
         )
       )
     ) |> 
