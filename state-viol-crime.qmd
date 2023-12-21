@@ -7,7 +7,7 @@ mainfont: "GT-America"
 linkcolor: "#00355a"
 anchor-sections: false
 params:
-  state: "WA"
+  state: "AK"
 execute:
   echo: false
   warning: false
@@ -70,7 +70,7 @@ srs_us <- srs_state_all |>
 
 srs_unsolved_by_county_to_map <- read_rds(file.path(sp_data_to_plot_path, 
                                              "viol_crime_unsolved_by_county_to_map.rds")) |>  
-  filter(state_name == state) 
+  filter(acs_county_state_name == state) 
 
 srs_unsolved_by_agency_to_table <- read_rds(file.path(sp_data_to_plot_path, 
                                              "viol_crime_unsolved_by_agency_to_table.rds")) |>  
@@ -593,35 +593,54 @@ blue5 <- "#00475d"
 
 ### add tooltip
 srs_unsolved_by_county_to_map_tooltip <- srs_unsolved_by_county_to_map |> 
+  ### removing counties' unsolved rate if they have fewer than 25 incidents reported in 2022
+  ### we want them grayed out on map
+  mutate(unsolved_rate_2022 = ifelse(n_reported_2022<25,
+                                     NA,unsolved_rate_2022)) |> 
+  ### recode any unsolved counts or rates less than 0 to 0
+  mutate(unsolved_rate_2022 = ifelse(unsolved_rate_2022<0 & !is.na(unsolved_rate_2022),
+                                     0,unsolved_rate_2022),
+         n_unsolved_2022 = ifelse(n_unsolved_2022<0 & !is.na(n_unsolved_2022),
+                                     0,n_unsolved_2022)) |> 
   # ### recode NaN and Inf values as NA
   # mutate(across(.cols = unsolved_rate_percent_point_change_2019_2022, 
   #               ~ ifelse(is.infinite(.x) | is.nan(.x), NA, .x))) |> 
   # ### add '+" in front of positive numbers and 0
   # ### only for value we'll include in tooltip
-  mutate(
-    # unsolved_rate_percent_point_change_2019_2022_clean = paste0(number(unsolved_rate_percent_point_change_2019_2022, 1, suffix = "%", style_positive = "plus",
-    #                            style_negative = "minus")),
-         tooltip = paste0(
+  mutate(tooltip = case_when(
+    n_reported_2022>=25 & !is.na(n_reported_2022) ~ paste0(
     "<b>", county_clean, " – 2022", "</b><br>",
       "Unsolved rate: ", comma(unsolved_rate_2022, 1),"%", "<br>",
       "Violent incidents reported: ", comma(n_reported_2022, 1), "<br>",
       "Violent incidents unsolved: ", comma(n_unsolved_2022, 1), "<br>",
       "Agencies reporting data: ", comma(n_agencies, 1), "<br>",
       "Population covered by reporting agencies: ", comma(nibrs_reported_pop_coverage_pct,1), "%", "<br>"
+      ),
+    n_reported_2022<25 & !is.na(n_reported_2022) ~ paste0(
+      "Agencies in ", county_clean, " did not report enough", "<br>",
+      "data on unsolved crime to the FBI to", "<br>",
+      "make reliable estimates (fewer than 25 incidents)."
+      ),
+    is.na(n_reported_2022)==TRUE ~ paste0(
+      "No agencies in ", county_clean, " reported data", "<br>",
+      "on unsolved crime to the FBI."
       )
-    ) |> 
-  ### recode any unsolved rates less than 0 to 0
-  mutate(unsolved_rate_2022 = ifelse(unsolved_rate_2022<0 & !is.na(unsolved_rate_2022),
-                                     0,unsolved_rate_2022))
+    )
+    ) 
+
+### extract state abbr for hc map pull
+state_abbr <- tolower(head(srs_unsolved_by_county_to_map_tooltip$state_abbr[!is.na(srs_unsolved_by_county_to_map_tooltip$state_abbr)],1))
+
 
 ### pull only state geo that we want for each param iteration
 ### to do: add legend title, additional info in tooltip, accessibility? 
 hcmap(
-  paste0("countries/us/us-",tolower(head(srs_unsolved_by_county_to_map_tooltip$state_abbr,1)),"-all"),
+  paste0("countries/us/us-",state_abbr,"-all"),
   data = srs_unsolved_by_county_to_map_tooltip,
   value = "unsolved_rate_2022",
   joinBy = c("fips","county_fips"),
   nullColor = "#E8E8E8",
+  nullInteraction = TRUE,
   borderWidth = 0.45,
   borderColor = "black",
   accessibility = list(
@@ -732,6 +751,8 @@ Examples of exceptional clearances include the death of the person who committed
 In some instances, the unsolved rate and number of unsolved crimes may be less than 0. This is due to the fact that the number of reported crimes cleared in a year can include incidents reported in prior years. For this reason, it is possible to have more cleared crimes than new reported incidents in a given year.
 
 Agency- and county-level violent crime and unsolved rate data presented above are restricted to agencies reporting data for all 12 months in 2022. The calculation of population covered by reporting agencies as well as the number of reporting agencies by county is also based on agencies with violent crime data for all 12 months. 
+
+Counties with fewer than 25 reported violent incidents in 2022 are excluded from the map as calculations of unsolved rates are not reliable. 
 
 :::
 

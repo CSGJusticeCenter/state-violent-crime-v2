@@ -177,7 +177,7 @@ axis_expansion_mult <- 0.5
 
 In 2022, 380.7 violent crime incidents per 100,000 residents were reported to police in the United States. Twenty-nine states had violent crime rates lower than the U.S. average and 21 states plus the District of Columbia had higher crime rates.
 
-The national violent crime rate in 2019 (380.8 per 100,000) was nearly the same as the 2022 rate. Between 2019 and 2022, violent crime rates in 32 states and the District of Columbia decreased, while violent crime rates in 18 states increased.
+The national violent crime rate in 2019 (380.8 per 100,000) was nearly the same as the 2022 rate. Between 2019 and 2022, violent crime rates in 32 states and the District of Columbia decreased, while violent crime rates in 18 states increased. Underlying these general trends, national rates of homicide (5 to 6 per 100k) and aggravated assault (250 to 268 per 100k) increased from 2019 to 2022 while rates of robbery (82 to 66 per 100k) and rape (44 to 40 per 100k) decreased.
 
 Data regarding crime and unsolved rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr). Violent crime includes homicide, aggravated assault, robbery, and rape. Crime rates are calculated by dividing the number of estimated incidents by the total population for a given geography. For more information, see the data sources and methods section below.
 

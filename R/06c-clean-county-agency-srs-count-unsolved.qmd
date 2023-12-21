@@ -224,9 +224,10 @@ us_county_population <- get_acs(
 
 
 
-### then join us_county_population to df_nibrs_violent_unsolved_by_county_to_map 
-df_nibrs_by_county_to_map_state_acs <- left_join(df_nibrs_violent_unsolved_by_county_to_map,
-                                                 us_county_population,
+### then right join us_county_population to df_nibrs_violent_unsolved_by_county_to_map 
+### we want the base file to include all counties
+df_nibrs_by_county_to_map_state_acs <- left_join(us_county_population,
+                                                 df_nibrs_violent_unsolved_by_county_to_map,
                                                  by = "county_fips") |>
   ### calculate population covered by reporting agencies by county
   ### using pop_jurisdiction from the kaplan agency-level file to sum the numerator by county and then pull acs county population for the denominator
