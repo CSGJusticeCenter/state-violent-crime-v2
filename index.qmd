@@ -158,12 +158,8 @@ max_viol_crime_off <- srs_us |>
   filter(year == max(year)) |>
   arrange(desc(incidents_reported)) |>
   mutate(pct = incidents_reported / sum(incidents_reported))
-```
 
-
-```{r}
 ### import and prep hex map geo
-
 hex <- sf::read_sf("us_states_hexgrid.geojson") |>
   select(state_abb = iso3166_2)
 
@@ -171,8 +167,9 @@ hex_gj <- hex |>
   sf::st_transform(3857) |>
   geojsonsf::sf_geojson() |>
   jsonlite::fromJSON(simplifyVector = FALSE)
-```
 
+axis_expansion_mult <- 0.5
+```
 
 # United States data on reported and unsolved violent crime
 
@@ -190,7 +187,6 @@ Data regarding crime and unsolved rates come from the FBI's [Uniform Crime Repor
 
 ```{r}
 #| fig-height: 5.5
-
 
 ### choose blues from csgjcr for now
 blue1 <- "#d4e9f8"
@@ -227,7 +223,8 @@ highchart() |>
         fontSize = "13px",
         fontFamily = default_fonts,
         fontWeight = 700,
-        textOutline = 0)
+        textOutline = 0
+        )
       ),
     accessibility = list(
       point = list(
@@ -238,7 +235,7 @@ highchart() |>
   hc_title(
     text = "Violent crime rate, 2022",
     align = "left",
-    style = list(fontFamily = header_font, color = "#004270",
+    style = list(fontFamily = header_font, color = "#005FAD",
                               fontSize = "24px", fontWeight = "bold")
     ) |> 
   hc_subtitle(
@@ -260,7 +257,6 @@ highchart() |>
     align = "center",
     horizontalAlign = "bottom",
     layout = "horizontal",
-    # title = list(text = "Percent Change"),
     symbolHeight = 25,
     symbolWidth = 250,
     x = 0,
@@ -271,13 +267,15 @@ highchart() |>
     formatter = JS("function(){return(this.point.tooltip)}")
     )  |>
   hc_plotOptions(
-      series = list(
-        animation = FALSE,
-        states = list(inactive = list(opacity = 1)),
-        cursor = "pointer"),
-        accessibility = list(
-          enabled = TRUE,
-          keyboardNavigation = list(enabled = TRUE))) |>
+    series = list(
+      animation = FALSE,
+      states = list(inactive = list(opacity = 1)),
+      cursor = "pointer"),
+      accessibility = list(
+        enabled = TRUE,
+        keyboardNavigation = list(enabled = TRUE)
+        )
+      ) |>
   hc_caption(
     text = "FBI Crime Data Explorer",
     align = "right",
@@ -366,7 +364,7 @@ highchart() |>
     align = "left",
     style = list(
       fontFamily = header_font,
-      color = "#004270",
+      color = "#005FAD",
       fontSize = "24px",
       fontWeight = "bold"
     )
@@ -441,7 +439,7 @@ highchart() |>
 ## All violent crime
 
 ```{r}
-srs_by_cat_us |> 
+to_plot <- srs_by_cat_us |> 
   mutate(
     incidents_reported_rate_total = incidents_reported_rate_total * 1e5,
     tooltip = paste0(
@@ -450,7 +448,15 @@ srs_by_cat_us |>
       "Violent incidents reported: ", comma(incidents_reported, 1)
       ),
     state_name = fct_relevel(state_name, "United States", after = Inf)
-    ) |>
+    )
+
+rng <- range(to_plot$incidents_reported_rate_total)
+mult <- diff(rng) * axis_expansion_mult
+
+y_min <- rng[1] - mult
+y_max <- rng[2] + mult
+
+to_plot |> 
   hchart(
     "spline",
     hcaes(year, incidents_reported_rate_total),
@@ -464,6 +470,11 @@ srs_by_cat_us |>
   hc_title(text = paste0("Violent crime in ", state_name_text)) |>
   hc_subtitle(text = "Crime reported to police per 100,000 residents") |> 
   hc_caption(text = "FBI Crime Data Explorer") |>
+  hc_yAxis(
+    min = y_min,
+    max = y_max,
+    endOnTick = FALSE
+  ) |>
   hc_setup()
 ```
 
@@ -495,6 +506,13 @@ to_plot <- srs_us |>
 to_plot_2 <- to_plot |> 
   filter(group == "Homicide")
 
+rng <- range(to_plot_2$incidents_reported_rate_total)
+mult <- diff(rng) * axis_expansion_mult
+
+y_min <- rng[1] - mult
+y_min <- if_else(y_min < 0, 0, y_min)
+y_max <- rng[2] + mult
+
 to_plot_2 |> 
   hchart(
     "spline",
@@ -505,7 +523,11 @@ to_plot_2 |>
         )
       )
   ) |> 
-  hc_yAxis(min = 0) |> 
+  hc_yAxis(
+    min = y_min,
+    max = y_max,
+    endOnTick = FALSE
+  ) |>
   hc_colors(unique(to_plot_2$color)) |> 
   hc_title(text = paste0("Homicide in ", state_name_text)) |>
   hc_subtitle(text = "Homicide incidents reported to police per 100,000 residents") |> 
@@ -519,6 +541,13 @@ to_plot_2 |>
 ```{r}
 to_plot_3 <- to_plot |> 
   filter(group == "Aggravated assault")
+
+rng <- range(to_plot_3$incidents_reported_rate_total)
+mult <- diff(rng) * axis_expansion_mult
+
+y_min <- rng[1] - mult
+y_min <- if_else(y_min < 0, 0, y_min)
+y_max <- rng[2] + mult
 
 to_plot_3 |> 
   hchart(
@@ -534,6 +563,11 @@ to_plot_3 |>
   hc_title(text = paste0("Aggravated assault in ", state_name_text)) |>
   hc_subtitle(text = "Incidents reported to police per 100,000 residents where aggravated assault was the most serious offense") |>
   hc_caption(text = "FBI Crime Data Explorer") |> 
+  hc_yAxis(
+    min = y_min,
+    max = y_max,
+    endOnTick = FALSE
+  ) |>
   hc_legend(enabled = FALSE) |> 
   hc_setup()
 ```
@@ -543,6 +577,13 @@ to_plot_3 |>
 ```{r}
 to_plot_5 <- to_plot |> 
   filter(group == "Robbery")
+
+rng <- range(to_plot_5$incidents_reported_rate_total)
+mult <- diff(rng) * axis_expansion_mult
+
+y_min <- rng[1] - mult
+y_min <- if_else(y_min < 0, 0, y_min)
+y_max <- rng[2] + mult
 
 to_plot_5 |>
   hchart(
@@ -558,6 +599,11 @@ to_plot_5 |>
   hc_title(text = paste0("Robbery in ", state_name_text)) |>
   hc_subtitle(text = "Incidents reported to police per 100,000 residents where robbery was the most serious offense") |>
   hc_caption(text = "FBI Crime Data Explorer") |> 
+  hc_yAxis(
+    min = y_min,
+    max = y_max,
+    endOnTick = FALSE
+  ) |>
   hc_legend(enabled = FALSE) |> 
   hc_setup()
 ```
@@ -567,6 +613,13 @@ to_plot_5 |>
 ```{r}
 to_plot_4 <- to_plot |> 
   filter(group == "Rape")
+
+rng <- range(to_plot_4$incidents_reported_rate_total)
+mult <- diff(rng) * axis_expansion_mult
+
+y_min <- rng[1] - mult
+y_min <- if_else(y_min < 0, 0, y_min)
+y_max <- rng[2] + mult
 
 to_plot_4 |> 
   hchart(
@@ -583,6 +636,11 @@ to_plot_4 |>
   hc_subtitle(text = "Incidents reported to police per 100,000 residents where rape was the most serious offense") |>
   hc_caption(text = "FBI Crime Data Explorer<br>The FBI <a href='https://ucr.fbi.gov/recent-program-updates/new-rape-definition-frequently-asked-questions'  target='_parent'>broadened the definition of rape<a/> for crime reporting in 2013") |>
   hc_legend(enabled = FALSE) |> 
+  hc_yAxis(
+    min = y_min,
+    max = y_max,
+    endOnTick = FALSE
+  ) |>  
   hc_setup()
 ```
 
@@ -675,7 +733,7 @@ highchart() |>
   hc_title(
     text = "Unsolved violent crime, 2022",
     align = "left",
-    style = list(fontFamily = header_font, color = "#004270",
+    style = list(fontFamily = header_font, color = "#005FAD",
                               fontSize = "24px", fontWeight = "bold")
     ) |>   
   hc_subtitle(
@@ -720,8 +778,6 @@ highchart() |>
         style = list(fontFamily = default_fonts)
     ) |>
   hc_setup()
-
-
 ```
 
 ## 2019 to 2022 change
@@ -798,7 +854,7 @@ highchart() |>
     align = "left",
     style = list(
       fontFamily = header_font,
-      color = "#004270",
+      color = "#005FAD",
       fontSize = "24px",
       fontWeight = "bold"
     )
@@ -868,7 +924,7 @@ unsolved_rate_max <- paste0(comma(min_max_viol_crime$pct_unsolved[2] * 100, 1), 
 ## All violent crime
 
 ```{r}
-srs_by_cat_us |> 
+to_plot <- srs_by_cat_us |> 
   filter(year != 2021) |> 
   mutate(
     pct_unsolved = pct_unsolved * 100,
@@ -878,7 +934,17 @@ srs_by_cat_us |>
       "Violent incidents reported: ", comma(incidents_reported, 1), "<br>",
       "Violent incidents unsolved: ", comma(incidents_unsolved, 1)
       )
-    ) |> 
+    )
+
+rng <- range(to_plot$pct_unsolved)
+mult <- diff(rng) * axis_expansion_mult
+
+y_min <- rng[1] - mult
+y_min <- if_else(y_min < 0, 0, y_min)
+y_max <- rng[2] + mult
+y_max <- if_else(y_max > 100, 100, y_max)
+
+to_plot |> 
   hchart(
     "spline",
     hcaes(year, pct_unsolved),
@@ -892,7 +958,12 @@ srs_by_cat_us |>
   hc_title(text = paste("Unsolved rate of violent crime in ", state_name_text)) |>
   hc_caption(text = "FBI Crime Data Explorer") |> 
   hc_setup() |> 
-  hc_yAxis(labels = list(format = "{value:,.0f}%"))
+  hc_yAxis(
+    min = y_min,
+    max = y_max,
+    endOnTick = FALSE,
+    labels = list(format = "{value:,.0f}%")
+  )
 ```
 
 ## By offense
@@ -913,6 +984,14 @@ to_plot <- srs_us |>
     ) |> 
   arrange(desc(year), pct_unsolved)
 
+# rng <- range(to_plot$pct_unsolved)
+# mult <- diff(rng) * axis_expansion_mult
+# 
+# y_min <- rng[1] - mult
+# y_min <- if_else(y_min < 0, 0, y_min)
+# y_max <- rng[2] + mult
+# y_max <- if_else(y_max > 100, 100, y_max)
+
 to_plot |>
   hchart(
     "spline",
@@ -927,7 +1006,12 @@ to_plot |>
   hc_title(text = paste0("Unsolved rate of violent crime in ", state_name_text, " by offense")) |>
   hc_caption(text = "FBI Crime Data Explorer") |> 
   hc_setup() |> 
-  hc_yAxis(labels = list(format = "{value:,.0f}%"))
+  hc_yAxis(
+    min = 0,
+    max = 100,
+    endOnTick = FALSE,
+    labels = list(format = "{value:,.0f}%")
+  )
 ```
 
 :::
