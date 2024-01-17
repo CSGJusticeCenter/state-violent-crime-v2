@@ -171,120 +171,11 @@ hex_gj <- hex |>
 axis_expansion_mult <- 0.5
 ```
 
-# United States data on reported and unsolved violent crime
+# Trends in Violent Crime and Accountability
 
-## Reported violent crime by state
-
-In 2022, 380.7 violent crime incidents per 100,000 residents were reported to police in the United States. Twenty-nine states had violent crime rates lower than the U.S. average and 21 states plus the District of Columbia had higher crime rates.
-
-The national violent crime rate in 2019 (380.8 per 100,000) was nearly the same as the 2022 rate. Between 2019 and 2022, violent crime rates in 32 states and the District of Columbia decreased, while violent crime rates in 18 states increased. Underlying these general trends, national rates of homicide (5 to 6 per 100k) and aggravated assault (250 to 268 per 100k) increased from 2019 to 2022 while rates of robbery (82 to 66 per 100k) and rape (44 to 40 per 100k) decreased.
-
-Data regarding crime and unsolved rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr). Violent crime includes homicide, aggravated assault, robbery, and rape. Crime rates are calculated by dividing the number of estimated incidents by the total population for a given geography. For more information, see the data sources and methods section below.
+## 50-State violent crime data
 
 ::: {.panel-tabset}
-
-## 2022 crime rate
-
-```{r}
-#| fig-height: 5.5
-
-### choose blues from csgjcr for now
-blue1 <- "#d4e9f8"
-blue2 <- "#9ed4ef"
-blue4 <- "#007392"
-blue5 <- "#00475d"
-
-### add tooltip
-srs_state_to_map_1 <- srs_state_to_map |> 
-  ### add '+" in front of positive numbers and 0
-  ### only for value we'll include in tooltip
-  mutate(
-    viol_crime_rate_percent_change_2019_2022_clean = as.numeric(comma(viol_crime_rate_percent_change_2019_2022,1)),
-    viol_crime_rate_percent_change_2019_2022_clean = sprintf("%+3d%%", viol_crime_rate_percent_change_2019_2022_clean),
-    tooltip = paste0(
-      "<b>", state_name, " – 2022", "</b><br>",
-      "Violent incidents per 100k: ", comma(viol_crime_rate_100k_2022, 1), "<br>",
-      "Violent incidents reported: ", comma(n_reported_2022, 1), "<br>"
-      )
-    )
-
-### highchart 
-highchart() |>
-  hc_add_series_map(
-    map = hex_gj,
-    df = srs_state_to_map_1,
-    joinBy = c("state_abb","state_abbr"),
-    value = "viol_crime_rate_100k_2022",
-    nullColor = "#E8E8E8",
-    dataLabels = list(
-      enabled = TRUE,
-      format = "{point.state_abb}",
-      style = list(
-        fontSize = "13px",
-        fontFamily = default_fonts,
-        fontWeight = 700,
-        textOutline = 0
-        )
-      ),
-    accessibility = list(
-      point = list(
-        valueDescriptionFormat = "state: {point.state_name}, violent crime rate: {point.value:.1f}"
-        )
-      )
-    ) |>
-  hc_title(
-    text = "Violent crime rate, 2022",
-    align = "left",
-    style = list(fontFamily = header_font, color = "#005FAD",
-                              fontSize = "24px", fontWeight = "bold")
-    ) |> 
-  hc_subtitle(
-    text = "Crime reported to police per 100,000 residents",
-    align = "left",
-    style = list(fontFamily = default_fonts, fontSize = "16px",
-                                 color = "#666666")
-  ) |> 
-  hc_colorAxis(
-    endOnTick = TRUE,
-    startOnTick = TRUE,
-    stops = color_stops(4, c(blue1, blue2, blue4, blue5)),
-    labels = list(
-      style = list(fontSize = "12px", fontFamily = default_fonts),
-      format = "{value:,.0f}"
-      )
-    ) |>
-  hc_legend(
-    align = "center",
-    horizontalAlign = "bottom",
-    layout = "horizontal",
-    symbolHeight = 25,
-    symbolWidth = 250,
-    x = 0,
-    y = 0
-    ) |>
-  hc_tooltip(
-    style = list(fontFamily = default_fonts),
-    formatter = JS("function(){return(this.point.tooltip)}")
-    )  |>
-  hc_plotOptions(
-    series = list(
-      animation = FALSE,
-      states = list(inactive = list(opacity = 1)),
-      cursor = "pointer"),
-      accessibility = list(
-        enabled = TRUE,
-        keyboardNavigation = list(enabled = TRUE)
-        )
-      ) |>
-  hc_caption(
-    text = "FBI Crime Data Explorer",
-    align = "right",
-    style = list(fontFamily = default_fonts)
-    ) |>
-  hc_setup()
-
-```
-
 
 ## 2019 to 2022 change
 
@@ -430,9 +321,362 @@ highchart() |>
 
 ```
 
+## 2022 crime rate
+
+```{r}
+#| fig-height: 5.5
+
+### choose blues from csgjcr for now
+blue1 <- "#d4e9f8"
+blue2 <- "#9ed4ef"
+blue4 <- "#007392"
+blue5 <- "#00475d"
+
+### add tooltip
+srs_state_to_map_1 <- srs_state_to_map |> 
+  ### add '+" in front of positive numbers and 0
+  ### only for value we'll include in tooltip
+  mutate(
+    viol_crime_rate_percent_change_2019_2022_clean = as.numeric(comma(viol_crime_rate_percent_change_2019_2022,1)),
+    viol_crime_rate_percent_change_2019_2022_clean = sprintf("%+3d%%", viol_crime_rate_percent_change_2019_2022_clean),
+    tooltip = paste0(
+      "<b>", state_name, " – 2022", "</b><br>",
+      "Violent incidents per 100k: ", comma(viol_crime_rate_100k_2022, 1), "<br>",
+      "Violent incidents reported: ", comma(n_reported_2022, 1), "<br>"
+      )
+    )
+
+### highchart 
+highchart() |>
+  hc_add_series_map(
+    map = hex_gj,
+    df = srs_state_to_map_1,
+    joinBy = c("state_abb","state_abbr"),
+    value = "viol_crime_rate_100k_2022",
+    nullColor = "#E8E8E8",
+    dataLabels = list(
+      enabled = TRUE,
+      format = "{point.state_abb}",
+      style = list(
+        fontSize = "13px",
+        fontFamily = default_fonts,
+        fontWeight = 700,
+        textOutline = 0
+        )
+      ),
+    accessibility = list(
+      point = list(
+        valueDescriptionFormat = "state: {point.state_name}, violent crime rate: {point.value:.1f}"
+        )
+      )
+    ) |>
+  hc_title(
+    text = "Violent crime rate, 2022",
+    align = "left",
+    style = list(fontFamily = header_font, color = "#005FAD",
+                              fontSize = "24px", fontWeight = "bold")
+    ) |> 
+  hc_subtitle(
+    text = "Crime reported to police per 100,000 residents",
+    align = "left",
+    style = list(fontFamily = default_fonts, fontSize = "16px",
+                                 color = "#666666")
+  ) |> 
+  hc_colorAxis(
+    endOnTick = TRUE,
+    startOnTick = TRUE,
+    stops = color_stops(4, c(blue1, blue2, blue4, blue5)),
+    labels = list(
+      style = list(fontSize = "12px", fontFamily = default_fonts),
+      format = "{value:,.0f}"
+      )
+    ) |>
+  hc_legend(
+    align = "center",
+    horizontalAlign = "bottom",
+    layout = "horizontal",
+    symbolHeight = 25,
+    symbolWidth = 250,
+    x = 0,
+    y = 0
+    ) |>
+  hc_tooltip(
+    style = list(fontFamily = default_fonts),
+    formatter = JS("function(){return(this.point.tooltip)}")
+    )  |>
+  hc_plotOptions(
+    series = list(
+      animation = FALSE,
+      states = list(inactive = list(opacity = 1)),
+      cursor = "pointer"),
+      accessibility = list(
+        enabled = TRUE,
+        keyboardNavigation = list(enabled = TRUE)
+        )
+      ) |>
+  hc_caption(
+    text = "FBI Crime Data Explorer",
+    align = "right",
+    style = list(fontFamily = default_fonts)
+    ) |>
+  hc_setup()
+
+```
+
 :::
 
+From 2019 to 2022, there were important variations in violent crime trends by offense. Nationally, rates of homicide and aggravated assault increased, while rates of rape and robbery declined.  
+
+Trends in violent crime also varied by state. Between 2019 and 2022, violent crime rates in 32 states and the District of Columbia decreased, while violent crime rates in 18 states increased.
+
+
+::: {.panel-tabset}
+
+## 2019 to 2022 change
+
+```{r}
+#| fig-height: 5.5
+
+### create object with states to exclude
+states_to_exclude_from_unsolved_rate_viz <- c("Illinois", "New York")
+
+### add tooltip
+srs_state_to_map_4 <- srs_state_to_map |>
+   ### filter out states in states_to_exclude_from_unsolved_rate_viz
+  mutate(unsolved_rate_percent_point_change_2019_2022 = ifelse(state_name%in%states_to_exclude_from_unsolved_rate_viz,
+                                     NA,unsolved_rate_percent_point_change_2019_2022)) |> 
+  ### add '+" in front of positive numbers and 0
+  ### only for value we'll include in tooltip
+  mutate(
+     unsolved_rate_percent_point_change_2019_2022_clean = as.numeric(comma(unsolved_rate_percent_point_change_2019_2022,1)),
+    unsolved_rate_percent_point_change_2019_2022_clean = sprintf("%+3d", unsolved_rate_percent_point_change_2019_2022_clean),
+    tooltip = ifelse(!state_name%in%states_to_exclude_from_unsolved_rate_viz,
+                     paste0(
+      "<b>", state_name, "</b><br>",
+      "Change in unsolved rate: ",
+      unsolved_rate_percent_point_change_2019_2022_clean, "<br>",
+      "Unsolved rate (2022): ", comma(unsolved_rate_2022, 1), "%", "<br>",
+      "Unsolved rate (2019): ", comma(unsolved_rate_2019, 1), "%", "<br>"
+    ),
+      paste0(
+      state_name, " did not report enough data", "<br>",
+      "on unsolved crime to the FBI to", "<br>",
+      "make reliable estimates."
+      )
+    ))
+  
+
+# Get data range
+data_range <-
+  range(srs_state_to_map_4$unsolved_rate_percent_point_change_2019_2022,
+        na.rm = TRUE)
+min <- data_range[1]
+max <- data_range[2]
+# print(min); print(max)
+
+# Adjust extremes so they are balanced at zero
+new_min <- min(-abs(min), -abs(max))
+new_max <- max(abs(min), abs(max))
+# print(new_min); print(new_max)
+
+### highchart
+highchart() |>
+  hc_add_series_map(
+    map = hex_gj,
+    df = srs_state_to_map_4,
+    joinBy = c("state_abb", "state_abbr"),
+    value = "unsolved_rate_percent_point_change_2019_2022",
+    nullColor = "#E8E8E8",
+    nullInteraction = TRUE,
+    dataLabels = list(
+      enabled = TRUE,
+      format = "{point.state_abb}",
+      style = list(
+        fontSize = "13px",
+        fontFamily = default_fonts,
+        fontWeight = 700,
+        textOutline = 0
+      )
+    ),
+    accessibility = list(
+      point = list(
+        valueDescriptionFormat = "state: {point.state_name}, percent point change: {point.value:.1f}"
+        )
+      )
+  ) |>
+  hc_title(
+    text = "Change in unsolved violent crime, 2019 to 2022",
+    align = "left",
+    style = list(
+      fontFamily = header_font,
+      color = "#005FAD",
+      fontSize = "24px",
+      fontWeight = "bold"
+    )
+  )  |> 
+  hc_subtitle(
+        text = "Percentage point change in rate of unsolved violent crimes from 2019 to 2022",
+        align = "left",
+        style = list(fontFamily = default_fonts, fontSize = "16px",
+                     color = "#666666")
+    ) |>
+  hc_colorAxis(
+    min = new_min,
+    max = new_max,
+    endOnTick = TRUE,
+    startOnTick = TRUE,
+    stops = color_stops(
+      7,
+      c(darkblue, regblue, lightblue, white, lightorange, orange, darkorange)
+    ),
+    labels = list(
+      format = "{value}",
+      style = list(fontSize = "12px",
+                   fontFamily = default_fonts)
+    )
+  ) |>
+  hc_legend(
+    align = "center",
+    horizontalAlign = "bottom",
+    layout = "horizontal",
+    # title = list(text = "Percent Change"),
+    symbolHeight = 25,
+    symbolWidth = 300,
+    x = 0,
+    y = 0
+  ) |>
+  hc_tooltip(
+    style = list(fontFamily = default_fonts),
+    formatter = JS("function(){return(this.point.tooltip)}")
+  )  |>
+  hc_plotOptions(
+      series = list(
+        animation = FALSE,
+        states = list(inactive = list(opacity = 1)),
+        cursor = "pointer"),
+        accessibility = list(
+          enabled = TRUE,
+          keyboardNavigation = list(enabled = TRUE))) |>
+    hc_caption(
+        text = "FBI Crime Data Explorer",
+        align = "right",
+        style = list(fontFamily = default_fonts)
+    ) |>
+  hc_setup()
+
+```
+
+## 2022 unsolved rate
+
+```{r}
+#| fig-height: 5.5
+
+### add tooltip
+srs_state_to_map_3 <- srs_state_to_map |> 
+  ### filter out states in states_to_exclude_from_unsolved_rate_viz
+  # filter(!state_name%in%states_to_exclude_from_unsolved_rate_viz) |> 
+  mutate(unsolved_rate_2022 = ifelse(state_name%in%states_to_exclude_from_unsolved_rate_viz,
+                                     NA,unsolved_rate_2022)) |> 
+  ### add '+" in front of positive numbers and 0
+  ### only for value we'll include in tooltip
+  mutate(
+    tooltip = ifelse(!state_name%in%states_to_exclude_from_unsolved_rate_viz,
+                     paste0(
+      "<b>", state_name, " – 2022", "</b><br>",
+      "Unsolved rate: ", comma(unsolved_rate_2022, 1),"%", "<br>",
+      "Violent incidents reported: ", comma(n_reported_2022, 1), "<br>",
+      "Violent incidents unsolved: ", comma(n_unsolved_2022, 1)
+      ),
+      paste0(
+      state_name, " did not report enough data", "<br>",
+      "on unsolved crime to the FBI to", "<br>",
+      "make reliable estimates."
+      )
+    ))
+
+### highchart 
+highchart() |> 
+  hc_add_series_map(
+    map = hex_gj,
+    df = srs_state_to_map_3,
+    joinBy = c("state_abb","state_abbr"),
+    value = "unsolved_rate_2022",
+    nullColor = "#E8E8E8",
+    nullInteraction = TRUE,
+    dataLabels = list(enabled = TRUE, format = "{point.state_abb}",
+                        style = list(fontSize = "13px",
+                                     fontFamily = default_fonts,
+                                     fontWeight = 700,
+                                     textOutline = 0)),
+    accessibility = list(
+      point = list(
+        valueDescriptionFormat = "state: {point.state_name}, unsolved rate: {point.value:.1f}"
+        )
+      )) |>
+  hc_title(
+    text = "Unsolved violent crime, 2022",
+    align = "left",
+    style = list(fontFamily = header_font, color = "#005FAD",
+                              fontSize = "24px", fontWeight = "bold")
+    ) |>   
+  hc_subtitle(
+        text = "Percentage of violent crimes not solved",
+        align = "left",
+        style = list(fontFamily = default_fonts, fontSize = "16px",
+                     color = "#666666")
+    ) |> 
+  hc_colorAxis(endOnTick = TRUE,
+               startOnTick = TRUE,
+               stops = color_stops(4, c(blue1,
+                                        blue2,
+                                        blue4,
+                                        blue5)),
+               labels = list(format = "{value}%",
+                             style = list(fontSize = "12px",
+                                          fontFamily = default_fonts))
+                             ) |>
+  hc_legend(align = "center",
+            horizontalAlign = "bottom",
+            layout = "horizontal",
+            # title = list(text = "Percent Change"),
+            symbolHeight = 25,
+            symbolWidth = 375,
+            x = 0,
+            y = 0) |> 
+     hc_tooltip(
+    style = list(fontFamily = default_fonts),
+    formatter = JS("function(){return(this.point.tooltip)}")
+    )  |>
+  hc_plotOptions(
+      series = list(
+        animation = FALSE,
+        states = list(inactive = list(opacity = 1)),
+        cursor = "pointer"),
+        accessibility = list(
+          enabled = TRUE,
+          keyboardNavigation = list(enabled = TRUE))) |>
+    hc_caption(
+        text = "FBI Crime Data Explorer",
+        align = "right",
+        style = list(fontFamily = default_fonts)
+    ) |>
+  hc_setup()
+```
+
+:::
+
+The percentage of violent crimes that law enforcement did not solve continued to rise from 2019 to 2022.  
+
+In 2022, there was no arrest in 63 percent of violent crime incidents reported to police in the United States. This is 6 percentage points higher than in 2019.  
+
+Between 2019 and 2022, unsolved violent crime rates in 12 states decreased, while unsolved crime rates in 36 states and the District of Columbia increased.  
+
+Illinois and New York did not report enough data on whether crimes were solved to the FBI to make reliable estimates. 
+
+
 ## Reported violent crime trends
+
+In 2022, 381 violent crime incidents per 100,000 residents were reported to police in the United States.
 
 ::: {.panel-tabset}
 
@@ -668,252 +912,10 @@ to_plot |>
 
 :::
 
-## Unsolved violent crime by state
 
-In 2022, 63 percent of violent crime incidents reported to police in the United States were not solved. Thirty-five states had unsolved violent crime rates lower than the U.S. average, and 13 states plus the District of Columbia had higher unsolved violent crime rates.
+## Unsolved violent crime trends
 
-The unsolved violent crime rate in 2019 (57 percent) was 6 percentage points lower than the 2022 rate. Between 2019 and 2022, unsolved violent crime rates in 12 states decreased, while unsolved crime rates in 36 states and the District of Columbia increased.
-
-Illinois and New York did not report enough data on unsolved crime to the FBI to make reliable estimates.
-
-Unsolved rates are the number of reported crimes not cleared by arrest or by exceptional means divided by the number of reported crimes. For more information, see the data sources and methods section below.
-
-::: {.panel-tabset}
-
-## 2022 unsolved rate
-
-```{r}
-#| fig-height: 5.5
-
-### create object with states to exclude
-states_to_exclude_from_unsolved_rate_viz <- c("Illinois", "New York")
-
-### add tooltip
-srs_state_to_map_3 <- srs_state_to_map |> 
-  ### filter out states in states_to_exclude_from_unsolved_rate_viz
-  # filter(!state_name%in%states_to_exclude_from_unsolved_rate_viz) |> 
-  mutate(unsolved_rate_2022 = ifelse(state_name%in%states_to_exclude_from_unsolved_rate_viz,
-                                     NA,unsolved_rate_2022)) |> 
-  ### add '+" in front of positive numbers and 0
-  ### only for value we'll include in tooltip
-  mutate(
-    tooltip = ifelse(!state_name%in%states_to_exclude_from_unsolved_rate_viz,
-                     paste0(
-      "<b>", state_name, " – 2022", "</b><br>",
-      "Unsolved rate: ", comma(unsolved_rate_2022, 1),"%", "<br>",
-      "Violent incidents reported: ", comma(n_reported_2022, 1), "<br>",
-      "Violent incidents unsolved: ", comma(n_unsolved_2022, 1)
-      ),
-      paste0(
-      state_name, " did not report enough data", "<br>",
-      "on unsolved crime to the FBI to", "<br>",
-      "make reliable estimates."
-      )
-    ))
-
-### highchart 
-highchart() |> 
-  hc_add_series_map(
-    map = hex_gj,
-    df = srs_state_to_map_3,
-    joinBy = c("state_abb","state_abbr"),
-    value = "unsolved_rate_2022",
-    nullColor = "#E8E8E8",
-    nullInteraction = TRUE,
-    dataLabels = list(enabled = TRUE, format = "{point.state_abb}",
-                        style = list(fontSize = "13px",
-                                     fontFamily = default_fonts,
-                                     fontWeight = 700,
-                                     textOutline = 0)),
-    accessibility = list(
-      point = list(
-        valueDescriptionFormat = "state: {point.state_name}, unsolved rate: {point.value:.1f}"
-        )
-      )) |>
-  hc_title(
-    text = "Unsolved violent crime, 2022",
-    align = "left",
-    style = list(fontFamily = header_font, color = "#005FAD",
-                              fontSize = "24px", fontWeight = "bold")
-    ) |>   
-  hc_subtitle(
-        text = "Percentage of violent crimes not solved",
-        align = "left",
-        style = list(fontFamily = default_fonts, fontSize = "16px",
-                     color = "#666666")
-    ) |> 
-  hc_colorAxis(endOnTick = TRUE,
-               startOnTick = TRUE,
-               stops = color_stops(4, c(blue1,
-                                        blue2,
-                                        blue4,
-                                        blue5)),
-               labels = list(format = "{value}%",
-                             style = list(fontSize = "12px",
-                                          fontFamily = default_fonts))
-                             ) |>
-  hc_legend(align = "center",
-            horizontalAlign = "bottom",
-            layout = "horizontal",
-            # title = list(text = "Percent Change"),
-            symbolHeight = 25,
-            symbolWidth = 375,
-            x = 0,
-            y = 0) |> 
-     hc_tooltip(
-    style = list(fontFamily = default_fonts),
-    formatter = JS("function(){return(this.point.tooltip)}")
-    )  |>
-  hc_plotOptions(
-      series = list(
-        animation = FALSE,
-        states = list(inactive = list(opacity = 1)),
-        cursor = "pointer"),
-        accessibility = list(
-          enabled = TRUE,
-          keyboardNavigation = list(enabled = TRUE))) |>
-    hc_caption(
-        text = "FBI Crime Data Explorer",
-        align = "right",
-        style = list(fontFamily = default_fonts)
-    ) |>
-  hc_setup()
-```
-
-## 2019 to 2022 change
-
-```{r}
-#| fig-height: 5.5
-
-### add tooltip
-srs_state_to_map_4 <- srs_state_to_map |>
-   ### filter out states in states_to_exclude_from_unsolved_rate_viz
-  mutate(unsolved_rate_percent_point_change_2019_2022 = ifelse(state_name%in%states_to_exclude_from_unsolved_rate_viz,
-                                     NA,unsolved_rate_percent_point_change_2019_2022)) |> 
-  ### add '+" in front of positive numbers and 0
-  ### only for value we'll include in tooltip
-  mutate(
-     unsolved_rate_percent_point_change_2019_2022_clean = as.numeric(comma(unsolved_rate_percent_point_change_2019_2022,1)),
-    unsolved_rate_percent_point_change_2019_2022_clean = sprintf("%+3d", unsolved_rate_percent_point_change_2019_2022_clean),
-    tooltip = ifelse(!state_name%in%states_to_exclude_from_unsolved_rate_viz,
-                     paste0(
-      "<b>", state_name, "</b><br>",
-      "Change in unsolved rate: ",
-      unsolved_rate_percent_point_change_2019_2022_clean, "<br>",
-      "Unsolved rate (2022): ", comma(unsolved_rate_2022, 1), "%", "<br>",
-      "Unsolved rate (2019): ", comma(unsolved_rate_2019, 1), "%", "<br>"
-    ),
-      paste0(
-      state_name, " did not report enough data", "<br>",
-      "on unsolved crime to the FBI to", "<br>",
-      "make reliable estimates."
-      )
-    ))
-  
-
-# Get data range
-data_range <-
-  range(srs_state_to_map_4$unsolved_rate_percent_point_change_2019_2022,
-        na.rm = TRUE)
-min <- data_range[1]
-max <- data_range[2]
-# print(min); print(max)
-
-# Adjust extremes so they are balanced at zero
-new_min <- min(-abs(min), -abs(max))
-new_max <- max(abs(min), abs(max))
-# print(new_min); print(new_max)
-
-### highchart
-highchart() |>
-  hc_add_series_map(
-    map = hex_gj,
-    df = srs_state_to_map_4,
-    joinBy = c("state_abb", "state_abbr"),
-    value = "unsolved_rate_percent_point_change_2019_2022",
-    nullColor = "#E8E8E8",
-    nullInteraction = TRUE,
-    dataLabels = list(
-      enabled = TRUE,
-      format = "{point.state_abb}",
-      style = list(
-        fontSize = "13px",
-        fontFamily = default_fonts,
-        fontWeight = 700,
-        textOutline = 0
-      )
-    ),
-    accessibility = list(
-      point = list(
-        valueDescriptionFormat = "state: {point.state_name}, percent point change: {point.value:.1f}"
-        )
-      )
-  ) |>
-  hc_title(
-    text = "Change in unsolved violent crime, 2019 to 2022",
-    align = "left",
-    style = list(
-      fontFamily = header_font,
-      color = "#005FAD",
-      fontSize = "24px",
-      fontWeight = "bold"
-    )
-  )  |> 
-  hc_subtitle(
-        text = "Percentage point change in rate of unsolved violent crimes from 2019 to 2022",
-        align = "left",
-        style = list(fontFamily = default_fonts, fontSize = "16px",
-                     color = "#666666")
-    ) |>
-  hc_colorAxis(
-    min = new_min,
-    max = new_max,
-    endOnTick = TRUE,
-    startOnTick = TRUE,
-    stops = color_stops(
-      7,
-      c(darkblue, regblue, lightblue, white, lightorange, orange, darkorange)
-    ),
-    labels = list(
-      format = "{value}",
-      style = list(fontSize = "12px",
-                   fontFamily = default_fonts)
-    )
-  ) |>
-  hc_legend(
-    align = "center",
-    horizontalAlign = "bottom",
-    layout = "horizontal",
-    # title = list(text = "Percent Change"),
-    symbolHeight = 25,
-    symbolWidth = 300,
-    x = 0,
-    y = 0
-  ) |>
-  hc_tooltip(
-    style = list(fontFamily = default_fonts),
-    formatter = JS("function(){return(this.point.tooltip)}")
-  )  |>
-  hc_plotOptions(
-      series = list(
-        animation = FALSE,
-        states = list(inactive = list(opacity = 1)),
-        cursor = "pointer"),
-        accessibility = list(
-          enabled = TRUE,
-          keyboardNavigation = list(enabled = TRUE))) |>
-    hc_caption(
-        text = "FBI Crime Data Explorer",
-        align = "right",
-        style = list(fontFamily = default_fonts)
-    ) |>
-  hc_setup()
-
-```
-
-:::
-
-## Unsolved violent crime
+In 2022, 63 percent of violent crime incidents reported to police in the United States were not solved.
 
 ```{r}
 unsolved_rate_max <- paste0(comma(min_max_viol_crime$pct_unsolved[2] * 100, 1), " percent")
@@ -1016,7 +1018,10 @@ to_plot |>
 
 :::
 
+
 ## Violent crime and unsolved crime by state, 2022
+
+Data regarding crime and unsolved rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr). Violent crime includes homicide, aggravated assault, robbery, and rape. Crime rates are calculated by dividing the number of estimated incidents by the total population for a given geography. Unsolved rates are the number of reported crimes not cleared by arrest or by exceptional means divided by the number of reported crimes. For more information, see the data sources and methods section below. 
 
 ```{r}
 ### create state-level table

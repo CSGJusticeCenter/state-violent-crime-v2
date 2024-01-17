@@ -286,7 +286,49 @@ df_nibrs_violent_unsolved_by_year_agency_2010_2022 <- df_nibrs_kaplan_2010_2022 
                              na.rm = TRUE)) |> 
   ungroup() |> 
   mutate(unsolved_rate = n_unsolved/n_reported,
-         n_reported_rate = n_reported/pop_jurisdiction*100000)
+         n_reported_rate = n_reported/pop_jurisdiction*100000) |> 
+  ### recode any unsolved counts or rates less than 0 to 0
+  mutate(unsolved_rate = ifelse(unsolved_rate<0 & !is.na(unsolved_rate),
+                                     0,unsolved_rate),
+         n_unsolved = ifelse(n_unsolved<0 & !is.na(n_unsolved),
+                                     0,n_unsolved)) 
+
+### prep df for agency-level viz with overall violent crime stats
+df_nibrs_violent_unsolved_by_agency_to_table_2022_to_overall_viz <- df_nibrs_violent_unsolved_by_year_agency_2010_2022 |> 
+  ### calculate and clean other counts/rates
+    # mutate(
+    #   unsolved_rate_rounded = scales::comma(unsolved_rate*100,accuracy = .1),
+    #   n_reported_rate = scales::comma(n_reported_rate,accuracy = .1),
+    #   n_reported = scales::comma(n_reported,accuracy = 1)) |> 
+  distinct(ori,
+           year,
+           .keep_all = TRUE) |> 
+  ### join acs county level file to clean up county name
+  ### similar to mapping df
+  left_join(us_county_population,
+            by = "county_fips") |> 
+  ### county name from ACS appears cleaner than from lea lookup table
+  ### so we'll clean up `county` -- using the acs version when not missing
+  mutate(county_clean = ifelse(!is.na(acs_county_name),
+                               acs_county_name,county)) |> 
+    dplyr::select(agency_name,
+                agency_type,
+                ori,
+                county_clean,
+                year,
+                population = pop_jurisdiction,
+                n_reported, 
+                n_reported_rate,
+                unsolved_rate,
+                state_name,
+                number_of_months_missing)
+  
+
+### write out
+write_rds(df_nibrs_violent_unsolved_by_agency_to_table_2022_to_overall_viz,
+          file.path(sp_data_to_plot_path,"viol_crime_unsolved_by_agency_to_viz_overall.rds"))
+
+
 
 ### prep df for agency-level table
 df_nibrs_violent_unsolved_by_agency_to_table_2022 <- df_nibrs_violent_unsolved_by_year_agency_2010_2022 |> 
@@ -324,3 +366,120 @@ write_rds(df_nibrs_violent_unsolved_by_agency_to_table_2022,
 
 ```
 
+```{r }
+########################################
+### create agency-level file for table -- broken out by offense type and year
+### two measures: 2022 unsolved rate 
+### and 2019-2022 percent change
+########################################
+df_nibrs_violent_unsolved_by_year_agency_offense_type_2010_2022 <- df_nibrs_kaplan_2010_2022 |> 
+  filter(group %in% c("Homicide", "Rape", "Robbery", "Aggravated assault"),
+         number_of_months_missing==0) |> 
+  ### add county from lookup
+  left_join(df_le_agency_crosswalk,
+            by = "ori") |> 
+  dplyr::group_by(year,
+                  county,
+                  county_fips,
+                  agency_name,
+                  agency_type,
+                  ori,
+                  pop_jurisdiction,
+                  state_name,
+                  state_abbr,
+                  number_of_months_missing,
+                  group) |> 
+  summarize(n_reported = sum(n_reported,
+                             na.rm = TRUE),
+            n_cleared = sum(n_cleared,
+                             na.rm = TRUE),
+            n_unsolved = sum(n_unsolved,
+                             na.rm = TRUE)) |> 
+  ungroup() |> 
+  mutate(unsolved_rate = n_unsolved/n_reported,
+         n_reported_rate = n_reported/pop_jurisdiction*100000) |> 
+  ### recode any unsolved counts or rates less than 0 to 0
+  mutate(unsolved_rate = ifelse(unsolved_rate<0 & !is.na(unsolved_rate),
+                                     0,unsolved_rate),
+         n_unsolved = ifelse(n_unsolved<0 & !is.na(n_unsolved),
+                                     0,n_unsolved)) 
+
+### prep df for agency-level table (building for washington request)
+### for viz
+df_nibrs_violent_unsolved_by_year_agency_offense_type_2010_2022 <- df_nibrs_violent_unsolved_by_year_agency_offense_type_2010_2022 |> 
+  ### calculate and clean other counts/rates
+    # mutate(
+    #   unsolved_rate_rounded = scales::comma(unsolved_rate*100,accuracy = .1),
+    #   n_reported_rate = scales::comma(n_reported_rate,accuracy = .1),
+    #   n_reported = scales::comma(n_reported,accuracy = 1)) |> 
+  distinct(ori,
+           year,
+           group,
+           .keep_all = TRUE) |> 
+  ### join acs county level file to clean up county name
+  ### similar to mapping df
+  left_join(us_county_population,
+            by = "county_fips") |> 
+  ### county name from ACS appears cleaner than from lea lookup table
+  ### so we'll clean up `county` -- using the acs version when not missing
+  mutate(county_clean = ifelse(!is.na(acs_county_name),
+                               acs_county_name,county)) |> 
+    dplyr::select(agency_name,
+                agency_type,
+                ori,
+                year,
+                county_clean,
+                population = pop_jurisdiction,
+                group,
+                n_reported, 
+                n_reported_rate,
+                unsolved_rate,
+                state_name,
+                number_of_months_missing)
+  
+
+### write out
+write_rds(df_nibrs_violent_unsolved_by_year_agency_offense_type_2010_2022,
+          file.path(sp_data_to_plot_path,"viol_crime_unsolved_by_agency_year_and_offense_to_viz.rds"))
+
+### prep df for agency-level table (building for washington request)
+### for table
+df_nibrs_violent_unsolved_by_year_agency_offense_type_2022_table <- df_nibrs_violent_unsolved_by_year_agency_offense_type_2010_2022 |> 
+  filter(year==2022,
+         number_of_months_missing==0) |> 
+  ### calculate and clean other counts/rates
+    # mutate(
+    #   unsolved_rate_rounded = scales::comma(unsolved_rate*100,accuracy = .1),
+    #   n_reported_rate = scales::comma(n_reported_rate,accuracy = .1),
+    #   n_reported = scales::comma(n_reported,accuracy = 1)) |> 
+  distinct(ori,
+           group,
+           .keep_all = TRUE) |> 
+  ### pivot long to wide
+  pivot_wider(names_from = group, 
+              values_from = c(n_reported, 
+                              n_reported_rate,
+                              unsolved_rate)) |> 
+  clean_names() |> 
+  dplyr::select(ori,
+                unsolved_rate_aggravated_assault:unsolved_rate_robbery) |> 
+  ### join to overall agency-level file
+  right_join(df_nibrs_violent_unsolved_by_agency_to_table_2022,
+            by = "ori") |> 
+    dplyr::select(agency_name,
+                agency_type,
+                ori,
+                county_clean,
+                population,
+                n_reported, 
+                n_reported_rate,
+                unsolved_rate,
+                unsolved_rate_aggravated_assault:unsolved_rate_robbery,
+                state_name,
+                number_of_months_missing)
+
+### write out
+write_rds(df_nibrs_violent_unsolved_by_year_agency_offense_type_2022_table,
+          file.path(sp_data_to_plot_path,"viol_crime_unsolved_by_agency_year_and_offense_to_table.rds"))
+
+```
