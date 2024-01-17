@@ -1021,8 +1021,6 @@ to_plot |>
 
 ## Violent crime and unsolved crime by state, 2022
 
-Data regarding crime and unsolved rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr). Violent crime includes homicide, aggravated assault, robbery, and rape. Crime rates are calculated by dividing the number of estimated incidents by the total population for a given geography. Unsolved rates are the number of reported crimes not cleared by arrest or by exceptional means divided by the number of reported crimes. For more information, see the data sources and methods section below. 
-
 ```{r}
 ### create state-level table
 srs_state_to_map |> 
@@ -1065,6 +1063,8 @@ srs_state_to_map |>
       )
     )
 ```
+
+Data regarding crime and unsolved rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr). Violent crime includes homicide, aggravated assault, robbery, and rape. Crime rates are calculated by dividing the number of estimated incidents by the total population for a given geography. Unsolved rates are the number of reported crimes not cleared by arrest or by exceptional means divided by the number of reported crimes. For more information, see the data sources and methods section below. 
 
 ::: {.callout-note icon=false collapse=true}
 
