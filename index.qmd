@@ -23,6 +23,7 @@ library(csgjcr)
 library(highcharter)
 library(htmlwidgets)
 library(reactable)
+library(reactablefmtr)
 
 source("R/utils.R")
 ```
@@ -1022,6 +1023,33 @@ to_plot |>
 ## Violent crime and unsolved crime by state, 2022
 
 ```{r}
+### function for percent change (thanks Matt!)
+add_plus_sign_percent_change <- function(value) {
+  
+  if (!is.numeric(value)) 
+    paste0(value)
+  
+  if (!is.na(value) & value >= 0)
+    paste0("+", round(value,digits = 0),"%")
+  
+  else
+    paste0(round(value,digits=0),"%")
+
+}
+
+add_plus_sign_percent_point_change <- function(value) {
+  
+  if (!is.numeric(value)) 
+    paste0(value)
+  
+  if (!is.na(value) & value >= 0)
+    paste0("+", round(value,digits = 0))
+  
+  else
+    paste0(round(value,digits=0))
+}
+
+
 ### create state-level table
 srs_state_to_map |> 
     select(
@@ -1047,7 +1075,9 @@ srs_state_to_map |>
       n_reported_2022 = colDef(name = "Violent Incidents Reported (2022)"), 
       viol_crime_rate_percent_change_2019_2022 = colDef(
         name = "Percent change in violent crime rate (2019 to 2022)",
-        format = colFormat(suffix = "%", digits = 0)
+        # format = colFormat(suffix = "%", 
+        #                    digits = 0),
+        cell = add_plus_sign_percent_change
         ),
       unsolved_rate_2022 = colDef(
         name = "Unsolved Rate (2022)",
@@ -1055,13 +1085,15 @@ srs_state_to_map |>
         ),
       unsolved_rate_percent_point_change_2019_2022 = colDef(
         name = "Percentage point change in unsolved rate (2019 to 2022)",
-        format = colFormat(digits = 0)
+        # format = colFormat(digits = 0),
+        cell = add_plus_sign_percent_point_change,
         ),
       style = list(
         fontFamily = "Source Sans Pro",
         fontWeight = 600)
       )
     )
+
 ```
 
 Data regarding crime and unsolved rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr). Violent crime includes homicide, aggravated assault, robbery, and rape. Crime rates are calculated by dividing the number of estimated incidents by the total population for a given geography. Unsolved rates are the number of reported crimes not cleared by arrest or by exceptional means divided by the number of reported crimes. For more information, see the data sources and methods section below. 
