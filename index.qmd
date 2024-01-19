@@ -174,11 +174,11 @@ axis_expansion_mult <- 0.5
 
 # Trends in Violent Crime and Accountability
 
-## 50-State violent crime data
+## 50-state violent crime data
 
 ::: {.panel-tabset}
 
-## 2019 to 2022 change
+## 2019–2022 change
 
 ```{r}
 #| fig-height: 5.5
@@ -252,7 +252,7 @@ highchart() |>
       )
   ) |>
   hc_title(
-    text = "Change in violent crime, 2019 to 2022",
+    text = "Change in violent crime, 2019–2022",
     align = "left",
     style = list(
       fontFamily = header_font,
@@ -433,7 +433,7 @@ Trends in violent crime also varied by state. Between 2019 and 2022, violent cri
 
 ::: {.panel-tabset}
 
-## 2019 to 2022 change
+## 2019–2022 change
 
 ```{r}
 #| fig-height: 5.5
@@ -506,7 +506,7 @@ highchart() |>
       )
   ) |>
   hc_title(
-    text = "Change in unsolved violent crime, 2019 to 2022",
+    text = "Change in unsolved violent crime, 2019–2022",
     align = "left",
     style = list(
       fontFamily = header_font,
@@ -672,7 +672,7 @@ In 2022, there was no arrest in 63 percent of violent crime incidents reported t
 
 Between 2019 and 2022, unsolved violent crime rates in 12 states decreased, while unsolved crime rates in 36 states and the District of Columbia increased.  
 
-Illinois and New York did not report enough data on whether crimes were solved to the FBI to make reliable estimates. 
+Illinois and New York did not report enough data to the FBI on whether crimes were solved to make reliable estimates.
 
 
 ## Reported violent crime trends
@@ -908,6 +908,7 @@ to_plot |>
   hc_title(text = paste0("Violent crime in ", state_name_text, " by offense")) |>
   hc_subtitle(text = "Crime reported to police per 100,000 residents") |> 
   hc_caption(text = "FBI Crime Data Explorer") |> 
+  hc_legend(reversed = "true") |> 
   hc_setup()
 ```
 
@@ -1096,7 +1097,7 @@ srs_state_to_map |>
 
 ```
 
-Data regarding crime and unsolved rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr). Violent crime includes homicide, aggravated assault, robbery, and rape. Crime rates are calculated by dividing the number of estimated incidents by the total population for a given geography. Unsolved rates are the number of reported crimes not cleared by arrest or by exceptional means divided by the number of reported crimes. For more information, see the data sources and methods section below. 
+Data regarding crime and unsolved rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr). Violent crime includes homicide, aggravated assault, robbery, and rape. Crime rates are calculated by dividing the number of estimated incidents by the total population for a given geography. Unsolved rates are the number of reported crimes not cleared by arrest or by exceptional means divided by the number of reported crimes. For more information, see the data sources and methodology section below. 
 
 ::: {.callout-note icon=false collapse=true}
 
@@ -1104,7 +1105,7 @@ Data regarding crime and unsolved rates come from the FBI's [Uniform Crime Repor
 
 Data regarding crime and unsolved rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr){target="_parent"}. Counts of reported violent crime between 2012 and 2022 are derived from the Summary Reporting System (SRS) and the National Incident-Based Reporting System (NIBRS). The FBI generated national estimates for reported crime and clearances based on agency-level reports, and these estimates were published through 2022 in the FBI's annual report, [_Crime in the U.S._](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019){target="_parent"} and on the FBI's [Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/home){target="_parent"}.
 
-The FBI stopped SRS data collection after data year 2020 and required law enforcement agencies to use NIBRS to report crime statistics to the FBI. This change decreased the number of agencies that submitted their crime data and thus reduced the reliability of state estimates in 2021. In 2022, the FBI allowed agencies who were unable to submit NIBRS data to submit SRS data again. 94 percent of the U.S. population was covered in the 2022 crime data submissions to the FBI, with most states providing close to complete data. However, the population upon which the estimates were derived decreased by over 10 percent in three states: Florida, Hawaii, and Illinois, so conclusions about crime changes in those states should be interpreted with additional caution.
+The FBI stopped SRS data collection after data year 2020 and required law enforcement agencies to use NIBRS to report crime statistics to the FBI. This change decreased the number of agencies that submitted their crime data and thus reduced the reliability of state estimates in 2021. In 2022, the FBI allowed agencies who were unable to submit NIBRS data to submit SRS data again. Ninety-four percent of the U.S. population was covered in the 2022 crime data submissions to the FBI, with most states providing close to complete data. However, the population upon which the estimates were derived decreased by over 10 percent in three states: Florida, Hawaii, and Illinois, so conclusions about crime changes in those states should be interpreted with additional caution.
 
 Crime rates are calculated by dividing the number of estimated incidents by the total U.S. population. Population data come from the U.S. Census Bureau [American Community Survey 1-year estimates (table B01003)](https://www.census.gov/programs-surveys/acs/data.html){target="_parent"} and the [2020 Decennial Census Redistricting Data (table P1)](https://www.census.gov/programs-surveys/decennial-census/about/rdo/summary-files.html){target="_parent"}.
 

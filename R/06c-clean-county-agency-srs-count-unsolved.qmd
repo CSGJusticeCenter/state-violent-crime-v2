@@ -137,8 +137,7 @@ df_nibrs_violent_unsolved_by_year_county_2010_2022 <- df_nibrs_kaplan_2010_2022 
 
 ########################################
 ### create county-level file for mapping
-### two measures: 2022 unsolved rate 
-### and 2019-2022 percent change
+### on violent crime site
 ########################################
 
 ### update on 12/19: only creating file with 2022 numbers to simplify process
@@ -151,37 +150,18 @@ df_nibrs_violent_unsolved_by_year_county_2010_2022 <- df_nibrs_kaplan_2010_2022 
 ### reported incidents 2022
 ### reported incidents 2019
 df_nibrs_violent_unsolved_by_county_to_map <- df_nibrs_violent_unsolved_by_year_county_2010_2022 |> 
-  filter(year%in%c(
-    2019,
-    2022),
-    state_name=="Maryland"
-    ) |> 
-  mutate(county_clean = ifelse(county=="Baltimore (City)",
-                               "Baltimore",county),
-         county_fips = ifelse(county=="Baltimore (City)",
-                               "24005",county_fips)) |> 
+  ### 2022 only for state website map
+  filter(year==2022) |> 
   group_by(county,
            county_fips,
            state_name,
            state_abbr) |> 
-  mutate(years_of_data = n_distinct(year)) |>
-  filter(years_of_data==2) |>
   ### currently multiplying rate by 100 instead of using scales::percent 
   ### may be better way to format within hc
-  mutate(
-    # n_reported_2019 = n_reported[year==2019],
-         n_reported_2022 = n_reported[year==2022],
-    # n_unsolved_2019 = n_unsolved[year==2019],
-    n_unsolved_2022 = n_unsolved[year==2022],
-         unsolved_rate_2019 = unsolved_rate[year==2019]*100,
-         unsolved_rate_2022 = unsolved_rate[year==2022]*100,
-         unsolved_rate_percent_change_2019_2022 = ((unsolved_rate_2022 - unsolved_rate_2019)/unsolved_rate_2019),
-         unsolved_rate_percent_point_change_2019_2022 = unsolved_rate_2022 - unsolved_rate_2019
-         ) |> 
+  mutate(n_reported_2022 = n_reported[year==2022],
+         n_unsolved_2022 = n_unsolved[year==2022],
+         unsolved_rate_2022 = unsolved_rate[year==2022]*100) |> 
   ungroup() |> 
-  ### now drop 2019
-  ### and keep unsolved rate from 2022
-  filter(year==2022) |>
   ### now we can de-dup by county
   dplyr::select(county,
                 county_fips,
@@ -189,11 +169,61 @@ df_nibrs_violent_unsolved_by_county_to_map <- df_nibrs_violent_unsolved_by_year_
                 state_name,
                 state_abbr,
                 n_agencies,
-                n_reported_2022:unsolved_rate_2022,
-                unsolved_rate_percent_change_2019_2022,
-                unsolved_rate_percent_point_change_2019_2022
-                ) |> 
+                n_reported_2022:unsolved_rate_2022) |> 
   distinct() 
+
+########################################
+### create county-level file for mapping
+### for maryland clearance rate request (see: https://github.com/CSGJusticeCenter/state-violent-crime-two-pagers/tree/ppt-officer/maryland_state_request)
+### two measures: 2022 unsolved rate 
+### and 2019-2022 percent change
+########################################
+
+### commented out as of 1/18; for maryland clearance rate analysis only
+# df_nibrs_violent_unsolved_by_county_to_map <- df_nibrs_violent_unsolved_by_year_county_2010_2022 |> 
+#   filter(year%in%c(
+#     2019,
+#     2022),
+#     state_name=="Maryland"
+#     ) |> 
+#   mutate(county_clean = ifelse(county=="Baltimore (City)",
+#                                "Baltimore",county),
+#          county_fips = ifelse(county=="Baltimore (City)",
+#                                "24005",county_fips)) |> 
+#   group_by(county,
+#            county_fips,
+#            state_name,
+#            state_abbr) |> 
+#   mutate(years_of_data = n_distinct(year)) |>
+#   filter(years_of_data==2) |>
+#   ### currently multiplying rate by 100 instead of using scales::percent 
+#   ### may be better way to format within hc
+#   mutate(
+#     # n_reported_2019 = n_reported[year==2019],
+#          n_reported_2022 = n_reported[year==2022],
+#     # n_unsolved_2019 = n_unsolved[year==2019],
+#     n_unsolved_2022 = n_unsolved[year==2022],
+#          unsolved_rate_2019 = unsolved_rate[year==2019]*100,
+#          unsolved_rate_2022 = unsolved_rate[year==2022]*100,
+#          unsolved_rate_percent_change_2019_2022 = ((unsolved_rate_2022 - unsolved_rate_2019)/unsolved_rate_2019),
+#          unsolved_rate_percent_point_change_2019_2022 = unsolved_rate_2022 - unsolved_rate_2019
+#          ) |> 
+#   ungroup() |> 
+#   ### now drop 2019
+#   ### and keep unsolved rate from 2022
+#   filter(year==2022) |>
+#   ### now we can de-dup by county
+#   dplyr::select(county,
+#                 county_fips,
+#                 nibrs_reported_pop_jursidiction,
+#                 state_name,
+#                 state_abbr,
+#                 n_agencies,
+#                 n_reported_2022:unsolved_rate_2022,
+#                 unsolved_rate_percent_change_2019_2022,
+#                 unsolved_rate_percent_point_change_2019_2022
+#                 ) |> 
+#   distinct() 
 
 ### additional work to add geo that joins NYC is temp commented out
 ### until we decide on whether to include given that it makes hc 

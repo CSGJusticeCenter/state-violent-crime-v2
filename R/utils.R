@@ -99,9 +99,14 @@ hc_setup <- function(x) {
 }
 
 offense_pal <- tibble(
-  color = jr_pal[c(2:5)],
+  color = jr_pal[c(2,3,4,5)],
   crime = c("Homicide", "Robbery", "Rape", "Aggravated assault")
 )
+
+# offense_pal <- tibble(
+#   color = jr_pal[c(5,4,3,2)],
+#   crime = c("Aggravated assault","Rape","Robbery","Homicide")
+# )
 
 reactable_template <- function(df, sort_col = "rate", ...) {
   reactable(
