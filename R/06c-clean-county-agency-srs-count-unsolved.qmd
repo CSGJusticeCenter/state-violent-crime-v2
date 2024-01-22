@@ -1,0 +1,525 @@
+---
+title: "clean-county_srs_count_unsolved"
+format: html
+---
+
+
+```{r }
+### call libraries
+library(tidyverse)
+library(csgjcr)
+library(janitor)
+library(tidycensus)
+```
+
+```{r }
+### set project path for jr data library for data we want to import
+sp_data_analysis_path <- csg_sp_path("JR_DATA_LIBRARY/data/analysis")
+
+### set project path for ad hoc request folder for data we'll export
+sp_data_to_plot_path <- csg_sp_path("ad_hoc_requests/state_violent_crime_marshall/data")
+
+### set project path for lea crosswalk downloaded from icpsr
+sharepoint_jr_clearance_le_agency_crosswalk <- csg_sp_path("JR_Clearance_Rates/Data/Law Enforcement Crosswalk")
+
+```
+
+```{r }
+### import nibrs file that matt developed for 50 state snapshots
+### file is unique by lea, index crime, and year
+### to use for state-specific pages, we need to do the following
+# add county (and handle agencies whose jurisdictions include multiple counties? remove? divide by count of counties?)
+# create county-level violent index unsolved rate (both 2022 and 2019-2022 change)
+df_nibrs_kaplan_2010_2022 <- read_rds(file.path(sp_data_analysis_path,"fbi","kaplan","fbi_kaplan_okca_agency.rds")) %>% 
+  janitor::clean_names() |> 
+  ### filter out agencies without all 12 months of data
+  filter(number_of_months_missing==0)
+
+```
+
+
+```{r }
+### next we will pull in a law enforcement agency lookup table in order to add a few more columns
+### namely, we want county and cleaned up agency name 
+
+
+### import fbi law enforcement agency crosswalk from icpsr download
+### downloaded from: https://www.icpsr.umich.edu/web/NACJD/studies/35158#
+### we'll use this crosswalk to join county to each agency
+
+### import 2012 raw le_agency_crosswalk.rda from icpsr download
+load(file=file.path(sharepoint_jr_clearance_le_agency_crosswalk, "le_agency_crosswalk.rda"))
+
+### rename and clean dataframe
+df_le_agency_crosswalk <- da35158.0001 |> 
+  clean_names() |> 
+  ### concatenate fips_state_code and fips_county_code 
+  ### clean names
+  mutate(county_fips = paste0(fips_st,
+                              fips_county),
+         county = trimws(str_to_title(countyname),
+                         which = "both"),
+         state_name = trimws(str_to_title(as.character(statename)),
+                             which = "both"),
+         name = str_to_title(name)) |> 
+  # ### add nyc as county for nypd + all city departments with reporting agencies
+  # mutate(county_with_nyc = if_else(county=="New York" & state_name=="New York",
+  #                        "New York City",county)) |> 
+  dplyr::select(agency_name_lookup = name,
+                ori = ori9,
+                county,
+                county_fips) |> 
+  ### NOTE: SOME AGENCIES APPEAR TO HAVE WRONG ORI ID
+  ### BIGGEST EXAMPLE IS PHILADELPHIA PD
+  ### BASED ON ORI IN THIS CROSSWALK
+  ### WE JOIN TO INDIANA COUNTY INSTEAD
+  ### OF PHILADELPHIA COUNTY
+  ### hard code fix for philly
+  ### is this just due to the 2012 file being outdated?
+  mutate(ori = if_else(ori=="PAPEP0000",
+                      "PAPEP0100",ori))
+
+### remove original file
+rm(da35158.0001)
+
+```
+
+
+```{r }
+###########################################
+### create county-level file with all years
+###########################################
+
+### create county-level file with df_nibrs_kaplan_2010_2022
+### pop_jurisdiction is duplicated across crime type
+### so we only want the sum across agencies within county
+### we'll join this to df_nibrs_violent_unsolved_by_year_county_2010_2022
+df_nibrs_reported_pop_jursidiction_2022 <- df_nibrs_kaplan_2010_2022 |> 
+  ### add county from agency lookup
+  left_join(df_le_agency_crosswalk,
+            by = "ori") |> 
+  ### only need one row per agency
+  ### and only 2022
+  filter(year==2022) |> 
+  distinct(ori,
+           .keep_all = TRUE) |> 
+  ### logic: we are only counting agencies (and their jurisdiction pop)
+  ### with 0 months missing
+  ### based on `number_of_months_missing`
+  dplyr::group_by(county_fips) |> 
+  summarize(nibrs_reported_pop_jursidiction = sum(pop_jurisdiction[number_of_months_missing==0], na.rm = TRUE)) |> 
+  ungroup()
+
+### create county-level file with other data we need for mapping
+df_nibrs_violent_unsolved_by_year_county_2010_2022 <- df_nibrs_kaplan_2010_2022 |> 
+    filter(group %in% c("Homicide", "Rape", "Robbery", "Aggravated assault")) |> 
+  ### add county from agency lookup
+  left_join(df_le_agency_crosswalk,
+            by = "ori") |> 
+ dplyr::group_by(year,
+                 county,
+                 county_fips,
+                 state_name,
+                 state_abbr) |> 
+  summarize(n_reported = sum(n_reported,
+                             na.rm = TRUE),
+            n_cleared = sum(n_cleared,
+                             na.rm = TRUE),
+            n_unsolved = sum(n_unsolved,
+                             na.rm = TRUE),
+            n_agencies = n_distinct(ori,
+                                    na.rm = TRUE)) |> 
+  ungroup() |> 
+  mutate(unsolved_rate = n_unsolved/n_reported) |> 
+  left_join(df_nibrs_reported_pop_jursidiction_2022,
+            by = "county_fips")
+
+
+########################################
+### create county-level file for mapping
+### on violent crime site
+########################################
+
+### update on 12/19: only creating file with 2022 numbers to simplify process
+### now that we're filtering out agencies with all months 
+
+### add tooltip data:
+### agencies per county
+### unsolved 2019 rate
+### unsolved 2022 rate
+### reported incidents 2022
+### reported incidents 2019
+df_nibrs_violent_unsolved_by_county_to_map <- df_nibrs_violent_unsolved_by_year_county_2010_2022 |> 
+  ### 2022 only for state website map
+  filter(year==2022) |> 
+  group_by(county,
+           county_fips,
+           state_name,
+           state_abbr) |> 
+  ### currently multiplying rate by 100 instead of using scales::percent 
+  ### may be better way to format within hc
+  mutate(n_reported_2022 = n_reported[year==2022],
+         n_unsolved_2022 = n_unsolved[year==2022],
+         unsolved_rate_2022 = unsolved_rate[year==2022]*100) |> 
+  ungroup() |> 
+  ### now we can de-dup by county
+  dplyr::select(county,
+                county_fips,
+                nibrs_reported_pop_jursidiction,
+                state_name,
+                state_abbr,
+                n_agencies,
+                n_reported_2022:unsolved_rate_2022) |> 
+  distinct() 
+
+########################################
+### create county-level file for mapping
+### for maryland clearance rate request (see: https://github.com/CSGJusticeCenter/state-violent-crime-two-pagers/tree/ppt-officer/maryland_state_request)
+### two measures: 2022 unsolved rate 
+### and 2019-2022 percent change
+########################################
+
+### commented out as of 1/18; for maryland clearance rate analysis only
+# df_nibrs_violent_unsolved_by_county_to_map <- df_nibrs_violent_unsolved_by_year_county_2010_2022 |> 
+#   filter(year%in%c(
+#     2019,
+#     2022),
+#     state_name=="Maryland"
+#     ) |> 
+#   mutate(county_clean = ifelse(county=="Baltimore (City)",
+#                                "Baltimore",county),
+#          county_fips = ifelse(county=="Baltimore (City)",
+#                                "24005",county_fips)) |> 
+#   group_by(county,
+#            county_fips,
+#            state_name,
+#            state_abbr) |> 
+#   mutate(years_of_data = n_distinct(year)) |>
+#   filter(years_of_data==2) |>
+#   ### currently multiplying rate by 100 instead of using scales::percent 
+#   ### may be better way to format within hc
+#   mutate(
+#     # n_reported_2019 = n_reported[year==2019],
+#          n_reported_2022 = n_reported[year==2022],
+#     # n_unsolved_2019 = n_unsolved[year==2019],
+#     n_unsolved_2022 = n_unsolved[year==2022],
+#          unsolved_rate_2019 = unsolved_rate[year==2019]*100,
+#          unsolved_rate_2022 = unsolved_rate[year==2022]*100,
+#          unsolved_rate_percent_change_2019_2022 = ((unsolved_rate_2022 - unsolved_rate_2019)/unsolved_rate_2019),
+#          unsolved_rate_percent_point_change_2019_2022 = unsolved_rate_2022 - unsolved_rate_2019
+#          ) |> 
+#   ungroup() |> 
+#   ### now drop 2019
+#   ### and keep unsolved rate from 2022
+#   filter(year==2022) |>
+#   ### now we can de-dup by county
+#   dplyr::select(county,
+#                 county_fips,
+#                 nibrs_reported_pop_jursidiction,
+#                 state_name,
+#                 state_abbr,
+#                 n_agencies,
+#                 n_reported_2022:unsolved_rate_2022,
+#                 unsolved_rate_percent_change_2019_2022,
+#                 unsolved_rate_percent_point_change_2019_2022
+#                 ) |> 
+#   distinct() 
+
+### additional work to add geo that joins NYC is temp commented out
+### until we decide on whether to include given that it makes hc 
+### a bit more complicated and that they are missing 2022 clearance data
+
+############################################
+### pull in county-level population estimates
+###########################################
+
+### county-level file
+### pulling in population data in case we want to use it as tooltip
+us_county_population <- get_acs(
+  geography = "county",
+  variables = "S0101_C01_001",
+  year = 2021,
+  geometry = TRUE,
+  cb = TRUE,
+  resolution = "20m") |>
+  clean_names() |>
+  mutate(state_geoid = substr(geoid, 1, 2)) |>
+  ### extract county and state name and trim any leading/trailing whitespace
+  mutate(acs_county_name = trimws(str_extract(name,  ".+?(?=County)")),
+         acs_county_state_name = trimws(str_extract(name, '\\b[^,]+$'))) |>
+  # ### join 5 nyc counties together
+  # ### and assign geo to nypd
+  # mutate(county_with_nyc = ifelse(acs_county_state_name=="New York" & acs_county_name%in%c("Bronx",
+  #                                                                                          "New York",
+  #                                                                                          "Queens",
+  #                                                                                          "Kings",
+  #                                                                                          "Richmond"),
+  #                                 "New York City",acs_county_name))  |>  ### just keeping geo for now
+  dplyr::select(county_fips = geoid,
+                acs_county_name,
+                acs_county_pop=estimate,
+                acs_county_state_name) |>
+  distinct() |> 
+  filter(acs_county_state_name=="Maryland")
+
+
+
+### then right join us_county_population to df_nibrs_violent_unsolved_by_county_to_map 
+### we want the base file to include all counties
+df_nibrs_by_county_to_map_state_acs <- left_join(us_county_population,
+                                                 df_nibrs_violent_unsolved_by_county_to_map,
+                                                 by = "county_fips") |>
+  ### calculate population covered by reporting agencies by county
+  ### using pop_jurisdiction from the kaplan agency-level file to sum the numerator by county and then pull acs county population for the denominator
+  ### currently multiplying rate by 100 instead of using scales::percent 
+  ### NOTE: SOME VALUES ARE OVER 100 -- RECODING TO 100
+  ### MIGHT WANT TO EXPLORE MORE
+  ### BIGGEST EXAMPLE OF ERROR IS PHILLY
+  mutate(nibrs_reported_pop_coverage_pct = (nibrs_reported_pop_jursidiction/acs_county_pop)*100,
+         nibrs_reported_pop_coverage_pct = ifelse(nibrs_reported_pop_coverage_pct>100 & !is.na(nibrs_reported_pop_coverage_pct),
+                                                  100,nibrs_reported_pop_coverage_pct)) |> 
+  ### county name from ACS appears cleaner than from lea lookup table
+  ### so we'll clean up `county` -- using the acs version when not missing
+  mutate(county_clean = ifelse(!is.na(acs_county_name),
+                               acs_county_name,county))
+  
+  # ### join geo for 5 nyc counties together
+  # ### group by state and county_with_nyc
+  # ### county_with_nyc is duplicated for the 5 nyc counties
+  # group_by(acs_county_state_name,
+  #          county_with_nyc) |>
+  # mutate(geometry = sf::st_union(geometry)) |>
+  # ungroup()
+
+### write out
+write_rds(df_nibrs_by_county_to_map_state_acs,
+          file.path(sp_data_to_plot_path,"viol_crime_unsolved_by_county_to_map_md_request.rds"))
+
+```
+
+```{r }
+########################################
+### create agency-level file for table
+### two measures: 2022 unsolved rate 
+### and 2019-2022 percent change
+########################################
+df_nibrs_violent_unsolved_by_year_agency_2010_2022 <- df_nibrs_kaplan_2010_2022 |> 
+  filter(group %in% c("Homicide", "Rape", "Robbery", "Aggravated assault")) |> 
+  ### add county from lookup
+  left_join(df_le_agency_crosswalk,
+            by = "ori") |> 
+  dplyr::group_by(year,
+                  county,
+                  county_fips,
+                  agency_name,
+                  agency_type,
+                  ori,
+                  pop_jurisdiction,
+                  state_name,
+                  state_abbr,
+                  number_of_months_missing) |> 
+  summarize(n_reported = sum(n_reported,
+                             na.rm = TRUE),
+            n_cleared = sum(n_cleared,
+                             na.rm = TRUE),
+            n_unsolved = sum(n_unsolved,
+                             na.rm = TRUE)) |> 
+  ungroup() |> 
+  mutate(unsolved_rate = n_unsolved/n_reported,
+         n_reported_rate = n_reported/pop_jurisdiction*100000) |> 
+  ### recode any unsolved counts or rates less than 0 to 0
+  mutate(unsolved_rate = ifelse(unsolved_rate<0 & !is.na(unsolved_rate),
+                                     0,unsolved_rate),
+         n_unsolved = ifelse(n_unsolved<0 & !is.na(n_unsolved),
+                                     0,n_unsolved)) 
+
+### prep df for agency-level viz with overall violent crime stats
+df_nibrs_violent_unsolved_by_agency_to_table_2022_to_overall_viz <- df_nibrs_violent_unsolved_by_year_agency_2010_2022 |> 
+  ### calculate and clean other counts/rates
+    # mutate(
+    #   unsolved_rate_rounded = scales::comma(unsolved_rate*100,accuracy = .1),
+    #   n_reported_rate = scales::comma(n_reported_rate,accuracy = .1),
+    #   n_reported = scales::comma(n_reported,accuracy = 1)) |> 
+  distinct(ori,
+           year,
+           .keep_all = TRUE) |> 
+  ### join acs county level file to clean up county name
+  ### similar to mapping df
+  left_join(us_county_population,
+            by = "county_fips") |> 
+  ### county name from ACS appears cleaner than from lea lookup table
+  ### so we'll clean up `county` -- using the acs version when not missing
+  mutate(county_clean = ifelse(!is.na(acs_county_name),
+                               acs_county_name,county)) |> 
+    dplyr::select(agency_name,
+                agency_type,
+                ori,
+                county_clean,
+                year,
+                population = pop_jurisdiction,
+                n_reported, 
+                n_reported_rate,
+                unsolved_rate,
+                state_name,
+                number_of_months_missing)
+  
+
+### write out
+write_rds(df_nibrs_violent_unsolved_by_agency_to_table_2022_to_overall_viz,
+          file.path(sp_data_to_plot_path,"viol_crime_unsolved_by_agency_to_viz_overall.rds"))
+
+
+
+### prep df for agency-level table
+df_nibrs_violent_unsolved_by_agency_to_table_2022 <- df_nibrs_violent_unsolved_by_year_agency_2010_2022 |> 
+  filter(year==2022) |> 
+  ### calculate and clean other counts/rates
+    # mutate(
+    #   unsolved_rate_rounded = scales::comma(unsolved_rate*100,accuracy = .1),
+    #   n_reported_rate = scales::comma(n_reported_rate,accuracy = .1),
+    #   n_reported = scales::comma(n_reported,accuracy = 1)) |> 
+  distinct(ori,
+           .keep_all = TRUE) |> 
+  ### join acs county level file to clean up county name
+  ### similar to mapping df
+  left_join(us_county_population,
+            by = "county_fips") |> 
+  ### county name from ACS appears cleaner than from lea lookup table
+  ### so we'll clean up `county` -- using the acs version when not missing
+  mutate(county_clean = ifelse(!is.na(acs_county_name),
+                               acs_county_name,county)) |> 
+    dplyr::select(agency_name,
+                agency_type,
+                ori,
+                county_clean,
+                population = pop_jurisdiction,
+                n_reported, 
+                n_reported_rate,
+                unsolved_rate,
+                state_name,
+                number_of_months_missing)
+  
+
+### write out
+write_rds(df_nibrs_violent_unsolved_by_agency_to_table_2022,
+          file.path(sp_data_to_plot_path,"viol_crime_unsolved_by_agency_to_table.rds"))
+
+```
+
+```{r }
+########################################
+### create agency-level file for table -- broken out by offense type and year
+### two measures: 2022 unsolved rate 
+### and 2019-2022 percent change
+########################################
+df_nibrs_violent_unsolved_by_year_agency_offense_type_2010_2022 <- df_nibrs_kaplan_2010_2022 |> 
+  filter(group %in% c("Homicide", "Rape", "Robbery", "Aggravated assault"),
+         number_of_months_missing==0) |> 
+  ### add county from lookup
+  left_join(df_le_agency_crosswalk,
+            by = "ori") |> 
+  dplyr::group_by(year,
+                  county,
+                  county_fips,
+                  agency_name,
+                  agency_type,
+                  ori,
+                  pop_jurisdiction,
+                  state_name,
+                  state_abbr,
+                  number_of_months_missing,
+                  group) |> 
+  summarize(n_reported = sum(n_reported,
+                             na.rm = TRUE),
+            n_cleared = sum(n_cleared,
+                             na.rm = TRUE),
+            n_unsolved = sum(n_unsolved,
+                             na.rm = TRUE)) |> 
+  ungroup() |> 
+  mutate(unsolved_rate = n_unsolved/n_reported,
+         n_reported_rate = n_reported/pop_jurisdiction*100000) |> 
+  ### recode any unsolved counts or rates less than 0 to 0
+  mutate(unsolved_rate = ifelse(unsolved_rate<0 & !is.na(unsolved_rate),
+                                     0,unsolved_rate),
+         n_unsolved = ifelse(n_unsolved<0 & !is.na(n_unsolved),
+                                     0,n_unsolved)) 
+
+### prep df for agency-level table (building for washington request)
+### for viz
+df_nibrs_violent_unsolved_by_year_agency_offense_type_2010_2022 <- df_nibrs_violent_unsolved_by_year_agency_offense_type_2010_2022 |> 
+  ### calculate and clean other counts/rates
+    # mutate(
+    #   unsolved_rate_rounded = scales::comma(unsolved_rate*100,accuracy = .1),
+    #   n_reported_rate = scales::comma(n_reported_rate,accuracy = .1),
+    #   n_reported = scales::comma(n_reported,accuracy = 1)) |> 
+  distinct(ori,
+           year,
+           group,
+           .keep_all = TRUE) |> 
+  ### join acs county level file to clean up county name
+  ### similar to mapping df
+  left_join(us_county_population,
+            by = "county_fips") |> 
+  ### county name from ACS appears cleaner than from lea lookup table
+  ### so we'll clean up `county` -- using the acs version when not missing
+  mutate(county_clean = ifelse(!is.na(acs_county_name),
+                               acs_county_name,county)) |> 
+    dplyr::select(agency_name,
+                agency_type,
+                ori,
+                year,
+                county_clean,
+                population = pop_jurisdiction,
+                group,
+                n_reported, 
+                n_reported_rate,
+                unsolved_rate,
+                state_name,
+                number_of_months_missing)
+  
+
+### write out
+write_rds(df_nibrs_violent_unsolved_by_year_agency_offense_type_2010_2022,
+          file.path(sp_data_to_plot_path,"viol_crime_unsolved_by_agency_year_and_offense_to_viz.rds"))
+
+### prep df for agency-level table (building for washington request)
+### for table
+df_nibrs_violent_unsolved_by_year_agency_offense_type_2022_table <- df_nibrs_violent_unsolved_by_year_agency_offense_type_2010_2022 |> 
+  filter(year==2022,
+         number_of_months_missing==0) |> 
+  ### calculate and clean other counts/rates
+    # mutate(
+    #   unsolved_rate_rounded = scales::comma(unsolved_rate*100,accuracy = .1),
+    #   n_reported_rate = scales::comma(n_reported_rate,accuracy = .1),
+    #   n_reported = scales::comma(n_reported,accuracy = 1)) |> 
+  distinct(ori,
+           group,
+           .keep_all = TRUE) |> 
+  ### pivot long to wide
+  pivot_wider(names_from = group, 
+              values_from = c(n_reported, 
+                              n_reported_rate,
+                              unsolved_rate)) |> 
+  clean_names() |> 
+  dplyr::select(ori,
+                unsolved_rate_aggravated_assault:unsolved_rate_robbery) |> 
+  ### join to overall agency-level file
+  right_join(df_nibrs_violent_unsolved_by_agency_to_table_2022,
+            by = "ori") |> 
+    dplyr::select(agency_name,
+                agency_type,
+                ori,
+                county_clean,
+                population,
+                n_reported, 
+                n_reported_rate,
+                unsolved_rate,
+                unsolved_rate_aggravated_assault:unsolved_rate_robbery,
+                state_name,
+                number_of_months_missing)
+
+### write out
+write_rds(df_nibrs_violent_unsolved_by_year_agency_offense_type_2022_table,
+          file.path(sp_data_to_plot_path,"viol_crime_unsolved_by_agency_year_and_offense_to_table.rds"))
+
+```

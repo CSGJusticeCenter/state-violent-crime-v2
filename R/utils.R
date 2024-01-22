@@ -21,7 +21,7 @@ hc_theme_jc <- hc_theme_merge(
     chart = list(
       style = list(fontFamily = default_fonts)
     ),
-    title = list(style = list(fontFamily = header_font, color = "#004270",
+    title = list(style = list(fontFamily = header_font, color = "#005FAD",
                               fontSize = "24px")),
     subtitle = list(style = list(fontFamily = default_fonts, fontSize = "16px",
                                  color = "#666666")),
@@ -98,17 +98,15 @@ hc_setup <- function(x) {
     )
 }
 
-
 offense_pal <- tibble(
-  color = jr_pal[1:4],
+  color = jr_pal[c(2,3,4,5)],
   crime = c("Homicide", "Robbery", "Rape", "Aggravated assault")
 )
 
-prison_offense_pal <- tibble(
-  color = jr_pal[1:5],
-  off_comb = c("Homicide", "Robbery", "Rape", "Aggravated or simple assault",
-               "Other violent offenses")
-)
+# offense_pal <- tibble(
+#   color = jr_pal[c(5,4,3,2)],
+#   crime = c("Aggravated assault","Rape","Robbery","Homicide")
+# )
 
 reactable_template <- function(df, sort_col = "rate", ...) {
   reactable(
