@@ -70,7 +70,7 @@ srs_us <- srs_state_all |>
 
 srs_unsolved_by_county_to_map <- read_rds(file.path(sp_data_to_plot_path, 
                                              "viol_crime_unsolved_by_county_to_map.rds")) |>  
-  filter(acs_county_state_name == "Maryland") 
+  filter(acs_county_state_name == state) 
 
 srs_unsolved_by_agency_to_table <- read_rds(file.path(sp_data_to_plot_path, 
                                              "viol_crime_unsolved_by_agency_to_table.rds")) |>  
