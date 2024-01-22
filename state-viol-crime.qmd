@@ -69,7 +69,7 @@ srs_us <- srs_state_all |>
   )
 
 srs_unsolved_by_county_to_map <- read_rds(file.path(sp_data_to_plot_path, 
-                                             "viol_crime_unsolved_by_county_to_map.rds")) |>  
+                                             "viol_crime_unsolved_by_county_to_map_clean.rds")) |>
   filter(acs_county_state_name == state) 
 
 srs_unsolved_by_agency_to_table <- read_rds(file.path(sp_data_to_plot_path, 
@@ -585,7 +585,6 @@ counties_represented <- comma(n_distinct(srs_unsolved_by_agency_to_table$county_
 ```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz}
 #| fig-height: 5.5
 
-
 ### choose blues from csgjcr for now
 blue1 <- "#d4e9f8"
 blue2 <- "#9ed4ef"
@@ -634,7 +633,6 @@ state_abbr <- tolower(head(srs_unsolved_by_county_to_map_tooltip$state_abbr[!is.
 
 
 ### pull only state geo that we want for each param iteration
-### to do: add legend title, additional info in tooltip, accessibility? 
 hcmap(
   paste0("countries/us/us-",state_abbr,"-all"),
   data = srs_unsolved_by_county_to_map_tooltip,
@@ -711,8 +709,8 @@ srs_unsolved_by_agency_to_table |>
     columns = list(
       agency_name = colDef(name = "Agency", minWidth = 250),
       # agency_type = colDef(name = "Agency Type"),
-      county_clean = colDef(name = "County"),
-      population = colDef(name = "Jurisdiction Population", minWidth = 115), 
+      county_clean = colDef(name = "County", minWidth = 108),
+      population = colDef(name = "Jurisdiction Population", minWidth = 116), 
       n_reported = colDef(name = "Violent Incidents Reported (2022)"), 
       n_reported_rate = colDef(name = "Violent Incidents per 100k (2022)",
                                format = colFormat(digits = 0)), 

@@ -62,9 +62,6 @@ df_le_agency_crosswalk <- da35158.0001 |>
          state_name = trimws(str_to_title(as.character(statename)),
                              which = "both"),
          name = str_to_title(name)) |> 
-  # ### add nyc as county for nypd + all city departments with reporting agencies
-  # mutate(county_with_nyc = if_else(county=="New York" & state_name=="New York",
-  #                        "New York City",county)) |> 
   dplyr::select(agency_name_lookup = name,
                 ori = ori9,
                 county,
@@ -76,8 +73,11 @@ df_le_agency_crosswalk <- da35158.0001 |>
   ### OF PHILADELPHIA COUNTY
   ### hard code fix for philly
   ### is this just due to the 2012 file being outdated?
-  mutate(ori = if_else(ori=="PAPEP0000",
-                      "PAPEP0100",ori))
+  mutate(county = if_else(ori=="PAPEP0000",
+                      "Philadelphia",county),
+         county_fips = if_else(ori=="PAPEP0000",
+                      "42101",county_fips)) |>
+  distinct()
 
 ### remove original file
 rm(da35158.0001)
@@ -239,29 +239,20 @@ us_county_population <- get_acs(
   geography = "county",
   variables = "S0101_C01_001",
   year = 2021,
-  geometry = TRUE,
+  geometry = FALSE,
   cb = TRUE,
   resolution = "20m") |>
   clean_names() |>
   mutate(state_geoid = substr(geoid, 1, 2)) |>
   ### extract county and state name and trim any leading/trailing whitespace
-  mutate(acs_county_name = trimws(str_extract(name,  ".+?(?=County)")),
+  ### need code that accounts for a variety of geographies (AK + LA don't have counties)
+  mutate(acs_county_name = trimws(str_extract(name,  ".+?(?=County|Parish|Census|Borough|and|Municipality)")),
          acs_county_state_name = trimws(str_extract(name, '\\b[^,]+$'))) |>
-  # ### join 5 nyc counties together
-  # ### and assign geo to nypd
-  # mutate(county_with_nyc = ifelse(acs_county_state_name=="New York" & acs_county_name%in%c("Bronx",
-  #                                                                                          "New York",
-  #                                                                                          "Queens",
-  #                                                                                          "Kings",
-  #                                                                                          "Richmond"),
-  #                                 "New York City",acs_county_name))  |>  ### just keeping geo for now
   dplyr::select(county_fips = geoid,
                 acs_county_name,
                 acs_county_pop=estimate,
                 acs_county_state_name) |>
-  distinct() |> 
-  filter(acs_county_state_name=="Maryland")
-
+  distinct() 
 
 
 ### then right join us_county_population to df_nibrs_violent_unsolved_by_county_to_map 
@@ -274,7 +265,7 @@ df_nibrs_by_county_to_map_state_acs <- left_join(us_county_population,
   ### currently multiplying rate by 100 instead of using scales::percent 
   ### NOTE: SOME VALUES ARE OVER 100 -- RECODING TO 100
   ### MIGHT WANT TO EXPLORE MORE
-  ### BIGGEST EXAMPLE OF ERROR IS PHILLY
+  ### BIGGEST EXAMPLE OF ERROR IS PHILLY (hardcoded fix to philly)
   mutate(nibrs_reported_pop_coverage_pct = (nibrs_reported_pop_jursidiction/acs_county_pop)*100,
          nibrs_reported_pop_coverage_pct = ifelse(nibrs_reported_pop_coverage_pct>100 & !is.na(nibrs_reported_pop_coverage_pct),
                                                   100,nibrs_reported_pop_coverage_pct)) |> 
@@ -283,17 +274,10 @@ df_nibrs_by_county_to_map_state_acs <- left_join(us_county_population,
   mutate(county_clean = ifelse(!is.na(acs_county_name),
                                acs_county_name,county))
   
-  # ### join geo for 5 nyc counties together
-  # ### group by state and county_with_nyc
-  # ### county_with_nyc is duplicated for the 5 nyc counties
-  # group_by(acs_county_state_name,
-  #          county_with_nyc) |>
-  # mutate(geometry = sf::st_union(geometry)) |>
-  # ungroup()
 
 ### write out
 write_rds(df_nibrs_by_county_to_map_state_acs,
-          file.path(sp_data_to_plot_path,"viol_crime_unsolved_by_county_to_map_md_request.rds"))
+          file.path(sp_data_to_plot_path,"viol_crime_unsolved_by_county_to_map_clean.rds"))
 
 ```
 
