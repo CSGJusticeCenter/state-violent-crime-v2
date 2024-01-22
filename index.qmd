@@ -211,7 +211,8 @@ srs_state_to_map_2 <- srs_state_to_map |>
       "<br>",
       "Violent incidents per 100k (2019): ",
       comma(viol_crime_rate_100k_2019, 1)
-    )
+    ),
+    url = paste0("https://projects.csgjusticecenter.org/tools-for-states-to-address-crime/50-state-crime-data/?state=", tolower(state_abbr))
   )
 
 # Get data range
@@ -308,10 +309,15 @@ highchart() |>
       series = list(
         animation = FALSE,
         states = list(inactive = list(opacity = 1)),
-        cursor = "pointer"),
-        accessibility = list(
+        cursor = "pointer",
+      accessibility = list(
           enabled = TRUE,
-          keyboardNavigation = list(enabled = TRUE))) |>
+          keyboardNavigation = list(enabled = TRUE)),
+      point = list(
+          events = list(
+            click = JS("function(){parent.document.location.href = this.options.url}")))
+      )
+    ) |>
   hc_caption(
     text = "FBI Crime Data Explorer",
     align = "right",
@@ -344,7 +350,8 @@ srs_state_to_map_1 <- srs_state_to_map |>
       "<b>", state_name, " – 2022", "</b><br>",
       "Violent incidents per 100k: ", comma(viol_crime_rate_100k_2022, 1), "<br>",
       "Violent incidents reported: ", comma(n_reported_2022, 1), "<br>"
-      )
+      ),
+    url = paste0("https://projects.csgjusticecenter.org/tools-for-states-to-address-crime/50-state-crime-data/?state=", tolower(state_abbr))
     )
 
 ### highchart 
@@ -405,16 +412,19 @@ highchart() |>
     style = list(fontFamily = default_fonts),
     formatter = JS("function(){return(this.point.tooltip)}")
     )  |>
-  hc_plotOptions(
-    series = list(
-      animation = FALSE,
-      states = list(inactive = list(opacity = 1)),
-      cursor = "pointer"),
+   hc_plotOptions(
+      series = list(
+        animation = FALSE,
+        states = list(inactive = list(opacity = 1)),
+        cursor = "pointer",
       accessibility = list(
-        enabled = TRUE,
-        keyboardNavigation = list(enabled = TRUE)
-        )
-      ) |>
+          enabled = TRUE,
+          keyboardNavigation = list(enabled = TRUE)),
+      point = list(
+          events = list(
+            click = JS("function(){parent.document.location.href = this.options.url}")))
+      )
+    ) |>
   hc_caption(
     text = "FBI Crime Data Explorer",
     align = "right",
@@ -464,7 +474,8 @@ srs_state_to_map_4 <- srs_state_to_map |>
       "on unsolved crime to the FBI to", "<br>",
       "make reliable estimates."
       )
-    ))
+    ),
+    url = paste0("https://projects.csgjusticecenter.org/tools-for-states-to-address-crime/50-state-crime-data/?state=", tolower(state_abbr)))
   
 
 # Get data range
@@ -550,14 +561,19 @@ highchart() |>
     style = list(fontFamily = default_fonts),
     formatter = JS("function(){return(this.point.tooltip)}")
   )  |>
-  hc_plotOptions(
+   hc_plotOptions(
       series = list(
         animation = FALSE,
         states = list(inactive = list(opacity = 1)),
-        cursor = "pointer"),
-        accessibility = list(
+        cursor = "pointer",
+      accessibility = list(
           enabled = TRUE,
-          keyboardNavigation = list(enabled = TRUE))) |>
+          keyboardNavigation = list(enabled = TRUE)),
+      point = list(
+          events = list(
+            click = JS("function(){parent.document.location.href = this.options.url}")))
+      )
+    ) |>
     hc_caption(
         text = "FBI Crime Data Explorer",
         align = "right",
@@ -593,7 +609,8 @@ srs_state_to_map_3 <- srs_state_to_map |>
       "on unsolved crime to the FBI to", "<br>",
       "make reliable estimates."
       )
-    ))
+    ),
+    url = paste0("https://projects.csgjusticecenter.org/tools-for-states-to-address-crime/50-state-crime-data/?state=", tolower(state_abbr)))
 
 ### highchart 
 highchart() |> 
@@ -648,14 +665,19 @@ highchart() |>
     style = list(fontFamily = default_fonts),
     formatter = JS("function(){return(this.point.tooltip)}")
     )  |>
-  hc_plotOptions(
+   hc_plotOptions(
       series = list(
         animation = FALSE,
         states = list(inactive = list(opacity = 1)),
-        cursor = "pointer"),
-        accessibility = list(
+        cursor = "pointer",
+      accessibility = list(
           enabled = TRUE,
-          keyboardNavigation = list(enabled = TRUE))) |>
+          keyboardNavigation = list(enabled = TRUE)),
+      point = list(
+          events = list(
+            click = JS("function(){parent.document.location.href = this.options.url}")))
+      )
+    ) |>
     hc_caption(
         text = "FBI Crime Data Explorer",
         align = "right",
