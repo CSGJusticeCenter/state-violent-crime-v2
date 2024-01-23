@@ -315,9 +315,9 @@ highchart() |>
           keyboardNavigation = list(enabled = TRUE)),
       point = list(
           events = list(
-            click = JS("function(){parent.document.location.href = this.options.url}")))
+            click = JS("function(){window.top.location.href = this.options.url}")))
       )
-    ) |>
+    ) |>  
   hc_caption(
     text = "FBI Crime Data Explorer",
     align = "right",
