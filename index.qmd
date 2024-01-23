@@ -422,7 +422,7 @@ highchart() |>
           keyboardNavigation = list(enabled = TRUE)),
       point = list(
           events = list(
-            click = JS("function(){parent.document.location.href = this.options.url}")))
+            click = JS("function(){window.top.location.href = this.options.url}")))
       )
     ) |>
   hc_caption(
@@ -571,7 +571,7 @@ highchart() |>
           keyboardNavigation = list(enabled = TRUE)),
       point = list(
           events = list(
-            click = JS("function(){parent.document.location.href = this.options.url}")))
+            click = JS("function(){window.top.location.href = this.options.url}")))
       )
     ) |>
     hc_caption(
@@ -675,7 +675,7 @@ highchart() |>
           keyboardNavigation = list(enabled = TRUE)),
       point = list(
           events = list(
-            click = JS("function(){parent.document.location.href = this.options.url}")))
+            click = JS("function(){window.top.location.href = this.options.url}")))
       )
     ) |>
     hc_caption(
