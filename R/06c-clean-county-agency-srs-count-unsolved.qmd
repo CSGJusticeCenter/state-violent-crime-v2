@@ -246,6 +246,7 @@ us_county_population <- get_acs(
   mutate(state_geoid = substr(geoid, 1, 2)) |>
   ### extract county and state name and trim any leading/trailing whitespace
   ### need code that accounts for a variety of geographies (AK + LA don't have counties)
+  ### may need to continue adding as other non-county examples arise
   mutate(acs_county_name = trimws(str_extract(name,  ".+?(?=County|Parish|Census|Borough|and|Municipality)")),
          acs_county_state_name = trimws(str_extract(name, '\\b[^,]+$'))) |>
   dplyr::select(county_fips = geoid,
