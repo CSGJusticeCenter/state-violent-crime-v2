@@ -186,10 +186,6 @@ df_nibrs_violent_unsolved_by_county_to_map <- df_nibrs_violent_unsolved_by_year_
 #     2022),
 #     state_name=="Maryland"
 #     ) |> 
-#   mutate(county_clean = ifelse(county=="Baltimore (City)",
-#                                "Baltimore",county),
-#          county_fips = ifelse(county=="Baltimore (City)",
-#                                "24005",county_fips)) |> 
 #   group_by(county,
 #            county_fips,
 #            state_name,
