@@ -524,7 +524,8 @@ to_plot <- srs_state |>
     pct_unsolved_tooltip = ifelse(pct_unsolved<0 & !is.na(pct_unsolved),
                                   "Less than 0%",as.character(percent(pct_unsolved_clean / 100, 1))),
     incidents_unsolved_tooltip = ifelse(incidents_unsolved<0 & !is.na(incidents_unsolved),
-                                  "Fewer than 0",as.character(comma(incidents_unsolved)))) |> 
+                                  "Fewer than 0",as.character(comma(round(incidents_unsolved,
+                                                                          digits=0))))) |> 
   mutate(
     group = fct_reorder(group, pct_unsolved, last),
     tooltip = paste0(
