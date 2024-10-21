@@ -41,7 +41,6 @@ srs_by_cat_state <- srs |>
     incidents_reported_rate_adult = incidents_reported / pop_adult
   )
 
-
 us_pop <- srs_state |>
   distinct(year, state_name, pop_total, pop_adult) |>
   group_by(year) |>

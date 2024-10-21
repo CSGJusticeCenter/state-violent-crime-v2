@@ -46,10 +46,10 @@ state_name_text <- "the United States"
 srs_state <- read_rds(file.path(sp_data_to_plot_path, "srs_state.rds"))
 
 srs_by_cat_us <- srs_state |>
-  filter(crime_cat == "Violent", year >= 2012) |>
+  filter(crime_cat == "Violent", year >= 2013) |>
   group_by(year) |>
   summarize(
-    across(c(pop_total, incidents_reported, incidents_unsolved), sum, na.rm = TRUE)
+    across(c(pop_total, incidents_reported, incidents_unsolved), \(x) sum(x, na.rm = TRUE))
   ) |>
   mutate(
     pop_total = pop_total / 4,
@@ -58,10 +58,10 @@ srs_by_cat_us <- srs_state |>
   )
 
 srs_us <- srs_state |>
-  filter(crime_cat == "Violent", year >= 2012) |>
+  filter(crime_cat == "Violent", year >= 2013) |>
   group_by(year, group) |>
   summarize(
-    across(c(pop_total, incidents_reported, incidents_unsolved), sum, na.rm = TRUE)
+    across(c(pop_total, incidents_reported, incidents_unsolved), \(x) sum(x, na.rm = TRUE))
   ) |>
   ungroup() |> 
   mutate(
@@ -72,10 +72,10 @@ srs_us <- srs_state |>
 
 ### import state-level file for mapping
 ### aggregate counts and create rates
-### only need 2019 and 2022 (to calculate change between the two)
+### only need 2019 and 2023 (to calculate change between the two)
 ### keeping values from each year for tooltips
 srs_state_to_map <- srs_state |>
-  filter(crime_cat == "Violent", year %in% c(2019, 2022)) |>
+  filter(crime_cat == "Violent", year %in% c(2019, 2023)) |>
   group_by(state_name, state_abbr, pop_total, year) |>
   summarize(
     n_reported = sum(incidents_reported, na.rm = TRUE),
@@ -93,23 +93,23 @@ srs_state_to_map <- srs_state |>
   ### calculate change over time
   mutate(
     n_reported_2019 = n_reported[year == 2019],
-    n_reported_2022 = n_reported[year == 2022],
+    n_reported_2023 = n_reported[year == 2023],
     n_unsolved_2019 = n_unsolved[year == 2019],
-    n_unsolved_2022 = n_unsolved[year == 2022],
+    n_unsolved_2023 = n_unsolved[year == 2023],
     viol_crime_rate_100k_2019 = viol_crime_rate_100k[year == 2019],
-    viol_crime_rate_100k_2022 = viol_crime_rate_100k[year == 2022],
+    viol_crime_rate_100k_2023 = viol_crime_rate_100k[year == 2023],
     unsolved_rate_2019 = unsolved_rate[year == 2019] * 100,
-    unsolved_rate_2022 = unsolved_rate[year == 2022] * 100,
-    unsolved_rate_percent_point_change_2019_2022 = unsolved_rate_2022 - unsolved_rate_2019,
-    viol_crime_rate_percent_change_2019_2022 = ((viol_crime_rate_100k[year ==
-                                                                        2022] - viol_crime_rate_100k[year == 2019]) / viol_crime_rate_100k[year ==
+    unsolved_rate_2023 = unsolved_rate[year == 2023] * 100,
+    unsolved_rate_percent_point_change_2019_2023 = unsolved_rate_2023 - unsolved_rate_2019,
+    viol_crime_rate_percent_change_2019_2023 = ((viol_crime_rate_100k[year ==
+                                                                        2023] - viol_crime_rate_100k[year == 2019]) / viol_crime_rate_100k[year ==
                                                                                                                                              2019]
     ) * 100
   ) |>
   ungroup() |>
   ### now drop 2019
-  ### and keep population from 2022
-  filter(year == 2022)
+  ### and keep population from 2023
+  filter(year == 2023)
 
 
 min_max_viol_crime <- srs_by_cat_us |>
@@ -178,7 +178,7 @@ axis_expansion_mult <- 0.5
 
 ::: {.panel-tabset}
 
-## 2019–2022 change
+## 2019–2023 change
 
 ```{r}
 #| fig-height: 5.5
@@ -197,17 +197,17 @@ srs_state_to_map_2 <- srs_state_to_map |>
   ### add '+" in front of positive numbers and 0
   ### only for value we'll include in tooltip
   mutate(
-    viol_crime_rate_percent_change_2019_2022_clean = as.numeric(comma(
-      viol_crime_rate_percent_change_2019_2022, 1
+    viol_crime_rate_percent_change_2019_2023_clean = as.numeric(comma(
+      viol_crime_rate_percent_change_2019_2023, 1
     )),
-    viol_crime_rate_percent_change_2019_2022_clean = sprintf("%+3d%%", viol_crime_rate_percent_change_2019_2022_clean),
+    viol_crime_rate_percent_change_2019_2023_clean = sprintf("%+3d%%", viol_crime_rate_percent_change_2019_2023_clean),
     tooltip = paste0(
       "<b>", state_name, "</b><br>",
       "Change in violent crime rate: ",
-      viol_crime_rate_percent_change_2019_2022_clean,
+      viol_crime_rate_percent_change_2019_2023_clean,
       "<br>",
-      "Violent incidents per 100k (2022): ",
-      comma(viol_crime_rate_100k_2022, 1),
+      "Violent incidents per 100k (2023): ",
+      comma(viol_crime_rate_100k_2023, 1),
       "<br>",
       "Violent incidents per 100k (2019): ",
       comma(viol_crime_rate_100k_2019, 1)
@@ -217,7 +217,7 @@ srs_state_to_map_2 <- srs_state_to_map |>
 
 # Get data range
 data_range <-
-  range(srs_state_to_map_2$viol_crime_rate_percent_change_2019_2022,
+  range(srs_state_to_map_2$viol_crime_rate_percent_change_2019_2023,
         na.rm = TRUE)
 min <- data_range[1]
 max <- data_range[2]
@@ -234,7 +234,7 @@ highchart() |>
     map = hex_gj,
     df = srs_state_to_map_2,
     joinBy = c("state_abb", "state_abbr"),
-    value = "viol_crime_rate_percent_change_2019_2022",
+    value = "viol_crime_rate_percent_change_2019_2023",
     nullColor = "#E8E8E8",
     dataLabels = list(
       enabled = TRUE,
@@ -253,7 +253,7 @@ highchart() |>
       )
   ) |>
   hc_title(
-    text = "Change in violent crime, 2019–2022",
+    text = "Change in violent crime, 2019–2023",
     align = "left",
     style = list(
       fontFamily = header_font,
@@ -328,7 +328,7 @@ highchart() |>
 
 ```
 
-## 2022 crime rate
+## 2023 crime rate
 
 ```{r}
 #| fig-height: 5.5
@@ -344,12 +344,12 @@ srs_state_to_map_1 <- srs_state_to_map |>
   ### add '+" in front of positive numbers and 0
   ### only for value we'll include in tooltip
   mutate(
-    viol_crime_rate_percent_change_2019_2022_clean = as.numeric(comma(viol_crime_rate_percent_change_2019_2022,1)),
-    viol_crime_rate_percent_change_2019_2022_clean = sprintf("%+3d%%", viol_crime_rate_percent_change_2019_2022_clean),
+    viol_crime_rate_percent_change_2019_2023_clean = as.numeric(comma(viol_crime_rate_percent_change_2019_2023,1)),
+    viol_crime_rate_percent_change_2019_2023_clean = sprintf("%+3d%%", viol_crime_rate_percent_change_2019_2023_clean),
     tooltip = paste0(
-      "<b>", state_name, " – 2022", "</b><br>",
-      "Violent incidents per 100k: ", comma(viol_crime_rate_100k_2022, 1), "<br>",
-      "Violent incidents reported: ", comma(n_reported_2022, 1), "<br>"
+      "<b>", state_name, " – 2023", "</b><br>",
+      "Violent incidents per 100k: ", comma(viol_crime_rate_100k_2023, 1), "<br>",
+      "Violent incidents reported: ", comma(n_reported_2023, 1), "<br>"
       ),
     url = paste0("https://projects.csgjusticecenter.org/tools-for-states-to-address-crime/50-state-crime-data/?state=", tolower(state_abbr))
     )
@@ -360,7 +360,7 @@ highchart() |>
     map = hex_gj,
     df = srs_state_to_map_1,
     joinBy = c("state_abb","state_abbr"),
-    value = "viol_crime_rate_100k_2022",
+    value = "viol_crime_rate_100k_2023",
     nullColor = "#E8E8E8",
     dataLabels = list(
       enabled = TRUE,
@@ -379,7 +379,7 @@ highchart() |>
       )
     ) |>
   hc_title(
-    text = "Violent crime rate, 2022",
+    text = "Violent crime rate, 2023",
     align = "left",
     style = list(fontFamily = header_font, color = "#005FAD",
                               fontSize = "24px", fontWeight = "bold")
@@ -436,14 +436,14 @@ highchart() |>
 
 :::
 
-From 2019 to 2022, there were important variations in violent crime trends by offense. Nationally, rates of homicide and aggravated assault increased, while rates of rape and robbery declined.  
+From 2019 to 2023, there were important variations in violent crime trends by offense. Nationally, rates of homicide and aggravated assault increased, while rates of rape and robbery declined.  
 
-Trends in violent crime also varied by state. Between 2019 and 2022, violent crime rates in 32 states and the District of Columbia decreased, while violent crime rates in 18 states increased.
+Trends in violent crime also varied by state. Between 2019 and 2023, violent crime rates in 32 states decreased, while violent crime rates in 18 states and the District of Columbia increased.
 
 
 ::: {.panel-tabset}
 
-## 2019–2022 change
+## 2019–2023 change
 
 ```{r}
 #| fig-height: 5.5
@@ -454,19 +454,19 @@ states_to_exclude_from_unsolved_rate_viz <- c("Illinois", "New York")
 ### add tooltip
 srs_state_to_map_4 <- srs_state_to_map |>
    ### filter out states in states_to_exclude_from_unsolved_rate_viz
-  mutate(unsolved_rate_percent_point_change_2019_2022 = ifelse(state_name%in%states_to_exclude_from_unsolved_rate_viz,
-                                     NA,unsolved_rate_percent_point_change_2019_2022)) |> 
+  mutate(unsolved_rate_percent_point_change_2019_2023 = ifelse(state_name%in%states_to_exclude_from_unsolved_rate_viz,
+                                     NA,unsolved_rate_percent_point_change_2019_2023)) |> 
   ### add '+" in front of positive numbers and 0
   ### only for value we'll include in tooltip
   mutate(
-     unsolved_rate_percent_point_change_2019_2022_clean = as.numeric(comma(unsolved_rate_percent_point_change_2019_2022,1)),
-    unsolved_rate_percent_point_change_2019_2022_clean = sprintf("%+3d", unsolved_rate_percent_point_change_2019_2022_clean),
+     unsolved_rate_percent_point_change_2019_2023_clean = as.numeric(comma(unsolved_rate_percent_point_change_2019_2023,1)),
+    unsolved_rate_percent_point_change_2019_2023_clean = sprintf("%+3d", unsolved_rate_percent_point_change_2019_2023_clean),
     tooltip = ifelse(!state_name%in%states_to_exclude_from_unsolved_rate_viz,
                      paste0(
       "<b>", state_name, "</b><br>",
       "Change in unsolved rate: ",
-      unsolved_rate_percent_point_change_2019_2022_clean, "<br>",
-      "Unsolved rate (2022): ", comma(unsolved_rate_2022, 1), "%", "<br>",
+      unsolved_rate_percent_point_change_2019_2023_clean, "<br>",
+      "Unsolved rate (2023): ", comma(unsolved_rate_2023, 1), "%", "<br>",
       "Unsolved rate (2019): ", comma(unsolved_rate_2019, 1), "%", "<br>"
     ),
       paste0(
@@ -480,7 +480,7 @@ srs_state_to_map_4 <- srs_state_to_map |>
 
 # Get data range
 data_range <-
-  range(srs_state_to_map_4$unsolved_rate_percent_point_change_2019_2022,
+  range(srs_state_to_map_4$unsolved_rate_percent_point_change_2019_2023,
         na.rm = TRUE)
 min <- data_range[1]
 max <- data_range[2]
@@ -497,7 +497,7 @@ highchart() |>
     map = hex_gj,
     df = srs_state_to_map_4,
     joinBy = c("state_abb", "state_abbr"),
-    value = "unsolved_rate_percent_point_change_2019_2022",
+    value = "unsolved_rate_percent_point_change_2019_2023",
     nullColor = "#E8E8E8",
     nullInteraction = TRUE,
     dataLabels = list(
@@ -517,7 +517,7 @@ highchart() |>
       )
   ) |>
   hc_title(
-    text = "Change in unsolved violent crime, 2019–2022",
+    text = "Change in unsolved violent crime, 2019–2023",
     align = "left",
     style = list(
       fontFamily = header_font,
@@ -527,7 +527,7 @@ highchart() |>
     )
   )  |> 
   hc_subtitle(
-        text = "Percentage point change in rate of unsolved violent crimes from 2019 to 2022",
+        text = "Percentage point change in rate of unsolved violent crimes from 2019 to 2023",
         align = "left",
         style = list(fontFamily = default_fonts, fontSize = "16px",
                      color = "#666666")
@@ -583,7 +583,7 @@ highchart() |>
 
 ```
 
-## 2022 unsolved rate
+## 2023 unsolved rate
 
 ```{r}
 #| fig-height: 5.5
@@ -592,17 +592,17 @@ highchart() |>
 srs_state_to_map_3 <- srs_state_to_map |> 
   ### filter out states in states_to_exclude_from_unsolved_rate_viz
   # filter(!state_name%in%states_to_exclude_from_unsolved_rate_viz) |> 
-  mutate(unsolved_rate_2022 = ifelse(state_name%in%states_to_exclude_from_unsolved_rate_viz,
-                                     NA,unsolved_rate_2022)) |> 
+  mutate(unsolved_rate_2023 = ifelse(state_name%in%states_to_exclude_from_unsolved_rate_viz,
+                                     NA,unsolved_rate_2023)) |> 
   ### add '+" in front of positive numbers and 0
   ### only for value we'll include in tooltip
   mutate(
     tooltip = ifelse(!state_name%in%states_to_exclude_from_unsolved_rate_viz,
                      paste0(
-      "<b>", state_name, " – 2022", "</b><br>",
-      "Unsolved rate: ", comma(unsolved_rate_2022, 1),"%", "<br>",
-      "Violent incidents reported: ", comma(n_reported_2022, 1), "<br>",
-      "Violent incidents unsolved: ", comma(n_unsolved_2022, 1)
+      "<b>", state_name, " – 2023", "</b><br>",
+      "Unsolved rate: ", comma(unsolved_rate_2023, 1),"%", "<br>",
+      "Violent incidents reported: ", comma(n_reported_2023, 1), "<br>",
+      "Violent incidents unsolved: ", comma(n_unsolved_2023, 1)
       ),
       paste0(
       state_name, " did not report enough data", "<br>",
@@ -618,7 +618,7 @@ highchart() |>
     map = hex_gj,
     df = srs_state_to_map_3,
     joinBy = c("state_abb","state_abbr"),
-    value = "unsolved_rate_2022",
+    value = "unsolved_rate_2023",
     nullColor = "#E8E8E8",
     nullInteraction = TRUE,
     dataLabels = list(enabled = TRUE, format = "{point.state_abb}",
@@ -632,7 +632,7 @@ highchart() |>
         )
       )) |>
   hc_title(
-    text = "Unsolved violent crime, 2022",
+    text = "Unsolved violent crime, 2023",
     align = "left",
     style = list(fontFamily = header_font, color = "#005FAD",
                               fontSize = "24px", fontWeight = "bold")
@@ -688,18 +688,18 @@ highchart() |>
 
 :::
 
-The percentage of violent crimes that law enforcement did not solve continued to rise from 2019 to 2022.  
+The percentage of violent crimes that law enforcement did not solve continued to rose from 2019 to 2022 and declined in 2023 to a level similar to 2020.  
 
-In 2022, there was no arrest in 63 percent of violent crime incidents reported to police in the United States. This is 6 percentage points higher than in 2019.  
+In 2023, there was no arrest in 59 percent of violent crime incidents reported to police in the United States. This is 2 percentage points higher than in 2019.  
 
-Between 2019 and 2022, unsolved violent crime rates in 12 states decreased, while unsolved crime rates in 36 states and the District of Columbia increased.  
+Between 2019 and 2023, unsolved violent crime rates in 10 states decreased, while unsolved crime rates in 38 states and the District of Columbia increased.  
 
 Illinois and New York did not report enough data to the FBI on whether crimes were solved to make reliable estimates.
 
 
 ## Reported violent crime trends
 
-In 2022, 381 violent crime incidents per 100,000 residents were reported to police in the United States.
+In `r max(srs_by_cat_us$year)`, `r srs_by_cat_us |> filter(year == max(year)) |> pull(incidents_reported_rate_total) |> comma(scale = 1e5)` violent crime incidents per 100,000 residents were reported to police in the United States.
 
 ::: {.panel-tabset}
 
@@ -901,7 +901,7 @@ to_plot_4 |>
   hc_colors(unique(to_plot_4$color)) |> 
   hc_title(text = paste0("Rape in ", state_name_text)) |>
   hc_subtitle(text = "Incidents reported to police per 100,000 residents where rape was the most serious offense") |>
-  hc_caption(text = "FBI Crime Data Explorer<br>The FBI <a href='https://ucr.fbi.gov/recent-program-updates/new-rape-definition-frequently-asked-questions'  target='_parent'>broadened the definition of rape<a/> for crime reporting in 2013") |>
+  hc_caption(text = "FBI Crime Data Explorer") |>
   hc_legend(enabled = FALSE) |> 
   hc_yAxis(
     min = y_min,
@@ -939,7 +939,7 @@ to_plot |>
 
 ## Unsolved violent crime trends
 
-In 2022, 63 percent of violent crime incidents reported to police in the United States were not solved.
+In `r max(srs_by_cat_us$year)`, `r srs_by_cat_us |> filter(year == max(year)) |> pull(pct_unsolved) |> percent(suffix = " percent")` of violent crime incidents reported to police in the United States were not solved.
 
 ```{r}
 unsolved_rate_max <- paste0(comma(min_max_viol_crime$pct_unsolved[2] * 100, 1), " percent")
@@ -961,6 +961,7 @@ to_plot <- srs_by_cat_us |>
       "Violent incidents unsolved: ", comma(incidents_unsolved, 1)
       )
     )
+
 
 rng <- range(to_plot$pct_unsolved)
 mult <- diff(rng) * axis_expansion_mult
@@ -1043,7 +1044,7 @@ to_plot |>
 :::
 
 
-## Violent crime and unsolved crime by state, 2022
+## Violent crime and unsolved crime by state, 2023
 
 ```{r}
 ### function for percent change (thanks Matt!)
@@ -1077,15 +1078,15 @@ add_plus_sign_percent_point_change <- function(value) {
 srs_state_to_map |> 
     select(
       state_name,
-      viol_crime_rate_100k_2022,
-      n_reported_2022,
-      viol_crime_rate_percent_change_2019_2022,
-      unsolved_rate_2022,
-      unsolved_rate_percent_point_change_2019_2022
+      viol_crime_rate_100k_2023,
+      n_reported_2023,
+      viol_crime_rate_percent_change_2019_2023,
+      unsolved_rate_2023,
+      unsolved_rate_percent_point_change_2019_2023
       ) |> 
    ### recode all unsolved incident data to NA if state %in% states_to_exclude_from_unsolved_rate_viz
   mutate(
-    across(unsolved_rate_2022:unsolved_rate_percent_point_change_2019_2022,
+    across(unsolved_rate_2023:unsolved_rate_percent_point_change_2019_2023,
                 ~ if_else(state_name%in%states_to_exclude_from_unsolved_rate_viz,
                           NA, .)
            )
@@ -1094,20 +1095,20 @@ srs_state_to_map |>
     sort_col = list("state_name" = "asc"),
     columns = list(
       state_name = colDef(name = "State"),
-      viol_crime_rate_100k_2022 = colDef(name = "Violent Incidents per 100k (2022)"), 
-      n_reported_2022 = colDef(name = "Violent Incidents Reported (2022)"), 
-      viol_crime_rate_percent_change_2019_2022 = colDef(
-        name = "Percent change in violent crime rate (2019 to 2022)",
+      viol_crime_rate_100k_2023 = colDef(name = "Violent Incidents per 100k (2023)"), 
+      n_reported_2023 = colDef(name = "Violent Incidents Reported (2023)"), 
+      viol_crime_rate_percent_change_2019_2023 = colDef(
+        name = "Percent change in violent crime rate (2019 to 2023)",
         # format = colFormat(suffix = "%", 
         #                    digits = 0),
         cell = add_plus_sign_percent_change
         ),
-      unsolved_rate_2022 = colDef(
-        name = "Unsolved Rate (2022)",
+      unsolved_rate_2023 = colDef(
+        name = "Unsolved Rate (2023)",
         format = colFormat(suffix = "%", digits = 0)
         ),
-      unsolved_rate_percent_point_change_2019_2022 = colDef(
-        name = "Percentage point change in unsolved rate (2019 to 2022)",
+      unsolved_rate_percent_point_change_2019_2023 = colDef(
+        name = "Percentage point change in unsolved rate (2019 to 2023)",
         # format = colFormat(digits = 0),
         cell = add_plus_sign_percent_point_change,
         ),
@@ -1118,16 +1119,17 @@ srs_state_to_map |>
     )
 
 ```
-
+<br>
+<br>
 Data regarding crime and unsolved rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr). Violent crime includes homicide, aggravated assault, robbery, and rape. Crime rates are calculated by dividing the number of estimated incidents by the total population for a given geography. Unsolved rates are the number of reported crimes not cleared by arrest or by exceptional means divided by the number of reported crimes. For more information, see the data sources and methodology section below. 
 
 ::: {.callout-note icon=false collapse=true}
 
 ## Data sources and methodology
 
-Data regarding crime and unsolved rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr){target="_parent"}. Counts of reported violent crime between 2012 and 2022 are derived from the Summary Reporting System (SRS) and the National Incident-Based Reporting System (NIBRS). The FBI generated national estimates for reported crime and clearances based on agency-level reports, and these estimates were published through 2022 in the FBI's annual report, [_Crime in the U.S._](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019){target="_parent"} and on the FBI's [Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/home){target="_parent"}.
+Data regarding crime and unsolved rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr){target="_parent"}. Counts of reported violent crime between 2013 and 2023 are derived from the Summary Reporting System (SRS) and the National Incident-Based Reporting System (NIBRS). The FBI generated national estimates for reported crime and clearances based on agency-level reports, and these estimates were published through 2023 in the FBI's annual report, [_Crime in the U.S._](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019){target="_parent"} and on the FBI's [Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/home){target="_parent"}.
 
-The FBI stopped SRS data collection after data year 2020 and required law enforcement agencies to use NIBRS to report crime statistics to the FBI. This change decreased the number of agencies that submitted their crime data and thus reduced the reliability of state estimates in 2021. In 2022, the FBI allowed agencies who were unable to submit NIBRS data to submit SRS data again. Ninety-four percent of the U.S. population was covered in the 2022 crime data submissions to the FBI, with most states providing close to complete data. However, the population upon which the estimates were derived decreased by over 10 percent in three states: Florida, Hawaii, and Illinois, so conclusions about crime changes in those states should be interpreted with additional caution.
+The FBI stopped SRS data collection after data year 2020 and required law enforcement agencies to use NIBRS to report crime statistics to the FBI. This change decreased the number of agencies that submitted their crime data and thus reduced the reliability of state estimates in 2021. In 2023, the FBI allowed agencies who were unable to submit NIBRS data to submit SRS data again. Ninety-four percent of the U.S. population was covered in the 2023 crime data submissions to the FBI, with most states providing close to complete data. However, the population upon which the estimates were derived decreased by over 10 percent in three states: Florida, Hawaii, and Illinois, so conclusions about crime changes in those states should be interpreted with additional caution.
 
 Crime rates are calculated by dividing the number of estimated incidents by the total U.S. population. Population data come from the U.S. Census Bureau [American Community Survey 1-year estimates (table B01003)](https://www.census.gov/programs-surveys/acs/data.html){target="_parent"} and the [2020 Decennial Census Redistricting Data (table P1)](https://www.census.gov/programs-surveys/decennial-census/about/rdo/summary-files.html){target="_parent"}.
 

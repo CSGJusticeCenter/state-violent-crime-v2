@@ -31,23 +31,27 @@ source("R/utils.R")
 # set path to data folder on sharepoint
 sp_data_to_plot_path <- csg_sp_path("ad_hoc_requests/state_violent_crime_marshall/data")
 
-state <- csg_state_convert(params$state, from = "abbr", "name")
-state_name_text <- if_else(params$state == "DC", "the District of Columbia", state)
+# state <- csg_state_convert(params$state, from = "abbr", "name")
+# state_name_text <- if_else(params$state == "DC", "the District of Columbia", state)
+
+state <- csg_state_convert("NM", from = "abbr", "name")
+state_name_text <- if_else("NM" == "DC", "the District of Columbia", state)
 
 # read in crime data
 srs_state <- read_rds(file.path(sp_data_to_plot_path, "srs_state.rds")) |> 
-  filter(state_name == state, crime_cat == "Violent", year >= 2012)
+  filter(state_name == state, crime_cat == "Violent", year >= 2013)
 srs_by_cat_state <- read_rds(file.path(sp_data_to_plot_path, "srs_by_cat_state.rds")) |> 
-  filter(state_name == state, crime_cat == "Violent", year >= 2012)
+  filter(state_name == state, crime_cat == "Violent", year >= 2013)
 
 
 srs_state_all <- read_rds(file.path(sp_data_to_plot_path, "srs_state.rds")) |> 
-    filter(crime_cat == "Violent", year >= 2012)
+    filter(crime_cat == "Violent", year >= 2013)
 
 srs_by_cat_us <- srs_state_all |>
-  group_by(year, state_name = "United States", state_abbr = "U.S.") |>
+  group_by(year, crime_cat, state_name = "United States", state_abbr = "U.S.") |>
   summarize(
-    across(c(pop_total, incidents_reported, incidents_unsolved), sum, na.rm = TRUE)
+    across(c(pop_total, incidents_reported, incidents_unsolved),
+    \(x) sum(x, na.rm = TRUE))
   ) |>
   ungroup() |> 
   mutate(
@@ -127,7 +131,7 @@ change_text_crime <- case_when(
   TRUE                      ~ "nearly the same as"
   )
 
-us_state_rate_comp <- (min_max_viol_crime$incidents_reported_rate_total[2] - srs_by_cat_us[srs_by_cat_us$year==2022, ]$incidents_reported_rate_total) / srs_by_cat_us[srs_by_cat_us$year==2022, ]$incidents_reported_rate_total
+us_state_rate_comp <- (min_max_viol_crime$incidents_reported_rate_total[2] - srs_by_cat_us[srs_by_cat_us$year==2023, ]$incidents_reported_rate_total) / srs_by_cat_us[srs_by_cat_us$year==2023, ]$incidents_reported_rate_total
 
 us_state_rate_text_crime <- case_when(
   us_state_rate_comp > 0.005 &
@@ -169,7 +173,7 @@ crime_rate_max <- paste0(comma(min_max_viol_crime$incidents_reported_rate_total[
 
 In `r max_year`, `r crime_rate_max` violent crime incidents per 100,000 residents were reported to police in `r state_name_text`. This is `r change_text_crime` the violent crime rate in `r min_year`.
 
-The crime rate in `r state_name_text` in 2022 was `r us_state_rate_text_crime` the United States average.
+The crime rate in `r state_name_text` in 2023 was `r us_state_rate_text_crime` the United States average.
 
 Data regarding crime and unsolved rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr). Violent crime includes homicide, aggravated assault, robbery, and rape. Crime rates are calculated by dividing the number of estimated incidents by the total population for a given geography. For more information, see the data sources and methodology section below.
 
@@ -386,7 +390,7 @@ to_plot_5 |>
   ) |> 
   hc_title(text = paste0("Rape in ", state_name_text)) |>
   hc_subtitle(text = "Incidents reported to police per 100,000 residents where rape was the most serious offense") |>
-  hc_caption(text = "FBI Uniform Crime Reporting Program SRS state estimates<br>The FBI <a href='https://ucr.fbi.gov/recent-program-updates/new-rape-definition-frequently-asked-questions' target='_parent'>broadened the definition of rape<a/> for crime reporting in 2013") |> 
+  hc_caption(text = "FBI Uniform Crime Reporting Program SRS state estimates") |> 
   hc_yAxis(
     min = y_min,
     max = y_max,
@@ -596,33 +600,33 @@ blue5 <- "#00475d"
 srs_unsolved_by_county_to_map_tooltip <- srs_unsolved_by_county_to_map |> 
   ### removing counties' unsolved rate if they have fewer than 25 incidents reported in 2022
   ### we want them grayed out on map
-  mutate(unsolved_rate_2022 = ifelse(n_reported_2022<25,
-                                     NA,unsolved_rate_2022)) |> 
+  mutate(unsolved_rate_2023 = ifelse(n_reported_2023<25,
+                                     NA,unsolved_rate_2023)) |> 
   ### recode any unsolved counts or rates less than 0 to 0
-  mutate(unsolved_rate_2022 = ifelse(unsolved_rate_2022<0 & !is.na(unsolved_rate_2022),
-                                     0,unsolved_rate_2022),
-         n_unsolved_2022 = ifelse(n_unsolved_2022<0 & !is.na(n_unsolved_2022),
-                                     0,n_unsolved_2022)) |> 
+  mutate(unsolved_rate_2023 = ifelse(unsolved_rate_2023<0 & !is.na(unsolved_rate_2023),
+                                     0,unsolved_rate_2023),
+         n_unsolved_2023 = ifelse(n_unsolved_2023<0 & !is.na(n_unsolved_2023),
+                                     0,n_unsolved_2023)) |> 
   # ### recode NaN and Inf values as NA
   # mutate(across(.cols = unsolved_rate_percent_point_change_2019_2022, 
   #               ~ ifelse(is.infinite(.x) | is.nan(.x), NA, .x))) |> 
   # ### add '+" in front of positive numbers and 0
   # ### only for value we'll include in tooltip
   mutate(tooltip = case_when(
-    n_reported_2022>=25 & !is.na(n_reported_2022) ~ paste0(
-    "<b>", county_clean, " – 2022", "</b><br>",
-      "Unsolved rate: ", comma(unsolved_rate_2022, 1),"%", "<br>",
-      "Violent incidents reported: ", comma(n_reported_2022, 1), "<br>",
-      "Violent incidents unsolved: ", comma(n_unsolved_2022, 1), "<br>",
+    n_reported_2023>=25 & !is.na(n_reported_2023) ~ paste0(
+    "<b>", county_clean, " – 2023", "</b><br>",
+      "Unsolved rate: ", comma(unsolved_rate_2023, 1),"%", "<br>",
+      "Violent incidents reported: ", comma(n_reported_2023, 1), "<br>",
+      "Violent incidents unsolved: ", comma(n_unsolved_2023, 1), "<br>",
       "Agencies reporting data: ", comma(n_agencies, 1), "<br>",
       "Population covered by reporting agencies: ", comma(nibrs_reported_pop_coverage_pct,1), "%", "<br>"
       ),
-    n_reported_2022<25 & !is.na(n_reported_2022) ~ paste0(
+    n_reported_2023<25 & !is.na(n_reported_2023) ~ paste0(
       "Agencies in ", county_clean, " did not report enough", "<br>",
       "data on unsolved crime to the FBI to", "<br>",
       "make reliable estimates (fewer than 25 incidents)."
       ),
-    is.na(n_reported_2022)==TRUE ~ paste0(
+    is.na(n_reported_2023)==TRUE ~ paste0(
       "No agencies in ", county_clean, " reported data", "<br>",
       "on unsolved crime to the FBI."
       )
@@ -637,7 +641,7 @@ state_abbr <- tolower(head(srs_unsolved_by_county_to_map_tooltip$state_abbr[!is.
 hcmap(
   paste0("countries/us/us-",state_abbr,"-all"),
   data = srs_unsolved_by_county_to_map_tooltip,
-  value = "unsolved_rate_2022",
+  value = "unsolved_rate_2023",
   joinBy = c("fips","county_fips"),
   nullColor = "#E8E8E8",
   nullInteraction = TRUE,
@@ -649,7 +653,7 @@ hcmap(
         )
       )) |> 
   hc_title(
-    text = "Unsolved violent crime rate, 2022",
+    text = "Unsolved violent crime rate, 2023",
     align = "left",
     style = list(fontFamily = header_font, color = "#005FAD",
                               fontSize = "24px", fontWeight = "bold")
@@ -690,7 +694,7 @@ cat("## Unsolved violent crime by agency in", state_name_text)
 
 ```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz, results='asis'}
 cat(paste0(
-  "In the following table, violent crime incident rates, as well as unsolved violent crime rates, are included for each of the ", total_agencies, " law enforcement agencies that reported data in ",state_name_text," in 2022. Please note that rates calculated for agencies with smaller jurisdiction populations, as well as fewer overall incidents, are less reliable than those for larger jurisdictions and should be interpreted with caution."))
+  "In the following table, violent crime incident rates, as well as unsolved violent crime rates, are included for each of the ", total_agencies, " law enforcement agencies that reported data in ",state_name_text," in 2023. Please note that rates calculated for agencies with smaller jurisdiction populations, as well as fewer overall incidents, are less reliable than those for larger jurisdictions and should be interpreted with caution."))
 ```
 
 ```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz}
@@ -703,6 +707,7 @@ srs_unsolved_by_agency_to_table |>
   select(-c(state_name, 
             agency_type,
             number_of_months_missing,
+            number_of_months_reported,
             ori)) |> 
   arrange(desc(population)) |>
   reactable_template(
@@ -712,11 +717,11 @@ srs_unsolved_by_agency_to_table |>
       # agency_type = colDef(name = "Agency Type"),
       county_clean = colDef(name = "County", minWidth = 108),
       population = colDef(name = "Jurisdiction Population", minWidth = 116), 
-      n_reported = colDef(name = "Violent Incidents Reported (2022)"), 
-      n_reported_rate = colDef(name = "Violent Incidents per 100k (2022)",
+      n_reported = colDef(name = "Violent Incidents Reported (2023)"), 
+      n_reported_rate = colDef(name = "Violent Incidents per 100k (2023)",
                                format = colFormat(digits = 0)), 
       unsolved_rate = colDef(
-        name = "Unsolved Rate (2022)",
+        name = "Unsolved Rate (2023)",
         format = colFormat(digits = 0, percent = TRUE)
         )
       ),
@@ -733,9 +738,9 @@ srs_unsolved_by_agency_to_table |>
 
 ## Data sources and methodology
 
-Data regarding crime and unsolved rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr){target="_parent"}. Counts of reported violent crime between 2012 and 2022 are derived from the Summary Reporting System (SRS) and the National Incident-Based Reporting System (NIBRS). The FBI generated national estimates for reported crime and clearances based on agency-level reports, and these estimates were published through 2022 in the FBI's annual report, [_Crime in the U.S._](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019){target="_parent"} and on the FBI's [Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/home){target="_parent"}.
+Data regarding crime and unsolved rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr){target="_parent"}. Counts of reported violent crime between 2013 and 2023 are derived from the Summary Reporting System (SRS) and the National Incident-Based Reporting System (NIBRS). The FBI generated national estimates for reported crime and clearances based on agency-level reports, and these estimates were published through 2023 in the FBI's annual report, [_Crime in the U.S._](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019){target="_parent"} and on the FBI's [Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/home){target="_parent"}.
 
-The FBI stopped SRS data collection after data year 2020 and required law enforcement agencies to use NIBRS to report crime statistics to the FBI. This change decreased the number of agencies that submitted their crime data and thus reduced the reliability of state estimates in 2021. In 2022, the FBI allowed agencies who were unable to submit NIBRS data to submit SRS data again. Ninety-four percent of the U.S. population was covered in the 2022 crime data submissions to the FBI, with most states providing close to complete data. However, the population upon which the estimates were derived decreased by over 10 percent in three states: Florida, Hawaii, and Illinois, so conclusions about crime changes in those states should be interpreted with additional caution.
+The FBI stopped SRS data collection after data year 2020 and required law enforcement agencies to use NIBRS to report crime statistics to the FBI. This change decreased the number of agencies that submitted their crime data and thus reduced the reliability of state estimates in 2021. In 2023, the FBI allowed agencies who were unable to submit NIBRS data to submit SRS data again. Ninety-four percent of the U.S. population was covered in the 2023 crime data submissions to the FBI, with most states providing close to complete data. However, the population upon which the estimates were derived decreased by over 10 percent in three states: Florida, Hawaii, and Illinois, so conclusions about crime changes in those states should be interpreted with additional caution.
 
 Crime rates are calculated by dividing the number of estimated incidents by the total U.S. population. Population data come from the U.S. Census Bureau [American Community Survey 1-year estimates (table B01003)](https://www.census.gov/programs-surveys/acs/data.html){target="_parent"} and the [2020 Decennial Census Redistricting Data (table P1)](https://www.census.gov/programs-surveys/decennial-census/about/rdo/summary-files.html){target="_parent"}.
 
@@ -750,9 +755,9 @@ Examples of exceptional clearances include the death of the person who committed
 
 In some instances, the unsolved rate and number of unsolved crimes may be less than 0. This is due to the fact that the number of reported crimes cleared in a year can include incidents reported in prior years. For this reason, it is possible to have more cleared crimes than new reported incidents in a given year.
 
-Agency- and county-level violent crime and unsolved rate data presented above are restricted to agencies reporting data for all 12 months in 2022. The calculation of population covered by reporting agencies, as well as the number of reporting agencies by county, is also based on agencies with violent crime data for all 12 months. 
+Agency- and county-level violent crime and unsolved rate data presented above are restricted to agencies reporting data for all 12 months in 2023. The calculation of population covered by reporting agencies, as well as the number of reporting agencies by county, is also based on agencies with violent crime data for all 12 months. 
 
-Counties with fewer than 25 reported violent incidents in 2022 are excluded from the map, as calculations of unsolved rates are not reliable. 
+Counties with fewer than 25 reported violent incidents in 2023 are excluded from the map, as calculations of unsolved rates are not reliable. 
 
 :::
 
