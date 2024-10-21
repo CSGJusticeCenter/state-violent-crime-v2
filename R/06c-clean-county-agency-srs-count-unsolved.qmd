@@ -50,6 +50,12 @@ df_nibrs_kaplan <- read_rds(file.path(sp_data_analysis_path,"fbi","kaplan","fbi_
 ### import 2012 raw le_agency_crosswalk.rda from icpsr download
 load(file=file.path(sharepoint_jr_clearance_le_agency_crosswalk, "le_agency_crosswalk.rda"))
 
+# in 2022 ct change the names and boundaries of their counties
+# this will upate the existing crosswalk with a new fips for each ori
+# going to upate all the ct agencies with these new fips
+ct_county_update <- read_csv("ct-county-update-ori.csv") |> 
+  select(ori, county_fips = new_county_fips)
+
 ### rename and clean dataframe
 df_le_agency_crosswalk <- da35158.0001 |> 
   clean_names() |> 
@@ -77,7 +83,9 @@ df_le_agency_crosswalk <- da35158.0001 |>
                       "Philadelphia",county),
          county_fips = if_else(ori=="PAPEP0000",
                       "42101",county_fips)) |>
-  distinct()
+  distinct() |> 
+  rows_update(ct_county_update, by = "ori")
+
 
 ### remove original file
 rm(da35158.0001)
@@ -190,7 +198,7 @@ us_county_population <- get_acs(
   ### extract county and state name and trim any leading/trailing whitespace
   ### need code that accounts for a variety of geographies (AK + LA don't have counties)
   ### may need to continue adding as other non-county examples arise
-  mutate(acs_county_name = trimws(str_extract(name,  ".+?(?=County|Parish|Census|Borough|and|Municipality)")),
+  mutate(acs_county_name = trimws(str_extract(name,  ".+?(?=County|Parish|Census|Borough|and|Municipality|Planning Region)")),
          acs_county_state_name = trimws(str_extract(name, '\\b[^,]+$'))) |>
   dplyr::select(county_fips = geoid,
                 acs_county_name,
@@ -750,5 +758,4 @@ df_nibrs_violent_unsolved_by_year_agency_offense_type_2023_table <- df_nibrs_vio
 ### write out
 write_rds(df_nibrs_violent_unsolved_by_year_agency_offense_type_2023_table,
           file.path(sp_data_to_plot_path,"viol_crime_unsolved_by_agency_year_and_offense_to_table.rds"))
-
 ```
