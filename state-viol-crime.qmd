@@ -31,11 +31,8 @@ source("R/utils.R")
 # set path to data folder on sharepoint
 sp_data_to_plot_path <- csg_sp_path("ad_hoc_requests/state_violent_crime_marshall/data")
 
-# state <- csg_state_convert(params$state, from = "abbr", "name")
-# state_name_text <- if_else(params$state == "DC", "the District of Columbia", state)
-
-state <- csg_state_convert("NM", from = "abbr", "name")
-state_name_text <- if_else("NM" == "DC", "the District of Columbia", state)
+state <- csg_state_convert(params$state, from = "abbr", "name")
+state_name_text <- if_else(params$state == "DC", "the District of Columbia", state)
 
 # read in crime data
 srs_state <- read_rds(file.path(sp_data_to_plot_path, "srs_state.rds")) |> 
@@ -606,7 +603,7 @@ srs_unsolved_by_county_to_map_tooltip <- srs_unsolved_by_county_to_map |>
   mutate(unsolved_rate_2023 = ifelse(unsolved_rate_2023<0 & !is.na(unsolved_rate_2023),
                                      0,unsolved_rate_2023),
          n_unsolved_2023 = ifelse(n_unsolved_2023<0 & !is.na(n_unsolved_2023),
-                                     0,n_unsolved_2023)) |> 
+                                     0,n_unsolved_2023)) |>
   # ### recode NaN and Inf values as NA
   # mutate(across(.cols = unsolved_rate_percent_point_change_2019_2022, 
   #               ~ ifelse(is.infinite(.x) | is.nan(.x), NA, .x))) |> 

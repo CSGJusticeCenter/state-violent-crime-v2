@@ -1,0 +1,204 @@
+agency_name_lookup,ori,county,old_county_fips,new_county_fips
+Ansonia Police Department                         ,CT0000200,New Haven,09009,09140
+Avon Police Department                            ,CT0000400,Hartford,09003,09110
+Beacon Falls Police Department                    ,CT0000500,New Haven,09009,09140
+Berlin Police Department                          ,CT0000700,Hartford,09003,09110
+Bethel Police Department                          ,CT0000900,Fairfield,09001,09190
+Bloomfield Police Department                      ,CT0001100,Hartford,09003,09110
+Bndd Hartford                                     ,CTBNDHT00,Hartford,09003,09110
+Branford Police Department                        ,CT0001400,New Haven,09009,09170
+Bridgeport Police Department                      ,CT0001500,Fairfield,09001,09120
+Bristol Police Department                         ,CT0001700,Hartford,09003,09140
+Bristol Police Mobile Comp System                 ,CT0000800,Hartford,09003,09140
+Brookfield Police Department                      ,CT0001800,Fairfield,09001,09140
+Canton Police Department                          ,CT0002300,Hartford,09003,09110
+Capital Community College Police                  ,CT0001300,Hartford,09003,09110
+Capitol Region Mobile Data System                 ,CT0000600,Hartford,09003,09110
+Central Connecticut State University Police       ,CT0019000,Hartford,09003,09110
+Central Ct State University Pd New Britain        ,CT0019500,Hartford,09003,09110
+Central Naugatuck Valley Reg Mobile Data Comm     ,CTRTS0200,Hartford,09003,09140
+Cheshire Police Department                        ,CT0002500,New Haven,09009,09140
+Chester Police Department                         ,CT0002600,Hartford,09003,09130
+Cjts Police Department                            ,CT0040200,Middlesex,09007,09130
+Clinton Police Department                         ,CT0002700,Middlesex,09007,09130
+Cntr Naugatuck Val Reg Mobile Data Comm Syst      ,CTRTS0100,New Haven,09009,09140
+Connecticut Motor Vehicle Dept Wethersfield       ,CT0018000,Hartford,09003,09110
+Connecticut State Capitol Police Department       ,CT0020000,Hartford,09003,09110
+Connecticut State Police                          ,CTCSP5000,Hartford,09003,09110
+Connecticut State Police                          ,CTCSP5100,Hartford,09003,09110
+Connecticut State Police                          ,CTCSP4300,Middlesex,09007,09130
+Connecticut State Police                          ,CTCSP0000,New Haven,09009,09140
+Connecticut State Police Cts Mdt                  ,CTCSP8300,Middlesex,09007,09130
+Connecticut State Police-Collect System           ,CTCSP9000,Middlesex,09007,09130
+Connecticut Supreme Court Police Department       ,CT0018600,Hartford,09003,09110
+Coventry Police Department                        ,CT0003200,Tolland,09013,09110
+Cromwell Police Department                        ,CT0003300,Middlesex,09007,09130
+Ct Dps Crim Just Info Serv Sec                    ,CT0040100,Middlesex,09007,09130
+Ct State Police Communication Truck               ,CTCSP8100,Middlesex,09007,09130
+Ct State Police Criminal Investigations           ,CTCSP4600,Middlesex,09007,09130
+Ct State Police Forensic Science Laboratory       ,CTCSP4700,New Haven,09009,09140
+Ct State Police Rentschler Field Stadium          ,CTCSP4900,Hartford,09003,09110
+Danbury Police Department                         ,CT0003400,Fairfield,09001,09190
+Danielson Pd                                      ,CT0006900,Windham,09015,09150
+Darien Police Department                          ,CT0003500,Fairfield,09001,09190
+Dept Of Consumer Prot Drug Control Div Hartford   ,CT0019800,Hartford,09003,09110
+Dept Of Mental Health Div Of Safety Services      ,CT0019900,Hartford,09003,09110
+Dept Revenue Services Security Unit Newington     ,CT0018400,Hartford,09003,09110
+Derby Police Department                           ,CT0003700,New Haven,09009,09140
+Div Of St Envir Conserv Police                    ,CT0018300,Litchfield,09005,09160
+East Hampton Police Department                    ,CT0004200,Middlesex,09007,09130
+East Hartford Police Department                   ,CT0004300,Hartford,09003,09110
+East Haven Police Department                      ,CT0004400,New Haven,09009,09170
+East Lyme Police Department                       ,CT0004500,New London,09011,09180
+East Windsor Police Department                    ,CT0004700,Hartford,09003,09110
+Eastern Connecticut State University Police       ,CT0019100,Windham,09015,09180
+Eastern Ct State University Pd Willimantic        ,CT0019600,Hartford,09003,09180
+Easton Police Department                          ,CT0004600,Fairfield,09001,09120
+Enfield Police Department                         ,CT0004900,Hartford,09003,09110
+Fairfield Police Department                       ,CT0005100,Fairfield,09001,09120
+Fairfield Police Dept                             ,CT001SP00,Fairfield,09001,09120
+Farmington Police Department                      ,CT0005200,Hartford,09003,09110
+Glastonbury Police Department                     ,CT0005400,Hartford,09003,09110
+Granby Police Department                          ,CT0005600,Hartford,09003,09110
+Greenwich Police Department                       ,CT0005700,Fairfield,09001,09190
+Groton (City) Police Department                   ,CT0005900,New London,09011,09180
+Groton (Town) Police Department                   ,CT00A5900,New London,09011,09180
+Groton Long Point Police Department               ,CT00B5900,New London,09011,09180
+Guilford Police Department                        ,CT0006000,New Haven,09009,09170
+Hamden Police Department                          ,CT0006200,New Haven,09009,09170
+Hartford                                          ,CT002SP00,Hartford,09003,09110
+Hartford Police Department                        ,CT0006400,Hartford,09003,09110
+Higher Education Center Safety & Security Pd      ,CT0014900,New Haven,09009,09170
+Jewett City Pd                                    ,CT0005800,New London,09011,09180
+Jewett City Police Department                     ,CT0019700,Hartford,09003,09180
+Ledyard Police Department                         ,CT0007000,New London,09011,09180
+Litchfield Police Department                      ,CT003SP00,Litchfield,09005,09160
+Madison Police Department                         ,CT0007600,New Haven,09009,09170
+Manchester Community College                      ,CT001A100,Hartford,09003,09110
+Manchester Police Department                      ,CT0007700,Hartford,09003,09110
+Mashantucket Peqout Tribal Police Department      ,CTDI00200,New London,09011,09180
+Meriden Police Department                         ,CT0008000,New Haven,09009,09170
+Metro Trans Auth Pd                               ,CT0018500,Fairfield,09001,09120
+Metropolitan District Commission                  ,CT0000100,Hartford,09003,09110
+Metropolitan District Police Department           ,CT0020100,Hartford,09003,09110
+Middlebury Police Department                      ,CT0008100,New Haven,09009,09140
+Middlesex                                         ,CT004SP00,Middlesex,09007,09130
+Middletown Police Department                      ,CT0008300,Middlesex,09007,09130
+Milford Police Department                         ,CT0008400,New Haven,09009,09170
+Mohegan Tribal Police Department                  ,CTDI00300,New London,09011,09180
+Monroe Police Department                          ,CT0008500,Fairfield,09001,09120
+Montville Police Department                       ,CT0008600,New London,09011,09180
+Naugatuck Police Department                       ,CT0008800,New Haven,09009,09140
+New Britain Police Department                     ,CT0008900,Hartford,09003,09110
+New Canaan Police Department                      ,CT0009000,Fairfield,09001,09190
+New Haven                                         ,CT005SP00,New Haven,09009,09170
+New Haven Police Department                       ,CT0009300,New Haven,09009,09170
+New London                                        ,CT006SP00,New London,09011,09190
+New London Police Department                      ,CT0009500,New London,09011,09190
+New Milford Police Department                     ,CT0009600,Litchfield,09005,09190
+Newington Police Department                       ,CT0009400,Hartford,09003,09110
+Newtown Police Department                         ,CT0009700,Fairfield,09001,09190
+North Branford Police Department                  ,CT0009900,New Haven,09009,09170
+North Ctrl Municipal Mobile Data Term System      ,CT0000300,Hartford,09003,09110
+North Haven Police Department                     ,CT0010100,New Haven,09009,09170
+Norwalk Police Department                         ,CT0010300,Fairfield,09001,09190
+Norwich Police Department                         ,CT0010400,New London,09011,09180
+Old Saybrook Police Department                    ,CT0010600,Middlesex,09007,09130
+Orange Police Department                          ,CT0010700,New Haven,09009,09170
+Plainfield Police Department                      ,CT0010900,Windham,09015,09150
+Plainville Police Department                      ,CT0011000,Hartford,09003,09110
+Plymouth Police Department                        ,CT0011100,Litchfield,09005,09140
+Portland Police Department                        ,CT0011300,Middlesex,09007,09130
+Portland Police Department                        ,CT0113000,Middlesex,09007,09130
+Prospect Police Department                        ,CT0011500,New Haven,09009,09140
+Putnam Police Department                          ,CT0011600,Windham,09015,09150
+Redding Police Department                         ,CT0011700,Fairfield,09001,09190
+Ridgefield Police Department                      ,CT0011800,Fairfield,09001,09190
+Rocky Hill Police Department                      ,CT0011900,Hartford,09003,09110
+Seymour Police Department                         ,CT0012400,New Haven,09009,09140
+Shelton Police Department                         ,CT0012600,Fairfield,09001,09140
+Simsbury Police Department                        ,CT0012800,Hartford,09003,09110
+South Central Connecticut Regional Water Authority,CT0017300,New Haven,09009,09140
+South Windsor Police Department                   ,CT0013200,Hartford,09003,09110
+Southbury Police Department                       ,CT0013000,New Haven,09009,09140
+Southern Connecticut State University Police      ,CT0019400,New Haven,09009,09170
+Southington Police Department                     ,CT0013100,Hartford,09003,09110
+Sp Bureau Of Identification Meriden               ,CTCSP0100,Middlesex,09007,09170
+Sp Casino Gambling Operations Unit                ,CTCSP4500,Middlesex,09007,09170
+Sp Central Intelligence Meriden                   ,CTCSP2800,New Haven,09009,09170
+Sp Detective Division Meriden                     ,CTCSPDD00,New Haven,09009,09170
+Sp Division Of Homeland Security                  ,CTCSP4400,New Haven,09009,09140
+Sp Eastern Dist Narcotics Waterford               ,CTCSP1600,New Haven,09009,09180
+Sp Fire Marshals Division Middletown              ,CTCSP1800,Middlesex,09007,09130
+Sp Municipal Police Training Academy Meriden      ,CTCSP1400,New Haven,09009,09170
+Sp Narcotics Division Meriden                     ,CTCSP1900,New Haven,09009,09170
+Sp Northwest Narcotics                            ,CTCSP2700,New Haven,09009,09180
+Sp Sccctf                                         ,CTCSPCI00,New Haven,09009,09180
+Sp Special License And Permits                    ,CTCSP2200,Middlesex,09007,09130
+Sp Troop A Southbury                              ,CTCSP0200,New Haven,09009,09180
+Sp Troop B North Canaan                           ,CTCSP0300,Litchfield,09005,09190
+Sp Troop C Tolland                                ,CTCSP0400,Tolland,09013,09110
+Sp Troop D Danielson                              ,CTCSP0500,Windham,09015,09150
+Sp Troop E Montville                              ,CTCSP0600,New London,09011,09180
+Sp Troop F Westbrook                              ,CTCSP0700,Middlesex,09007,09130
+Sp Troop G Bridgeport                             ,CTCSP0800,Fairfield,09001,09120
+Sp Troop H Hartford                               ,CTCSP0900,Hartford,09003,09110
+Sp Troop I Bethany                                ,CTCSP1000,New Haven,09009,09170
+Sp Troop K Colchester                             ,CTCSP1100,New London,09011,09180
+Sp Troop L Litchfield                             ,CTCSP1200,Litchfield,09005,09160
+Sp Trp W Bradley Internl Airport Windsor Locks    ,CTCSP1300,Hartford,09003,09110
+Sprague                                           ,CT0013300,New London,09011,09180
+St Tax Dept Special Investigation Sect Hartford   ,CT0018200,Hartford,09003,09110
+Stafford Police Department                        ,CT0013400,Tolland,09013,09110
+Stamford Police Department                        ,CT0013500,Fairfield,09001,09190
+State Police                                      ,CTCSP2900,New Haven,09009,09140
+State Police Armory Site 13                       ,CTCSP8200,Hartford,09003,09110
+State Police Auto Theft                           ,CTCSP2500,New Haven,09009,09140
+State Police Auto Theft Bridgeport                ,CTCSP4000,Fairfield,09001,09120
+State Police Auto Theft Hartford                  ,CTCSP4100,Hartford,09003,09110
+State Police Auto Theft New Haven                 ,CTCSP4200,New Haven,09009,09170
+State Police Capitol Police                       ,CTCSP2600,Hartford,09003,09110
+State Police Casino Gambling                      ,CTCSP3700,New London,09011,09190
+State Police Casino Gambling Ledyard              ,CTCSP3800,New London,09011,09180
+State Police Central District Meriden             ,CTCSP2100,New Haven,09009,09170
+State Police Eastern District Norwich             ,CTCSP2400,New London,09011,09180
+State Police Forensic Lab Meriden                 ,CTCSP3500,New Haven,09009,09170
+State Police North Central Narcotics Newington    ,CTCSP3100,Hartford,09003,09110
+State Police Off Of Administrative Svc Hartford   ,CTCSP3400,Hartford,09003,09110
+State Police Off Of Field Operations Middletown   ,CTCSP3300,Middlesex,09007,09130
+State Police Professional Standards Meriden       ,CTCSP3600,New Haven,09009,09170
+State Police Sex Offender Unit                    ,CTCSP3900,Middlesex,09007,09130
+State Police South Central Narcotics Cheshire     ,CTCSP3000,New Haven,09009,09140
+State Police Southwest Narcotics Westport         ,CTCSP3200,Fairfield,09001,09190
+State Police Weapons Division Middletown          ,CTCSP8000,Middlesex,09007,09130
+State Police Western District Litchfield          ,CTCSP2000,Litchfield,09005,09160
+Stonington Police Department                      ,CT0013700,New London,09011,09110
+Stratford Police Department                       ,CT0013800,Fairfield,09001,09120
+Suffield Police Department                        ,CT0013900,Hartford,09003,09110
+Thomaston Police Department                       ,CT0014000,Litchfield,09005,09140
+Tolland                                           ,CT007SP00,Tolland,09013,09110
+Torrington Police Department                      ,CT0014300,Litchfield,09005,09160
+Trumbull Police Department                        ,CT0014400,Fairfield,09001,09120
+Univ Of Ct: Avery Point                           ,CT0017100,New London,09011,09180
+University Of Connecticut Health Center Police    ,CT0019200,Hartford,09003,09110
+University Of Connecticut Police                  ,CT0017000,Tolland,09013,09110
+Vernon Police Department                          ,CT0014600,Tolland,09013,09110
+Wallingford Police Department                     ,CT0014800,New Haven,09009,09170
+Waterbury Police Department                       ,CT0015100,New Haven,09009,09140
+Waterford Police Department                       ,CT0015200,New London,09011,09180
+Watertown Police Department                       ,CT0015300,Litchfield,09005,09140
+West Hartford Police Department                   ,CT0015500,Hartford,09003,09110
+West Haven Police Department                      ,CT0015600,New Haven,09009,09170
+Western Connecticut State University Police       ,CT0019300,Fairfield,09001,09190
+Weston Police Department                          ,CT0015700,Fairfield,09001,09190
+Westport Police Department                        ,CT0015800,Fairfield,09001,09190
+Wethersfield Police Department                    ,CT0015900,Hartford,09003,09110
+Willimantic Police Department                     ,CT0016300,Windham,09015,09180
+Wilton Police Department                          ,CT0016100,Fairfield,09001,09190
+Winchester Police Department                      ,CT0016200,Litchfield,09005,09160
+Windham                                           ,CT008SP00,Windham,09015,09180
+Windsor Locks Police Department                   ,CT0016500,Hartford,09003,09110
+Windsor Police Department                         ,CT0016400,Hartford,09003,09110
+Wolcott Police Department                         ,CT0016600,New Haven,09009,09140
+Woodbridge Police Department                      ,CT0016700,New Haven,09009,09170
+Yale University                                   ,CT0016900,New Haven,09009,09170
