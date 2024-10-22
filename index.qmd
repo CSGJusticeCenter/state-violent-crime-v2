@@ -29,6 +29,9 @@ source("R/utils.R")
 ```
 
 ```{r}
+options(scipen=999)
+
+
 # path to data folder on sharepoint
 sp_data_to_plot_path <-
   csg_sp_path("ad_hoc_requests/state_violent_crime_marshall/data")
@@ -658,7 +661,7 @@ highchart() |>
             layout = "horizontal",
             # title = list(text = "Percent Change"),
             symbolHeight = 25,
-            symbolWidth = 375,
+            symbolWidth = 400,
             x = 0,
             y = 0) |> 
      hc_tooltip(
