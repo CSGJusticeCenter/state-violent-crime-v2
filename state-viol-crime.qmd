@@ -754,6 +754,8 @@ In some instances, the unsolved rate and number of unsolved crimes may be less t
 
 Agency- and county-level violent crime and unsolved rate data presented above are restricted to agencies reporting data for all 12 months in 2023. The calculation of population covered by reporting agencies, as well as the number of reporting agencies by county, is also based on agencies with violent crime data for all 12 months. 
 
+Each law enforcement agency is grouped by the county where they are based using the Law Enforcement Agency Identifiers Crosswalk developed by the Bureau of Justice Statistics in 2012. The overall county population used for calculation of county-level rates are based on the sum of the jurisdiction populations for agencies reporting data for all 12 months in 2023.
+
 Counties with fewer than 25 reported violent incidents in 2023 are excluded from the map, as calculations of unsolved rates are not reliable. 
 
 :::

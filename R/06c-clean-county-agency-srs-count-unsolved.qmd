@@ -187,6 +187,12 @@ df_nibrs_violent_unsolved_by_county_to_map <- df_nibrs_violent_unsolved_by_year_
 ### pull in county-level population estimates
 ###########################################
 
+### create list of words to exclude from county name -- but only if the exact string matches
+### as opposed to a part of another word (i.e., we don't want to remove "and" from "Grand")
+words_to_exclude <- c("County","Parish","Census","Municipality","Planning Region", "Area")
+
+words_to_exclude_use <- paste0("\\b", paste(words_to_exclude , collapse="\\b|\\b"), "\\b")
+
 ### county-level file
 ### pulling in population data in case we want to use it as tooltip
 us_county_population <- get_acs(
@@ -201,8 +207,11 @@ us_county_population <- get_acs(
   ### extract county and state name and trim any leading/trailing whitespace
   ### need code that accounts for a variety of geographies (AK + LA don't have counties)
   ### may need to continue adding as other non-county examples arise
-  mutate(acs_county_name = trimws(str_extract(name,  ".+?(?=County|Parish|Census|Borough|and|Municipality|Planning Region)")),
-         acs_county_state_name = trimws(str_extract(name, '\\b[^,]+$'))) |>
+  mutate(acs_county_name = trimws(str_remove_all(name, 
+                                                  regex(words_to_exclude_use, 
+                                                        ignore_case = TRUE))),
+         acs_county_state_name = trimws(str_extract(name, '\\b[^,]+$')),
+         acs_county_name = trimws(str_remove_all(acs_county_name, paste0(", ",acs_county_state_name)))) |>
   dplyr::select(county_fips = geoid,
                 acs_county_name,
                 acs_county_pop=estimate,
