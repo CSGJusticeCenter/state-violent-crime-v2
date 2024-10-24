@@ -36,9 +36,18 @@ state_name_text <- if_else(params$state == "DC", "the District of Columbia", sta
 
 # read in crime data
 srs_state <- read_rds(file.path(sp_data_to_plot_path, "srs_state.rds")) |> 
-  filter(state_name == state, crime_cat == "Violent", year >= 2013)
+  filter(state_name == state, crime_cat == "Violent", year >= 2013) |>
+  mutate(
+    incidents_solved = incidents_reported - incidents_unsolved,
+    pct_solved = incidents_solved / incidents_reported
+  )
+
 srs_by_cat_state <- read_rds(file.path(sp_data_to_plot_path, "srs_by_cat_state.rds")) |> 
-  filter(state_name == state, crime_cat == "Violent", year >= 2013)
+  filter(state_name == state, crime_cat == "Violent", year >= 2013) |>
+  mutate(
+    incidents_solved = incidents_reported - incidents_unsolved,
+    pct_solved = incidents_solved / incidents_reported
+  )
 
 
 srs_state_all <- read_rds(file.path(sp_data_to_plot_path, "srs_state.rds")) |> 
@@ -54,7 +63,9 @@ srs_by_cat_us <- srs_state_all |>
   mutate(
     pop_total = pop_total / 4,
     incidents_reported_rate_total = incidents_reported / pop_total,
-    pct_unsolved = incidents_unsolved / incidents_reported
+    # pct_unsolved = incidents_unsolved / incidents_reported,
+    incidents_solved = incidents_reported - incidents_unsolved,
+    pct_solved = incidents_solved / incidents_reported
   )
 
 srs_us <- srs_state_all |>
@@ -66,25 +77,31 @@ srs_us <- srs_state_all |>
   mutate(
     pop_total = pop_total,
     incidents_reported_rate_total = incidents_reported / pop_total,
-    pct_unsolved = incidents_unsolved / incidents_reported
+    # pct_unsolved = incidents_unsolved / incidents_reported,
+    incidents_solved = incidents_reported - incidents_unsolved,
+    pct_solved = incidents_solved / incidents_reported
   )
 
-srs_unsolved_by_county_to_map <- read_rds(file.path(sp_data_to_plot_path, 
+srs_solved_by_county_to_map <- read_rds(file.path(sp_data_to_plot_path, 
                                              "viol_crime_unsolved_by_county_to_map_clean.rds")) |>
-  filter(acs_county_state_name == state) 
+  filter(acs_county_state_name == state) |> 
+  mutate(n_solved_2023 = n_reported_2023 - n_unsolved_2023,
+         solved_rate_2023 = n_solved_2023 / n_reported_2023)
 
-srs_unsolved_by_agency_to_table <- read_rds(file.path(sp_data_to_plot_path, 
+srs_solved_by_agency_to_table <- read_rds(file.path(sp_data_to_plot_path, 
                                              "viol_crime_unsolved_by_agency_to_table.rds")) |>  
-  filter(state_name == state)
+  filter(state_name == state) |> 
+  mutate(n_unsolved = unsolved_rate*n_reported,
+         n_solved = n_reported - n_unsolved,
+         solved_rate = n_solved / n_reported)
 
 ### create object with states to exclude
-states_to_exclude_from_unsolved_rate_viz <- c("Illinois",
-                                              "New York")
+states_to_exclude_from_solved_rate_viz <- c("Illinois")
 
 # create title of page
 # we don't have IL or NY clearance rate data so take that out of title
 doc_title <- case_when(
-  state %in% states_to_exclude_from_unsolved_rate_viz ~ paste(state, "data on violent crime"),
+  state %in% states_to_exclude_from_solved_rate_viz ~ paste(state, "data on violent crime"),
   state == "District of Columbia" ~ paste(state, "data on violent crime and arrests"),
   TRUE ~ paste(state, "data on violent crime and arrests"),
   )
@@ -145,18 +162,18 @@ us_state_rate_text_crime <- case_when(
   )
 
 
-pct_change_unsolved <- min_max_viol_crime$pct_unsolved[2] - min_max_viol_crime$pct_unsolved[1]
+pct_change_solved <- min_max_viol_crime$pct_solved[2] - min_max_viol_crime$pct_solved[1]
 
 change_text_clear <- case_when(
-  pct_change_unsolved > 0.005 &
-    pct_change_unsolved < 0.015 ~ paste0(comma(abs(pct_change_unsolved * 100), 1),
+  pct_change_solved > 0.005 &
+    pct_change_solved < 0.015 ~ paste0(comma(abs(pct_change_solved * 100), 1),
                                     " percentage point higher than"),
-  pct_change_unsolved >= 0.015  ~ paste0(comma(abs(pct_change_unsolved * 100), 1),
+  pct_change_solved >= 0.015  ~ paste0(comma(abs(pct_change_solved * 100), 1),
                                     " percentage points higher than"),
-  pct_change_unsolved < -0.005 &
-    pct_change_unsolved > -0.015 ~ paste0(comma(abs(pct_change_unsolved * 100), 1),
+  pct_change_solved < -0.005 &
+    pct_change_solved > -0.015 ~ paste0(comma(abs(pct_change_solved * 100), 1),
                                     " percentage point lower than"),
-  pct_change_unsolved <= -0.015 ~ paste0(comma(abs(pct_change_unsolved * 100), 1),
+  pct_change_solved <= -0.015 ~ paste0(comma(abs(pct_change_solved * 100), 1),
                                     " percentage points lower than"),
   TRUE                      ~ "nearly the same as"
   )
@@ -172,7 +189,7 @@ In `r max_year`, `r crime_rate_max` violent crime incidents per 100,000 resident
 
 The crime rate in `r state_name_text` in 2023 was `r us_state_rate_text_crime` the United States average.
 
-Data regarding crime and unsolved rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr). Violent crime includes homicide, aggravated assault, robbery, and rape. Crime rates are calculated by dividing the number of estimated incidents by the total population for a given geography. For more information, see the data sources and methodology section below.
+Data regarding crime and solved rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr). Violent crime includes homicide, aggravated assault, robbery, and rape. Crime rates are calculated by dividing the number of estimated incidents by the total population for a given geography. For more information, see the data sources and methodology section below.
 
 `r low_reporting_dynamic`
 
@@ -422,23 +439,23 @@ to_plot |>
 
 :::
 
-```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz, results='asis'}
-cat("## Unsolved violent crime in", state_name_text)
+```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
+cat("## Solved violent crime in", state_name_text)
 ```
 
-```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz}
-unsolved_rate_max <- paste0(comma(min_max_viol_crime$pct_unsolved[2] * 100, 1), " percent")
+```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz}
+solved_rate_max <- paste0(comma(min_max_viol_crime$pct_solved[2] * 100, 1), " percent")
 ```
 
-```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz, results='asis'}
+```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
 cat(paste0(
-  "In ", max_year, ", ", unsolved_rate_max, " of violent crimes reported to police in ", state_name_text, " were not solved. This is ", change_text_clear, " the unsolved rate in ", min_year, ".", '\n','\n',
+  "In ", max_year, ", ", solved_rate_max, " of violent crimes reported to police in ", state_name_text, " were solved. This is ", change_text_clear, " the solved rate in ", min_year, ".", '\n','\n',
     
-    "Unsolved rates are the number of reported crimes not cleared by arrest or by exceptional means divided by the number of reported crimes. For more information, see the data sources and methodology section below."
+    "Solved rates are the number of reported crimes cleared by arrest or by exceptional means divided by the number of reported crimes. For more information, see the data sources and methodology section below."
 ))
 ```
 
-```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz, results='asis'}
+```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
 cat("
 ::: {.panel-tabset}
 
@@ -446,33 +463,33 @@ cat("
 ")
 ```
 
-```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz}
+```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz}
 to_plot <- srs_by_cat_state |> 
   bind_rows(srs_by_cat_us) |> 
   filter(year != 2021) |> 
   mutate(
     ### shouldn't be an issue for overall viz
-    ### but just in case, recoding any unsolved rate below 0 to 0
-    pct_unsolved_clean = ifelse(pct_unsolved<0 & !is.na(pct_unsolved),
-                          0,pct_unsolved),
-    pct_unsolved_clean = pct_unsolved_clean * 100,
-    ### create pct_unsolved and incidents_unsolved for tooltip
+    ### but just in case, recoding any solved rate below 0 to 0
+    pct_solved_clean = ifelse(pct_solved<0 & !is.na(pct_solved),
+                          0,pct_solved),
+    pct_solved_clean = pct_solved_clean * 100,
+    ### create pct_solved and incidents_solved for tooltip
     ### where if value is below 0, explanatory text is displayed
     ### instead of number
-    pct_unsolved_tooltip = ifelse(pct_unsolved<0 & !is.na(pct_unsolved),
-                                  "Less than 0%",as.character(percent(pct_unsolved_clean / 100, 1))),
-    incidents_unsolved_tooltip = ifelse(incidents_unsolved<0 & !is.na(incidents_unsolved),
-                                  "Fewer than 0",as.character(comma(incidents_unsolved))),
+    pct_solved_tooltip = ifelse(pct_solved<0 & !is.na(pct_solved),
+                                  "Less than 0%",as.character(percent(pct_solved_clean / 100, 1))),
+    incidents_solved_tooltip = ifelse(incidents_solved<0 & !is.na(incidents_solved),
+                                  "Fewer than 0",as.character(comma(incidents_solved))),
     tooltip = paste0(
       "<b>", state_name, " – ", year, "</b><br>",
-      "Unsolved rate: ", pct_unsolved_tooltip, "<br>",
+      "Solved rate: ", pct_solved_tooltip, "<br>",
       "Violent incidents reported: ", comma(incidents_reported, 1), "<br>",
-      "Violent incidents unsolved: ", incidents_unsolved_tooltip
+      "Violent incidents solved: ", incidents_solved_tooltip
       ),
     state_name = fct_relevel(state_name, "United States", after = Inf)
     )
 
-rng <- range(to_plot$pct_unsolved_clean)
+rng <- range(to_plot$pct_solved_clean)
 mult <- diff(rng) * axis_expansion_mult
 
 y_min <- rng[1] - mult
@@ -483,17 +500,17 @@ y_max <- if_else(y_max > 100, 100, y_max)
 to_plot |> 
   hchart(
     "spline",
-    hcaes(year, pct_unsolved_clean, group = state_name),
+    hcaes(year, pct_solved_clean, group = state_name),
     color = jr_pal[c(1, 7)],
     dashStyle = c("solid", "dash"),
     opacity = c(1, 0.75),
     accessibility = list(
       point = list(
-        valueDescriptionFormat = "year: {point.x:.0f}, unsolved rate: {point.y:.1f}%"
+        valueDescriptionFormat = "year: {point.x:.0f}, solved rate: {point.y:.1f}%"
         )
       )     
   ) |> 
-  hc_title(text = paste("Violent crime unsolved rate in ", state_name_text)) |>
+  hc_title(text = paste("Violent crime solved rate in ", state_name_text)) |>
   hc_caption(text = "FBI Uniform Crime Reporting Program<br>Aggregated from SRS agency-level Offenses Known reports") |> 
   hc_setup() |> 
   hc_yAxis(
@@ -504,41 +521,41 @@ to_plot |>
   )
 ```
 
-```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz, results='asis'}
+```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
 cat("
 ## By offense
 ")
 ```
 
-```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz}
+```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz}
 to_plot <- srs_state |> 
   filter(year != 2021) |> 
   left_join(offense_pal, by = c("group" = "crime")) |> 
   mutate(
-    ### recode any unsolved rate below 0 to 0
-    pct_unsolved_clean = ifelse(pct_unsolved<0 & !is.na(pct_unsolved),
-                          0,pct_unsolved),
-    pct_unsolved_clean = pct_unsolved_clean * 100,
-    ### create pct_unsolved and incidents_unsolved for tooltip
+    ### recode any solved rate below 0 to 0
+    pct_solved_clean = ifelse(pct_solved<0 & !is.na(pct_solved),
+                          0,pct_solved),
+    pct_solved_clean = pct_solved_clean * 100,
+    ### create pct_solved and incidents_solved for tooltip
     ### where if value is below 0, explanatory text is displayed
     ### instead of number
-    pct_unsolved_tooltip = ifelse(pct_unsolved<0 & !is.na(pct_unsolved),
-                                  "Less than 0%",as.character(percent(pct_unsolved_clean / 100, 1))),
-    incidents_unsolved_tooltip = ifelse(incidents_unsolved<0 & !is.na(incidents_unsolved),
-                                  "Fewer than 0",as.character(comma(round(incidents_unsolved,
+    pct_solved_tooltip = ifelse(pct_solved<0 & !is.na(pct_solved),
+                                  "Less than 0%",as.character(percent(pct_solved_clean / 100, 1))),
+    incidents_solved_tooltip = ifelse(incidents_solved<0 & !is.na(incidents_solved),
+                                  "Fewer than 0",as.character(comma(round(incidents_solved,
                                                                           digits=0))))) |> 
   mutate(
-    group = fct_reorder(group, pct_unsolved, last),
+    group = fct_reorder(group, pct_solved, last),
     tooltip = paste0(
       "<b>", group, " – ", year, "</b></br>",
-      "Unsolved rate: ", pct_unsolved_tooltip, "<br>",
+      "Solved rate: ", pct_solved_tooltip, "<br>",
       "Incidents reported: ", comma(incidents_reported, 1), "<br>",
-      "Incidents unsolved: ", incidents_unsolved_tooltip
+      "Incidents solved: ", incidents_solved_tooltip
       )
     ) |> 
-  arrange(desc(year), pct_unsolved_clean)
+  arrange(desc(year), pct_solved_clean)
 
-# rng <- range(to_plot$pct_unsolved_clean)
+# rng <- range(to_plot$pct_solved_clean)
 # mult <- diff(rng) * axis_expansion_mult
 # 
 # y_min <- rng[1] - mult
@@ -549,15 +566,15 @@ to_plot <- srs_state |>
 to_plot |>   
   hchart(
     "spline",
-    hcaes(year, pct_unsolved_clean, group = group),
+    hcaes(year, pct_solved_clean, group = group),
     accessibility = list(
       point = list(
-        valueDescriptionFormat = "{point.state}, year: {point.x:.0f}, unsolved rate: {point.y:.1f}%"
+        valueDescriptionFormat = "{point.state}, year: {point.x:.0f}, solved rate: {point.y:.1f}%"
         )
       )       
   ) |> 
   hc_colors(unique(to_plot$color)) |> 
-  hc_title(text = paste0("Violent crime unsolved rate in ", state_name_text, ", by offense")) |>
+  hc_title(text = paste0("Violent crime solved rate in ", state_name_text, ", by offense")) |>
   hc_caption(text = "FBI Uniform Crime Reporting Program<br>Aggregated from SRS agency-level Offenses Known reports") |> 
   hc_setup() |> 
   hc_yAxis(
@@ -568,23 +585,23 @@ to_plot |>
   )
 ```
 
-```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz, results='asis'}
+```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
 cat("
 :::
 ")
 ```
 
-```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz, results='asis'}
-cat("## Unsolved violent crime by county in", state_name_text)
+```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
+cat("## Solved violent crime by county in", state_name_text)
 ```
 
-```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz}
-total_agencies <- comma(n_distinct(srs_unsolved_by_agency_to_table$ori))
+```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz}
+total_agencies <- comma(n_distinct(srs_solved_by_agency_to_table$ori))
 
-counties_represented <- comma(n_distinct(srs_unsolved_by_agency_to_table$county_clean))
+counties_represented <- comma(n_distinct(srs_solved_by_agency_to_table$county_clean))
 ```
 
-```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz}
+```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz}
 #| fig-height: 5.5
 
 ### choose blues from csgjcr for now
@@ -594,51 +611,51 @@ blue4 <- "#007392"
 blue5 <- "#00475d"
 
 ### add tooltip
-srs_unsolved_by_county_to_map_tooltip <- srs_unsolved_by_county_to_map |> 
-  ### removing counties' unsolved rate if they have fewer than 25 incidents reported in 2022
+srs_solved_by_county_to_map_tooltip <- srs_solved_by_county_to_map |> 
+  ### removing counties' solved rate if they have fewer than 25 incidents reported in 2022
   ### we want them grayed out on map
-  mutate(unsolved_rate_2023 = ifelse(n_reported_2023<25,
-                                     NA,unsolved_rate_2023)) |> 
-  ### recode any unsolved counts or rates less than 0 to 0
-  mutate(unsolved_rate_2023 = ifelse(unsolved_rate_2023<0 & !is.na(unsolved_rate_2023),
-                                     0,unsolved_rate_2023),
-         n_unsolved_2023 = ifelse(n_unsolved_2023<0 & !is.na(n_unsolved_2023),
-                                     0,n_unsolved_2023)) |>
+  mutate(solved_rate_2023 = ifelse(n_reported_2023<25,
+                                     NA,solved_rate_2023)) |> 
+  ### recode any solved counts or rates less than 0 to 0
+  mutate(solved_rate_2023 = ifelse(solved_rate_2023<0 & !is.na(solved_rate_2023),
+                                     0,solved_rate_2023),
+         n_solved_2023 = ifelse(n_solved_2023<0 & !is.na(n_solved_2023),
+                                     0,n_solved_2023)) |>
   # ### recode NaN and Inf values as NA
-  # mutate(across(.cols = unsolved_rate_percent_point_change_2019_2022, 
+  # mutate(across(.cols = solved_rate_percent_point_change_2019_2022, 
   #               ~ ifelse(is.infinite(.x) | is.nan(.x), NA, .x))) |> 
   # ### add '+" in front of positive numbers and 0
   # ### only for value we'll include in tooltip
   mutate(tooltip = case_when(
     n_reported_2023>=25 & !is.na(n_reported_2023) ~ paste0(
     "<b>", county_clean, " – 2023", "</b><br>",
-      "Unsolved rate: ", comma(unsolved_rate_2023, 1),"%", "<br>",
+      "Solved rate: ", comma(solved_rate_2023, 1),"%", "<br>",
       "Violent incidents reported: ", comma(n_reported_2023, 1), "<br>",
-      "Violent incidents unsolved: ", comma(n_unsolved_2023, 1), "<br>",
+      "Violent incidents solved: ", comma(n_solved_2023, 1), "<br>",
       "Agencies reporting data: ", comma(n_agencies, 1), "<br>",
       "Population covered by reporting agencies: ", comma(nibrs_reported_pop_coverage_pct,1), "%", "<br>"
       ),
     n_reported_2023<25 & !is.na(n_reported_2023) ~ paste0(
       "Agencies in ", county_clean, " did not report enough", "<br>",
-      "data on unsolved crime to the FBI to", "<br>",
+      "data on solved crime to the FBI to", "<br>",
       "make reliable estimates (fewer than 25 incidents)."
       ),
     is.na(n_reported_2023)==TRUE ~ paste0(
       "No agencies in ", county_clean, " reported data", "<br>",
-      "on unsolved crime to the FBI."
+      "on solved crime to the FBI."
       )
     )
     ) 
 
 ### extract state abbr for hc map pull
-state_abbr <- tolower(head(srs_unsolved_by_county_to_map_tooltip$state_abbr[!is.na(srs_unsolved_by_county_to_map_tooltip$state_abbr)],1))
+state_abbr <- tolower(head(srs_solved_by_county_to_map_tooltip$state_abbr[!is.na(srs_solved_by_county_to_map_tooltip$state_abbr)],1))
 
 
 ### pull only state geo that we want for each param iteration
 hcmap(
   paste0("countries/us/us-",state_abbr,"-all"),
-  data = srs_unsolved_by_county_to_map_tooltip,
-  value = "unsolved_rate_2023",
+  data = srs_solved_by_county_to_map_tooltip,
+  value = "solved_rate_2023",
   joinBy = c("fips","county_fips"),
   nullColor = "#E8E8E8",
   nullInteraction = TRUE,
@@ -646,11 +663,11 @@ hcmap(
   borderColor = "black",
   accessibility = list(
       point = list(
-        valueDescriptionFormat = "county: {point.acs_county_name}, unsolved rate: {point.value:.1f}"
+        valueDescriptionFormat = "county: {point.acs_county_name}, solved rate: {point.value:.1f}"
         )
       )) |> 
   hc_title(
-    text = "Unsolved violent crime rate, 2023",
+    text = "Solved violent crime rate, 2023",
     align = "left",
     style = list(fontFamily = header_font, color = "#005FAD",
                               fontSize = "24px", fontWeight = "bold")
@@ -685,17 +702,17 @@ hcmap(
 
 ```
 
-```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz, results='asis'}
-cat("## Unsolved violent crime by agency in", state_name_text)
+```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
+cat("## Solved violent crime by agency in", state_name_text)
 ```
 
-```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz, results='asis'}
+```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
 cat(paste0(
-  "In the following table, violent crime incident rates, as well as unsolved violent crime rates, are included for each of the ", total_agencies, " law enforcement agencies that reported data in ",state_name_text," in 2023. Please note that rates calculated for agencies with smaller jurisdiction populations, as well as fewer overall incidents, are less reliable than those for larger jurisdictions and should be interpreted with caution."))
+  "In the following table, violent crime incident rates, as well as solved violent crime rates, are included for each of the ", total_agencies, " law enforcement agencies that reported data in ",state_name_text," in 2023. Please note that rates calculated for agencies with smaller jurisdiction populations, as well as fewer overall incidents, are less reliable than those for larger jurisdictions and should be interpreted with caution."))
 ```
 
-```{r, eval=!state %in% states_to_exclude_from_unsolved_rate_viz}
-srs_unsolved_by_agency_to_table |> 
+```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz}
+srs_solved_by_agency_to_table |> 
   ### overwrite rate  with NA if agency is missing population (current value is .inf)
   mutate(n_reported_rate = ifelse(population==0,
                                   NA,n_reported_rate)) |>
@@ -717,8 +734,8 @@ srs_unsolved_by_agency_to_table |>
       n_reported = colDef(name = "Violent Incidents Reported (2023)"), 
       n_reported_rate = colDef(name = "Violent Incidents per 100k (2023)",
                                format = colFormat(digits = 0, separators = TRUE)), 
-      unsolved_rate = colDef(
-        name = "Unsolved Rate (2023)",
+      solved_rate = colDef(
+        name = "Solved Rate (2023)",
         format = colFormat(digits = 0, percent = TRUE)
         )
       )
@@ -731,13 +748,13 @@ srs_unsolved_by_agency_to_table |>
 
 ## Data sources and methodology
 
-Data regarding crime and unsolved rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr){target="_parent"}. Counts of reported violent crime between 2013 and 2023 are derived from the Summary Reporting System (SRS) and the National Incident-Based Reporting System (NIBRS). The FBI generated national estimates for reported crime and clearances based on agency-level reports, and these estimates were published through 2023 in the FBI's annual report, [_Crime in the U.S._](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019){target="_parent"} and on the FBI's [Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/home){target="_parent"}. For agency-level clearance data, we used [Jacob Kaplan's version of the Offenses Known and Clearances by Arrest](https://doi.org/10.7910/DVN/OESSD1) dataset.
+Data regarding crime and solved rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr){target="_parent"}. Counts of reported violent crime between 2013 and 2023 are derived from the Summary Reporting System (SRS) and the National Incident-Based Reporting System (NIBRS). The FBI generated national estimates for reported crime and clearances based on agency-level reports, and these estimates were published through 2023 in the FBI's annual report, [_Crime in the U.S._](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019){target="_parent"} and on the FBI's [Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/home){target="_parent"}. For agency-level clearance data, we used [Jacob Kaplan's version of the Offenses Known and Clearances by Arrest](https://doi.org/10.7910/DVN/OESSD1) dataset.
 
 The FBI stopped SRS data collection after data year 2020 and required law enforcement agencies to use NIBRS to report crime statistics to the FBI. This change decreased the number of agencies that submitted their crime data and thus reduced the reliability of state estimates in 2021. In 2022, the FBI allowed agencies who were unable to submit NIBRS data to submit SRS data again. Ninety-four percent of the U.S. population was covered in the 2023 crime data submissions to the FBI, with most states providing close to complete data. However, the population upon which the estimates were derived decreased by over 10 percent in three states: Florida, Hawaii, and Illinois, so conclusions about crime changes in those states should be interpreted with additional caution.
 
 Crime rates are calculated by dividing the number of estimated incidents by the total U.S. population. Population data come from the U.S. Census Bureau [American Community Survey 1-year estimates (table B01003)](https://www.census.gov/programs-surveys/acs/data.html){target="_parent"} and the [2020 Decennial Census Redistricting Data (table P1)](https://www.census.gov/programs-surveys/decennial-census/about/rdo/summary-files.html){target="_parent"}.
 
-Unsolved rates are the number of reported crimes not cleared by arrest or by exceptional means divided by the number of reported crimes. A reported crime incident is [cleared by exceptional means](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019/topic-pages/clearances){target='_parent'} if a law enforcement agency is unable to arrest or formally charge a person with a crime, but the agency has met the following conditions:
+Solved rates are the number of reported crimes cleared by arrest or by exceptional means divided by the number of reported crimes. A reported crime incident is [cleared by exceptional means](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019/topic-pages/clearances){target='_parent'} if a law enforcement agency is unable to arrest or formally charge a person with a crime, but the agency has met the following conditions:
     
 a) Identified the person who committed the crime
 b) Gathered enough evidence to support an arrest, make a charge, and turn over the person to the court for prosecution
@@ -746,13 +763,13 @@ d) Encountered a circumstance outside the control of law enforcement that prohib
     
 Examples of exceptional clearances include the death of the person who committed the crime; the victim’s refusal to cooperate with the prosecution after the person who committed the crime has been identified; or the denial of extradition.
 
-In some instances, the unsolved rate and number of unsolved crimes may be less than 0. This is due to the fact that the number of reported crimes cleared in a year can include incidents reported in prior years. For this reason, it is possible to have more cleared crimes than new reported incidents in a given year.
+In some instances, the solved rate and number of solved crimes may be less than 0. This is due to the fact that the number of reported crimes cleared in a year can include incidents reported in prior years. For this reason, it is possible to have more cleared crimes than new reported incidents in a given year.
 
-Agency- and county-level violent crime and unsolved rate data presented above are restricted to agencies reporting data for all 12 months in 2023. The calculation of population covered by reporting agencies, as well as the number of reporting agencies by county, is also based on agencies with violent crime data for all 12 months. 
+Agency- and county-level violent crime and solved rate data presented above are restricted to agencies reporting data for all 12 months in 2023. The calculation of population covered by reporting agencies, as well as the number of reporting agencies by county, is also based on agencies with violent crime data for all 12 months. 
 
 Each law enforcement agency is grouped by the county where they are based using the Law Enforcement Agency Identifiers Crosswalk developed by the Bureau of Justice Statistics in 2012. The overall county population used for calculation of county-level rates are based on the sum of the jurisdiction populations for agencies reporting data for all 12 months in 2023.
 
-Counties with fewer than 25 reported violent incidents in 2023 are excluded from the map, as calculations of unsolved rates are not reliable. 
+Counties with fewer than 25 reported violent incidents in 2023 are excluded from the map, as calculations of solved rates are not reliable. 
 
 :::
 
