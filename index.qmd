@@ -691,7 +691,7 @@ highchart() |>
 
 :::
 
-The percentage of violent crimes that law enforcement did not solve continued to rose from 2019 to 2022 and declined in 2023 to a level similar to 2020.  
+The percentage of violent crimes that law enforcement did not solve continued to rise from 2019 to 2022 and declined in 2023 to a level similar to 2020.  
 
 In 2023, there was no arrest in 59 percent of violent crime incidents reported to police in the United States. This is 2 percentage points higher than in 2019.  
 
