@@ -547,7 +547,7 @@ highchart() |>
     startOnTick = TRUE,
     stops = color_stops(
       7,
-      c(darkblue, regblue, lightblue, white, lightorange, orange, darkorange)
+      rev(c(darkblue, regblue, lightblue, white, lightorange, orange, darkorange))
     ),
     labels = list(
       format = "{value}",
@@ -696,14 +696,9 @@ highchart() |>
 
 :::
 
-The percentage of violent crimes that law enforcement did not solve continued to rise from 2019 to 2022 and declined in 2023 to a level similar to 2020.  
-
-In 2023, there was no arrest in 59 percent of violent crime incidents reported to police in the United States. This is 2 percentage points higher than in 2019.  
-
-Between 2019 and 2023, solved violent crime rates in 10 states decreased, while solved crime rates in 38 states and the District of Columbia increased.  
+Between 2019 and 2023, solved violent crime rates in 18 states increased, while solved crime rates in 32 states and the District of Columbia decreased.
 
 Illinois did not report enough data to the FBI on whether crimes were solved to make reliable estimates.
-
 
 ## Reported violent crime trends
 
@@ -947,7 +942,7 @@ to_plot |>
 
 ## Solved violent crime trends
 
-In `r max(srs_by_cat_us$year)`, `r srs_by_cat_us |> filter(year == max(year)) |> pull(pct_solved) |> percent(suffix = " percent")` of violent crime incidents reported to police in the United States were solved.
+In `r max(srs_by_cat_us$year)`, `r srs_by_cat_us |> filter(year == max(year)) |> pull(pct_solved) |> percent(suffix = " percent")` of violent crime incidents reported to police in the United States were solved. The percentage of violent crimes that law enforcement solved fell from 2019 to 2022 and increased in 2023 to a level similar to 2020.
 
 ```{r}
 solved_rate_max <- paste0(comma(min_max_viol_crime$pct_solved[2] * 100, 1), " percent")

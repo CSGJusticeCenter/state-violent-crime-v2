@@ -121,7 +121,7 @@ reactable_template <- function(df, sort_col = "rate", ...) {
       format = colFormat(digits = 0, separators = TRUE),
       headerStyle = list(fontWeight = 700, fontFamily = default_fonts,
                          fontVariant = "all-petite-caps"),
-      style = list(fontWeight = 400, fontFamily = default_fonts)
+      style = list(fontWeight = 400, fontFamily = "Source Sans Pro")
     ),
     ...
   )
