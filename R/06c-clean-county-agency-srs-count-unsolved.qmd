@@ -631,6 +631,7 @@ write_rds(df_nibrs_by_county_to_map_state_acs,
 # writexl::write_xlsx(df_nibrs_violent_unsolved_by_offense_year_county_2015_2019_nm_pa,
 #           file.path(sp_data_to_plot_path,"viol_crime_by_county_2015_2019_nm_pa.xlsx"))
 
+
 ```
 
 ```{r }
@@ -710,15 +711,7 @@ write_rds(df_nibrs_violent_unsolved_by_agency_to_table_2023_to_overall_viz,
 
 
 ### prep df for agency-level table
-df_nibrs_violent_unsolved_by_agency_to_table_2023 <- df_nibrs_violent_unsolved_by_year_agency |> 
-  filter(year==2023) |> 
-  ### calculate and clean other counts/rates
-    # mutate(
-    #   unsolved_rate_rounded = scales::comma(unsolved_rate*100,accuracy = .1),
-    #   n_reported_rate = scales::comma(n_reported_rate,accuracy = .1),
-    #   n_reported = scales::comma(n_reported,accuracy = 1)) |> 
-  distinct(ori,
-           .keep_all = TRUE) |> 
+df_nibrs_violent_unsolved_by_agency_to_table <- df_nibrs_violent_unsolved_by_year_agency |> 
   ### join acs county level file to clean up county name
   ### similar to mapping df
   left_join(us_county_population,
@@ -727,7 +720,8 @@ df_nibrs_violent_unsolved_by_agency_to_table_2023 <- df_nibrs_violent_unsolved_b
   ### so we'll clean up `county` -- using the acs version when not missing
   mutate(county_clean = ifelse(!is.na(acs_county_name),
                                acs_county_name,county)) |> 
-    dplyr::select(agency_name,
+    dplyr::select(year,
+                  agency_name,
                 agency_type,
                 ori,
                 county_clean,
@@ -737,8 +731,51 @@ df_nibrs_violent_unsolved_by_agency_to_table_2023 <- df_nibrs_violent_unsolved_b
                 unsolved_rate,
                 state_name,
                 number_of_months_missing,
-                number_of_months_reported)
-  
+                number_of_months_reported) |> 
+  mutate(n_unsolved = unsolved_rate*n_reported,
+         n_solved = n_reported - n_unsolved,
+         solved_rate = n_solved / n_reported)  |> 
+  # dplyr::select(-year) |> 
+  distinct(ori,
+           year,
+           .keep_all = TRUE) 
+
+### first df with everything we need except for calculation of 2019 to 2023 change
+df_nibrs_violent_unsolved_by_agency_to_table_2023_1 <- df_nibrs_violent_unsolved_by_agency_to_table |> 
+  filter(year==2023)
+
+### now calculate 2019-2023 change where possible and join to df_nibrs_violent_unsolved_by_agency_to_table_2023_1
+### agency must have both years of data for this calculation
+df_nibrs_violent_unsolved_by_agency_to_table_2023_to_join <- df_nibrs_violent_unsolved_by_agency_to_table |> 
+  filter(year%in%c(
+    2019,
+    2023)) |>
+  group_by(ori) |>
+  mutate(years_of_data = n_distinct(year)) |>
+  filter(years_of_data==2) |>
+  ### currently multiplying rate by 100 instead of using scales::percent
+  ### may be better way to format within hc
+  mutate(solved_rate_2019 = solved_rate[year==2019],
+         solved_rate_2023 = solved_rate[year==2023],
+         solved_rate_percent_change_2019_2023 = ((solved_rate_2023 - solved_rate_2019)/solved_rate_2019)) |>
+  ungroup() |>
+  ### now drop 2019
+  ### and keep unsolved rate from 2022
+  filter(year==2023) |> 
+    dplyr::select(ori,
+                  solved_rate_percent_change_2019_2023) |> 
+  mutate(solved_rate_percent_change_2019_2023 = ifelse(is.nan(solved_rate_percent_change_2019_2023),
+                                                       NA,solved_rate_percent_change_2019_2023),
+         solved_rate_percent_change_2019_2023 = ifelse(is.infinite(solved_rate_percent_change_2019_2023),
+                                                       NA,solved_rate_percent_change_2019_2023))
+
+
+### now join df_nibrs_violent_unsolved_by_agency_to_table_2023 and df_nibrs_violent_unsolved_by_agency_to_table_2023_to_join
+df_nibrs_violent_unsolved_by_agency_to_table_2023 <- left_join(df_nibrs_violent_unsolved_by_agency_to_table_2023_1,
+                                                               df_nibrs_violent_unsolved_by_agency_to_table_2023_to_join,
+                                                               by = "ori")
+
+
 
 ### write out
 write_rds(df_nibrs_violent_unsolved_by_agency_to_table_2023,
@@ -749,8 +786,8 @@ write_rds(df_nibrs_violent_unsolved_by_agency_to_table_2023,
 ```{r }
 ########################################
 ### create agency-level file for table -- broken out by offense type and year
-### two measures: 2022 unsolved rate 
-### and 2019-2022 percent change
+### two measures: 2023 solved rate 
+### and 2019-2023 percent change
 ########################################
 df_nibrs_violent_unsolved_by_year_agency_offense_type <- df_nibrs_kaplan |> 
   filter(group %in% c("Homicide", "Rape", "Robbery", "Aggravated assault"),

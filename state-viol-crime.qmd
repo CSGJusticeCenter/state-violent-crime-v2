@@ -7,7 +7,7 @@ mainfont: "GT-America"
 linkcolor: "#00355a"
 anchor-sections: false
 params:
-  state: "AK"
+  state: "CO"
 execute:
   echo: false
   warning: false
@@ -90,10 +90,7 @@ srs_solved_by_county_to_map <- read_rds(file.path(sp_data_to_plot_path,
 
 srs_solved_by_agency_to_table <- read_rds(file.path(sp_data_to_plot_path, 
                                              "viol_crime_unsolved_by_agency_to_table.rds")) |>  
-  filter(state_name == state) |> 
-  mutate(n_unsolved = unsolved_rate*n_reported,
-         n_solved = n_reported - n_unsolved,
-         solved_rate = n_solved / n_reported)
+  filter(state_name == state) 
 
 ### create object with states to exclude
 states_to_exclude_from_solved_rate_viz <- c("Illinois")
@@ -621,6 +618,8 @@ srs_solved_by_county_to_map_tooltip <- srs_solved_by_county_to_map |>
                                      0,solved_rate_2023),
          n_solved_2023 = ifelse(n_solved_2023<0 & !is.na(n_solved_2023),
                                      0,n_solved_2023)) |>
+  ### convert solve rate from decimal to whole number -- for map legend
+  mutate(solved_rate_2023 = solved_rate_2023*100) |> 
   # ### recode NaN and Inf values as NA
   # mutate(across(.cols = solved_rate_percent_point_change_2019_2022, 
   #               ~ ifelse(is.infinite(.x) | is.nan(.x), NA, .x))) |> 
@@ -716,13 +715,15 @@ srs_solved_by_agency_to_table |>
   ### overwrite rate  with NA if agency is missing population (current value is .inf)
   mutate(n_reported_rate = ifelse(population==0,
                                   NA,n_reported_rate)) |>
-  ### remove state name
+  ### remove state name and other additional columns
   ### we just needed it to filter on param
-  select(-c(state_name, 
-            agency_type,
-            number_of_months_missing,
-            number_of_months_reported,
-            ori)) |> 
+  select(agency_name,
+         county_clean,
+         population,
+         n_reported,
+         n_reported_rate,
+         solved_rate,
+         solved_rate_percent_change_2019_2023) |> 
   arrange(desc(population)) |>
   reactable_template(
     sort_col = list("population" = "desc"),
@@ -730,12 +731,16 @@ srs_solved_by_agency_to_table |>
       agency_name = colDef(name = "Agency", minWidth = 250),
       # agency_type = colDef(name = "Agency Type"),
       county_clean = colDef(name = "County", minWidth = 108),
-      population = colDef(name = "Jurisdiction Population", minWidth = 116), 
+      population = colDef(name = "Jurisdiction Population", minWidth = 130), 
       n_reported = colDef(name = "Violent Incidents Reported (2023)"), 
       n_reported_rate = colDef(name = "Violent Incidents per 100k (2023)",
                                format = colFormat(digits = 0, separators = TRUE)), 
       solved_rate = colDef(
         name = "Solve Rate (2023)",
+        format = colFormat(digits = 0, percent = TRUE)
+        ),
+      solved_rate_percent_change_2019_2023 = colDef(
+        name = "Change in Solve Rate, 2019-2023",
         format = colFormat(digits = 0, percent = TRUE)
         )
       )
