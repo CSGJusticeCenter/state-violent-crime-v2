@@ -189,7 +189,7 @@ In `r max_year`, `r crime_rate_max` violent crime incidents per 100,000 resident
 
 The crime rate in `r state_name_text` in 2023 was `r us_state_rate_text_crime` the United States average.
 
-Data regarding crime and solved rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr). Violent crime includes homicide, aggravated assault, robbery, and rape. Crime rates are calculated by dividing the number of estimated incidents by the total population for a given geography. For more information, see the data sources and methodology section below.
+Data regarding crime and solve rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr). Violent crime includes homicide, aggravated assault, robbery, and rape. Crime rates are calculated by dividing the number of estimated incidents by the total population for a given geography. For more information, see the data sources and methodology section below.
 
 `r low_reporting_dynamic`
 
@@ -449,9 +449,9 @@ solved_rate_max <- paste0(comma(min_max_viol_crime$pct_solved[2] * 100, 1), " pe
 
 ```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
 cat(paste0(
-  "In ", max_year, ", ", solved_rate_max, " of violent crimes reported to police in ", state_name_text, " were solved. This is ", change_text_clear, " the solved rate in ", min_year, ".", '\n','\n',
+  "In ", max_year, ", ", solved_rate_max, " of violent crimes reported to police in ", state_name_text, " were solved. This is ", change_text_clear, " the solve rate in ", min_year, ".", '\n','\n',
     
-    "Solved rates are the number of reported crimes cleared by arrest or by exceptional means divided by the number of reported crimes. For more information, see the data sources and methodology section below."
+    "Solve rates are the number of reported crimes cleared by arrest or by exceptional means divided by the number of reported crimes. For more information, see the data sources and methodology section below."
 ))
 ```
 
@@ -482,7 +482,7 @@ to_plot <- srs_by_cat_state |>
                                   "Fewer than 0",as.character(comma(incidents_solved))),
     tooltip = paste0(
       "<b>", state_name, " – ", year, "</b><br>",
-      "Solved rate: ", pct_solved_tooltip, "<br>",
+      "Solve rate: ", pct_solved_tooltip, "<br>",
       "Violent incidents reported: ", comma(incidents_reported, 1), "<br>",
       "Violent incidents solved: ", incidents_solved_tooltip
       ),
@@ -506,11 +506,11 @@ to_plot |>
     opacity = c(1, 0.75),
     accessibility = list(
       point = list(
-        valueDescriptionFormat = "year: {point.x:.0f}, solved rate: {point.y:.1f}%"
+        valueDescriptionFormat = "year: {point.x:.0f}, solve rate: {point.y:.1f}%"
         )
       )     
   ) |> 
-  hc_title(text = paste("Violent crime solved rate in ", state_name_text)) |>
+  hc_title(text = paste("Violent crime solve rate in ", state_name_text)) |>
   hc_caption(text = "FBI Uniform Crime Reporting Program<br>Aggregated from SRS agency-level Offenses Known reports") |> 
   hc_setup() |> 
   hc_yAxis(
@@ -548,7 +548,7 @@ to_plot <- srs_state |>
     group = fct_reorder(group, pct_solved, last),
     tooltip = paste0(
       "<b>", group, " – ", year, "</b></br>",
-      "Solved rate: ", pct_solved_tooltip, "<br>",
+      "Solve rate: ", pct_solved_tooltip, "<br>",
       "Incidents reported: ", comma(incidents_reported, 1), "<br>",
       "Incidents solved: ", incidents_solved_tooltip
       )
@@ -569,12 +569,12 @@ to_plot |>
     hcaes(year, pct_solved_clean, group = group),
     accessibility = list(
       point = list(
-        valueDescriptionFormat = "{point.state}, year: {point.x:.0f}, solved rate: {point.y:.1f}%"
+        valueDescriptionFormat = "{point.state}, year: {point.x:.0f}, solve rate: {point.y:.1f}%"
         )
       )       
   ) |> 
   hc_colors(unique(to_plot$color)) |> 
-  hc_title(text = paste0("Violent crime solved rate in ", state_name_text, ", by offense")) |>
+  hc_title(text = paste0("Violent crime solve rate in ", state_name_text, ", by offense")) |>
   hc_caption(text = "FBI Uniform Crime Reporting Program<br>Aggregated from SRS agency-level Offenses Known reports") |> 
   hc_setup() |> 
   hc_yAxis(
@@ -629,7 +629,7 @@ srs_solved_by_county_to_map_tooltip <- srs_solved_by_county_to_map |>
   mutate(tooltip = case_when(
     n_reported_2023>=25 & !is.na(n_reported_2023) ~ paste0(
     "<b>", county_clean, " – 2023", "</b><br>",
-      "Solved rate: ", comma(solved_rate_2023, 1),"%", "<br>",
+      "Solve rate: ", comma(solved_rate_2023, 1),"%", "<br>",
       "Violent incidents reported: ", comma(n_reported_2023, 1), "<br>",
       "Violent incidents solved: ", comma(n_solved_2023, 1), "<br>",
       "Agencies reporting data: ", comma(n_agencies, 1), "<br>",
@@ -663,11 +663,11 @@ hcmap(
   borderColor = "black",
   accessibility = list(
       point = list(
-        valueDescriptionFormat = "county: {point.acs_county_name}, solved rate: {point.value:.1f}"
+        valueDescriptionFormat = "county: {point.acs_county_name}, solve rate: {point.value:.1f}"
         )
       )) |> 
   hc_title(
-    text = "Solved violent crime rate, 2023",
+    text = "Violent crime solve rate, 2023",
     align = "left",
     style = list(fontFamily = header_font, color = "#005FAD",
                               fontSize = "24px", fontWeight = "bold")
@@ -708,7 +708,7 @@ cat("## Solved violent crime by agency in", state_name_text)
 
 ```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
 cat(paste0(
-  "In the following table, violent crime incident rates, as well as solved violent crime rates, are included for each of the ", total_agencies, " law enforcement agencies that reported data in ",state_name_text," in 2023. Please note that rates calculated for agencies with smaller jurisdiction populations, as well as fewer overall incidents, are less reliable than those for larger jurisdictions and should be interpreted with caution."))
+  "In the following table, violent crime incident rates, as well as violent crime solve rates, are included for each of the ", total_agencies, " law enforcement agencies that reported data in ",state_name_text," in 2023. Please note that rates calculated for agencies with smaller jurisdiction populations, as well as fewer overall incidents, are less reliable than those for larger jurisdictions and should be interpreted with caution."))
 ```
 
 ```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz}
@@ -735,7 +735,7 @@ srs_solved_by_agency_to_table |>
       n_reported_rate = colDef(name = "Violent Incidents per 100k (2023)",
                                format = colFormat(digits = 0, separators = TRUE)), 
       solved_rate = colDef(
-        name = "Solved Rate (2023)",
+        name = "Solve Rate (2023)",
         format = colFormat(digits = 0, percent = TRUE)
         )
       )
@@ -748,13 +748,13 @@ srs_solved_by_agency_to_table |>
 
 ## Data sources and methodology
 
-Data regarding crime and solved rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr){target="_parent"}. Counts of reported violent crime between 2013 and 2023 are derived from the Summary Reporting System (SRS) and the National Incident-Based Reporting System (NIBRS). The FBI generated national estimates for reported crime and clearances based on agency-level reports, and these estimates were published through 2023 in the FBI's annual report, [_Crime in the U.S._](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019){target="_parent"} and on the FBI's [Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/home){target="_parent"}. For agency-level clearance data, we used [Jacob Kaplan's version of the Offenses Known and Clearances by Arrest](https://doi.org/10.7910/DVN/OESSD1) dataset.
+Data regarding crime and solve rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr){target="_parent"}. Counts of reported violent crime between 2013 and 2023 are derived from the Summary Reporting System (SRS) and the National Incident-Based Reporting System (NIBRS). The FBI generated national estimates for reported crime and clearances based on agency-level reports, and these estimates were published through 2023 in the FBI's annual report, [_Crime in the U.S._](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019){target="_parent"} and on the FBI's [Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/home){target="_parent"}. For agency-level clearance data, we used [Jacob Kaplan's version of the Offenses Known and Clearances by Arrest](https://doi.org/10.7910/DVN/OESSD1) dataset.
 
 The FBI stopped SRS data collection after data year 2020 and required law enforcement agencies to use NIBRS to report crime statistics to the FBI. This change decreased the number of agencies that submitted their crime data and thus reduced the reliability of state estimates in 2021. In 2022, the FBI allowed agencies who were unable to submit NIBRS data to submit SRS data again. Ninety-four percent of the U.S. population was covered in the 2023 crime data submissions to the FBI, with most states providing close to complete data. However, the population upon which the estimates were derived decreased by over 10 percent in three states: Florida, Hawaii, and Illinois, so conclusions about crime changes in those states should be interpreted with additional caution.
 
 Crime rates are calculated by dividing the number of estimated incidents by the total U.S. population. Population data come from the U.S. Census Bureau [American Community Survey 1-year estimates (table B01003)](https://www.census.gov/programs-surveys/acs/data.html){target="_parent"} and the [2020 Decennial Census Redistricting Data (table P1)](https://www.census.gov/programs-surveys/decennial-census/about/rdo/summary-files.html){target="_parent"}.
 
-Solved rates are the number of reported crimes cleared by arrest or by exceptional means divided by the number of reported crimes. A reported crime incident is [cleared by exceptional means](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019/topic-pages/clearances){target='_parent'} if a law enforcement agency is unable to arrest or formally charge a person with a crime, but the agency has met the following conditions:
+Solve rates are the number of reported crimes cleared by arrest or by exceptional means divided by the number of reported crimes. A reported crime incident is [cleared by exceptional means](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019/topic-pages/clearances){target='_parent'} if a law enforcement agency is unable to arrest or formally charge a person with a crime, but the agency has met the following conditions:
     
 a) Identified the person who committed the crime
 b) Gathered enough evidence to support an arrest, make a charge, and turn over the person to the court for prosecution
@@ -763,13 +763,13 @@ d) Encountered a circumstance outside the control of law enforcement that prohib
     
 Examples of exceptional clearances include the death of the person who committed the crime; the victim’s refusal to cooperate with the prosecution after the person who committed the crime has been identified; or the denial of extradition.
 
-In some instances, the solved rate and number of solved crimes may be less than 0. This is due to the fact that the number of reported crimes cleared in a year can include incidents reported in prior years. For this reason, it is possible to have more cleared crimes than new reported incidents in a given year.
+In some instances, the solve rate and number of solved crimes may be less than 0. This is due to the fact that the number of reported crimes cleared in a year can include incidents reported in prior years. For this reason, it is possible to have more cleared crimes than new reported incidents in a given year.
 
-Agency- and county-level violent crime and solved rate data presented above are restricted to agencies reporting data for all 12 months in 2023. The calculation of population covered by reporting agencies, as well as the number of reporting agencies by county, is also based on agencies with violent crime data for all 12 months. 
+Agency- and county-level violent crime and solve rate data presented above are restricted to agencies reporting data for all 12 months in 2023. The calculation of population covered by reporting agencies, as well as the number of reporting agencies by county, is also based on agencies with violent crime data for all 12 months. 
 
 Each law enforcement agency is grouped by the county where they are based using the Law Enforcement Agency Identifiers Crosswalk developed by the Bureau of Justice Statistics in 2012. The overall county population used for calculation of county-level rates are based on the sum of the jurisdiction populations for agencies reporting data for all 12 months in 2023.
 
-Counties with fewer than 25 reported violent incidents in 2023 are excluded from the map, as calculations of solved rates are not reliable. 
+Counties with fewer than 25 reported violent incidents in 2023 are excluded from the map, as calculations of solve rates are not reliable. 
 
 :::
 
