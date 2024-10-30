@@ -714,6 +714,20 @@ cat(paste0(
 
 
 ```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz}
+
+### function for percent change
+add_plus_sign_percent_point_change <- function(value) {
+  
+  if (!is.numeric(value)) 
+    paste0(value)
+  
+  if (!is.na(value) & value > 0)
+    paste0("+", round(value,digits = 0))
+  
+  else
+    paste0(round(value,digits=0))
+}
+
 srs_solved_by_agency_to_table |> 
   ### overwrite rate  with NA if agency is missing population (current value is .inf)
   mutate(n_reported_rate = ifelse(population==0,
@@ -726,7 +740,11 @@ srs_solved_by_agency_to_table |>
          n_reported_rate,
          n_reported,
          solved_rate,
-         solved_rate_percent_change_2019_2023) |> 
+         solved_rate_percent_point_change_2019_2023) |> 
+  ### round solved_rate_percent_point_change_2019_2023 for successful use 
+  ### of add_plus_sign_percent_point_change function
+  mutate(solved_rate_percent_point_change_2019_2023 = as.numeric(round(solved_rate_percent_point_change_2019_2023,
+                                                            digits = 0))) |>
   arrange(desc(population)) |>
   reactable_template(
     sort_col = list("population" = "desc"),
@@ -742,9 +760,10 @@ srs_solved_by_agency_to_table |>
         name = "Solve Rate (2023)",
         format = colFormat(digits = 0, percent = TRUE)
         ),
-      solved_rate_percent_change_2019_2023 = colDef(
+      solved_rate_percent_point_change_2019_2023 = colDef(
         name = "Percentage point change in solve rate (2019 to 2023)",
-        format = colFormat(digits = 0, percent = TRUE)
+        # format = colFormat(digits = 0, percent = TRUE)
+        cell = add_plus_sign_percent_point_change
         )
       )
     )

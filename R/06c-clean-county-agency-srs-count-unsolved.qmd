@@ -757,17 +757,20 @@ df_nibrs_violent_unsolved_by_agency_to_table_2023_to_join <- df_nibrs_violent_un
   ### may be better way to format within hc
   mutate(solved_rate_2019 = solved_rate[year==2019],
          solved_rate_2023 = solved_rate[year==2023],
-         solved_rate_percent_change_2019_2023 = ((solved_rate_2023 - solved_rate_2019)/solved_rate_2019)) |>
+         # solved_rate_percent_change_2019_2023 = ((solved_rate_2023 - solved_rate_2019)/solved_rate_2019),
+         solved_rate_percent_point_change_2019_2023 = solved_rate_2023 - solved_rate_2019,
+         ### convert to percent point (from decimal)
+         solved_rate_percent_point_change_2019_2023 = solved_rate_percent_point_change_2019_2023*100) |>
   ungroup() |>
   ### now drop 2019
   ### and keep unsolved rate from 2022
   filter(year==2023) |> 
     dplyr::select(ori,
-                  solved_rate_percent_change_2019_2023) |> 
-  mutate(solved_rate_percent_change_2019_2023 = ifelse(is.nan(solved_rate_percent_change_2019_2023),
-                                                       NA,solved_rate_percent_change_2019_2023),
-         solved_rate_percent_change_2019_2023 = ifelse(is.infinite(solved_rate_percent_change_2019_2023),
-                                                       NA,solved_rate_percent_change_2019_2023))
+                  solved_rate_percent_point_change_2019_2023) |> 
+  mutate(solved_rate_percent_point_change_2019_2023 = ifelse(is.nan(solved_rate_percent_point_change_2019_2023),
+                                                       NA,solved_rate_percent_point_change_2019_2023),
+         solved_rate_percent_point_change_2019_2023 = ifelse(is.infinite(solved_rate_percent_point_change_2019_2023),
+                                                       NA,solved_rate_percent_point_change_2019_2023))
 
 
 ### now join df_nibrs_violent_unsolved_by_agency_to_table_2023 and df_nibrs_violent_unsolved_by_agency_to_table_2023_to_join
