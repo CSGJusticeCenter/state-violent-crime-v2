@@ -105,9 +105,9 @@ doc_title <- case_when(
 
 ### create dynamic text for 3 states with low reporting numbers
 low_reporting_dynamic <- case_when(
-  state == "Florida" ~ paste0("Note: Florida’s 2022 estimates were based on data from 67 percent fewer agencies and covered 33 percent less of the population compared to 2020."),
-  state == "Illinois" ~ paste0("Note: Illinois’ 2022 estimates were based on data submitted from 32 percent fewer agencies and covered 16 percent less of the population compared to 2020."),
-    state == "Hawaii" ~ paste0("Note: Hawaii’s 2022 estimates were based on data submitted by 25 percent fewer agencies and covered 12 percent less of the population compared to 2020."),
+  state == "Florida" ~ paste0("Note: Florida's 2023 estimates were based on data from 47 percent fewer agencies and covered 35 percent less of the population compared to 2020."),
+  state == "Mississippi" ~ paste0("Note: Mississippi's 2023 estimates were based on data submitted from 15 percent more agencies but covered 16 percent less of the population compared to 2020."),
+    state == "Wyoming" ~ paste0("Note: Wyoming's 2023 estimates were based on data submitted by 10 percent fewer agencies and covered 10 percent less of the population compared to 2020."),
   TRUE ~ paste0(""),
   )
 
@@ -755,7 +755,7 @@ srs_solved_by_agency_to_table |>
 
 Data regarding crime and solve rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr){target="_parent"}. Counts of reported violent crime between 2013 and 2023 are derived from the Summary Reporting System (SRS) and the National Incident-Based Reporting System (NIBRS). The FBI generated national estimates for reported crime and clearances based on agency-level reports, and these estimates were published through 2023 in the FBI's annual report, [_Crime in the U.S._](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019){target="_parent"} and on the FBI's [Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/home){target="_parent"}. For agency-level clearance data, we used [Jacob Kaplan's version of the Offenses Known and Clearances by Arrest](https://doi.org/10.7910/DVN/OESSD1) dataset.
 
-The FBI stopped SRS data collection after data year 2020 and required law enforcement agencies to use NIBRS to report crime statistics to the FBI. This change decreased the number of agencies that submitted their crime data and thus reduced the reliability of state estimates in 2021. In 2022, the FBI allowed agencies who were unable to submit NIBRS data to submit SRS data again. Ninety-four percent of the U.S. population was covered in the 2023 crime data submissions to the FBI, with most states providing close to complete data. However, the population upon which the estimates were derived decreased by over 10 percent in three states: Florida, Hawaii, and Illinois, so conclusions about crime changes in those states should be interpreted with additional caution.
+The FBI stopped SRS data collection after data year 2020 and required law enforcement agencies to use NIBRS to report crime statistics to the FBI. This change decreased the number of agencies that submitted their crime data and thus reduced the reliability of state estimates in 2021. In 2022 and 2023, the FBI allowed agencies who were unable to submit NIBRS data to submit SRS data again. Ninety-four percent of the U.S. population was covered in the 2023 crime data submissions to the FBI, with most states providing close to complete data. However, the population upon which the estimates were derived decreased by over 10 percent in three states: Florida, Mississippi, and Wyoming, so conclusions about crime changes in those states should be interpreted with additional caution.
 
 Crime rates are calculated by dividing the number of estimated incidents by the total U.S. population. Population data come from the U.S. Census Bureau [American Community Survey 1-year estimates (table B01003)](https://www.census.gov/programs-surveys/acs/data.html){target="_parent"} and the [2020 Decennial Census Redistricting Data (table P1)](https://www.census.gov/programs-surveys/decennial-census/about/rdo/summary-files.html){target="_parent"}.
 
