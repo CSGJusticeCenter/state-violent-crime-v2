@@ -1121,7 +1121,7 @@ srs_state_to_map |>
 ```
 <br>
 <br>
-Data regarding crime and solve rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr). Violent crime includes homicide, aggravated assault, robbery, and rape. Crime rates are calculated by dividing the number of estimated incidents by the total population for a given geography. Solve rates are the number of reported crimes not cleared by arrest or by exceptional means divided by the number of reported crimes. For more information, see the data sources and methodology section below. 
+Data regarding crime and solve rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr). Violent crime includes homicide, aggravated assault, robbery, and rape. Crime rates are calculated by dividing the number of estimated incidents by the total population for a given geography. Solve rates are the number of reported crimes cleared by arrest or by exceptional means divided by the number of reported crimes. For more information, see the data sources and methodology section below. 
 
 ::: {.callout-note icon=false collapse=true}
 
