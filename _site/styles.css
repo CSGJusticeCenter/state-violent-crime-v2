@@ -81,3 +81,7 @@ h4 {
 .rt-tr-header {
   display: -webkit-flex !important;
 }
+
+.rt-align-right {
+  text-align: -webkit-right !important;
+}
