@@ -78,6 +78,6 @@ h4 {
     margin-bottom: 0mm;
 }
 
-.rt-thead {
+.rt-tr-header {
   display: -webkit-flex !important;
 }
