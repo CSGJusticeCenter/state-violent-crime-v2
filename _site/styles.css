@@ -84,4 +84,5 @@ h4 {
 
 .rt-align-right {
   text-align-last: right !important;
+  text-align: -webkit-right !important;
 }
