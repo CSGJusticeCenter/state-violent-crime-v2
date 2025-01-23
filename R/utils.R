@@ -13,29 +13,29 @@ header_weight <- 700
 # define justice reinvestment color palette
 jr_pal <- c("#4095B1", "#273C4C", "#50A25D", "#E17619", "#E25449", "#779F38", "#AFABAB")
 
-# define theme for highcharter
-hc_theme_jc <- hc_theme_merge(
-  hc_theme_smpl(),
-  hc_theme(
-    colors = jr_pal,
-    chart = list(
-      style = list(fontFamily = default_fonts)
-    ),
-    title = list(style = list(fontFamily = header_font, color = "#005FAD",
-                              fontSize = "24px")),
-    subtitle = list(style = list(fontFamily = default_fonts, fontSize = "16px",
-                                 color = "#666666")),
-    legend = list(align = "center", verticalAlign = "bottom"),
-    caption = list(align = "right"),
-    plotOptions = list(
-      series = list(states = list(inactive = list(opacity = 1))),
-      line = list(marker = list(enabled = TRUE)),
-      spline = list(marker = list(enabled = TRUE)),
-      area = list(marker = list(enabled = TRUE)),
-      areaspline = list(marker = list(enabled = TRUE))
-    )
-  )
-)
+# # define theme for highcharter
+# hc_theme_jc <- hc_theme_merge(
+#   hc_theme_smpl(),
+#   hc_theme(
+#     colors = jr_pal,
+#     chart = list(
+#       style = list(fontFamily = default_fonts)
+#     ),
+#     title = list(style = list(fontFamily = header_font, color = "#005FAD",
+#                               fontSize = "24px")),
+#     subtitle = list(style = list(fontFamily = default_fonts, fontSize = "16px",
+#                                  color = "#666666")),
+#     legend = list(align = "center", verticalAlign = "bottom"),
+#     caption = list(align = "right"),
+#     plotOptions = list(
+#       series = list(states = list(inactive = list(opacity = 1))),
+#       line = list(marker = list(enabled = TRUE)),
+#       spline = list(marker = list(enabled = TRUE)),
+#       area = list(marker = list(enabled = TRUE)),
+#       areaspline = list(marker = list(enabled = TRUE))
+#     )
+#   )
+# )
 
 render_image <- JS("
   function(){
@@ -125,4 +125,58 @@ reactable_template <- function(df, sort_col = "rate", ...) {
     ),
     ...
   )
+}
+
+### function for percent change
+add_plus_sign_percent_point_change <- function(value) {
+
+  if (!is.numeric(value))
+    paste0(value)
+
+  if (!is.na(value) & value > 0)
+    paste0("+", round(value,digits = 0))
+
+  else
+    paste0(round(value,digits=0))
+}
+
+### create not in function to use below via negate
+`%nin%` <- Negate(`%in%`)
+
+
+### create function to clean up and visualize SHR data
+### this function will prepare a df for plotting -- grouping by
+### varying incident or demographic characteristics
+function_shr_grouping_for_plot <- function(df, var){
+
+  df |>
+    left_join(csg_regions_filtered,
+              by = "state_abbr") |>
+    mutate(group_for_plot = case_when(state_abbr==state_abbr ~ state_abbr,
+                                      state_abbr!=state_abbr & !is.na(csg_region) ~ csg_region,
+                                      TRUE ~ "drop")) |>
+    filter(!!sym(var)%nin%c("Unknown","Missing"),
+           year>=2018,
+           group_for_plot!="drop") |>
+    dplyr::select(group_for_plot,
+                  year,
+                  n_total_incidents,
+                  n_total_cleared,
+                  !!sym(var)) |>
+    group_by(group_for_plot,
+             !!sym(var)) |>
+    ### sum across years by group
+    summarize(n_total_cleared = sum(n_total_cleared, na.rm=TRUE),
+              n_total_incidents = sum(n_total_incidents, na.rm=TRUE),
+              clearance_rate = n_total_cleared/n_total_incidents) |>
+    ungroup() |>
+    # bind_rows(srs_by_cat_us) |>
+    mutate(
+      tooltip = paste0(
+        "<b>",group_for_plot,"–",!!sym(var),"</b><br>",
+        "Solve Rate: ", scales::percent(clearance_rate,
+                                        accuracy = 1)),
+      clearance_rate = clearance_rate*100
+    )
+
 }
