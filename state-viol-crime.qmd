@@ -988,6 +988,9 @@ min_year_resources <- min(asslgf_clean_percent_change$year)
 pct_change_spending <- scales::percent((asslgf_clean_percent_change$n_inflation_adjusted_2022_dollars[asslgf_clean_percent_change$year==max_year_resources] - asslgf_clean_percent_change$n_inflation_adjusted_2022_dollars[asslgf_clean_percent_change$year==min_year_resources]) / asslgf_clean_percent_change$n_inflation_adjusted_2022_dollars[asslgf_clean_percent_change$year==min_year_resources],
                                        accuracy = 1)
 
+pct_change_spending_abs_value <- scales::percent(abs((asslgf_clean_percent_change$n_inflation_adjusted_2022_dollars[asslgf_clean_percent_change$year==max_year_resources] - asslgf_clean_percent_change$n_inflation_adjusted_2022_dollars[asslgf_clean_percent_change$year==min_year_resources]) / asslgf_clean_percent_change$n_inflation_adjusted_2022_dollars[asslgf_clean_percent_change$year==min_year_resources]),
+                                       accuracy = 1)
+
 
 change_spending_text_clear <- case_when(
   pct_change_spending >= 0 ~ paste0(" increased"),
@@ -1007,7 +1010,7 @@ cat("### Expenditures")
 
 ```{r, results='asis'}
 cat(paste0(
-  state_name_text, change_spending_text_clear, " spending by ", pct_change_spending," from ", min_year_resources, " to ",max_year_resources, ", adjusting for inflation." 
+  state_name_text, change_spending_text_clear, " spending by ", pct_change_spending_abs_value," from ", min_year_resources, " to ",max_year_resources, ", adjusting for inflation." 
   
 ))
 ```
@@ -1100,6 +1103,9 @@ min_year_resources <- min(ucr_employee_data_by_state_clean_percent_change$year)
 pct_change_staffing <- scales::percent((ucr_employee_data_by_state_clean_percent_change$officer_pop_rate_per_10k[ucr_employee_data_by_state_clean_percent_change$year==max_year_resources] - ucr_employee_data_by_state_clean_percent_change$officer_pop_rate_per_10k[ucr_employee_data_by_state_clean_percent_change$year==min_year_resources]) / ucr_employee_data_by_state_clean_percent_change$officer_pop_rate_per_10k[ucr_employee_data_by_state_clean_percent_change$year==min_year_resources],
                                        accuracy = 1)
 
+pct_change_staffing_abs_value <- scales::percent(abs((ucr_employee_data_by_state_clean_percent_change$officer_pop_rate_per_10k[ucr_employee_data_by_state_clean_percent_change$year==max_year_resources] - ucr_employee_data_by_state_clean_percent_change$officer_pop_rate_per_10k[ucr_employee_data_by_state_clean_percent_change$year==min_year_resources]) / ucr_employee_data_by_state_clean_percent_change$officer_pop_rate_per_10k[ucr_employee_data_by_state_clean_percent_change$year==min_year_resources]),
+                                       accuracy = 1)
+
 
 change_staffing_text_clear <- case_when(
   pct_change_staffing >= 0 ~ paste0(" increased"),
@@ -1118,7 +1124,7 @@ cat("### Officers per Capita")
 
 ```{r,  results='asis'}
 cat(paste0(
-  "The number of officers per 10k residents in ", state_name_text," has", change_staffing_text_clear, " by ", pct_change_staffing," from ", min_year_resources, " to ",max_year_resources,"." 
+  "The number of officers per 10k residents in ", state_name_text," has", change_staffing_text_clear, " by ", pct_change_staffing_abs_value," from ", min_year_resources, " to ",max_year_resources,"." 
   
 ))
 ```
@@ -1198,6 +1204,9 @@ pct_change_staffing_per_violent_offense <- scales::percent((ucr_employee_data_by
                                        accuracy = 1)
 
 
+pct_change_staffing_per_violent_offense_abs_value <- scales::percent(abs((ucr_employee_data_by_state_clean_percent_change$officer_per_violent_offense_1k[ucr_employee_data_by_state_clean_percent_change$year==max_year_resources] - ucr_employee_data_by_state_clean_percent_change$officer_per_violent_offense_1k[ucr_employee_data_by_state_clean_percent_change$year==min_year_resources]) / ucr_employee_data_by_state_clean_percent_change$officer_per_violent_offense_1k[ucr_employee_data_by_state_clean_percent_change$year==min_year_resources]),
+                                       accuracy = 1)
+
 change_staffing_per_violent_offense_text_clear <- case_when(
   pct_change_staffing_per_violent_offense >= 0 ~ paste0(" increased"),
   pct_change_staffing_per_violent_offense < 0 ~ paste0(" decreased")
@@ -1215,7 +1224,7 @@ cat("### Officer Workload")
 
 ```{r,  results='asis'}
 cat(paste0(
-  "The number of officers per 1k violent crimes in ", state_name_text," has", change_staffing_per_violent_offense_text_clear, " by ", pct_change_staffing_per_violent_offense," from ", min_year_resources, " to ",max_year_resources,"." 
+  "The number of officers per 1k violent crimes in ", state_name_text," has", change_staffing_per_violent_offense_text_clear, " by ", pct_change_staffing_per_violent_offense_abs_value," from ", min_year_resources, " to ",max_year_resources,"." 
   
 ))
 ```
