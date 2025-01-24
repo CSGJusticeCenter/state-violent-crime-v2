@@ -13,29 +13,29 @@ header_weight <- 700
 # define justice reinvestment color palette
 jr_pal <- c("#4095B1", "#273C4C", "#50A25D", "#E17619", "#E25449", "#779F38", "#AFABAB")
 
-# # define theme for highcharter
-# hc_theme_jc <- hc_theme_merge(
-#   hc_theme_smpl(),
-#   hc_theme(
-#     colors = jr_pal,
-#     chart = list(
-#       style = list(fontFamily = default_fonts)
-#     ),
-#     title = list(style = list(fontFamily = header_font, color = "#005FAD",
-#                               fontSize = "24px")),
-#     subtitle = list(style = list(fontFamily = default_fonts, fontSize = "16px",
-#                                  color = "#666666")),
-#     legend = list(align = "center", verticalAlign = "bottom"),
-#     caption = list(align = "right"),
-#     plotOptions = list(
-#       series = list(states = list(inactive = list(opacity = 1))),
-#       line = list(marker = list(enabled = TRUE)),
-#       spline = list(marker = list(enabled = TRUE)),
-#       area = list(marker = list(enabled = TRUE)),
-#       areaspline = list(marker = list(enabled = TRUE))
-#     )
-#   )
-# )
+# define theme for highcharter
+hc_theme_jc <- hc_theme_merge(
+  hc_theme_smpl(),
+  hc_theme(
+    colors = jr_pal,
+    chart = list(
+      style = list(fontFamily = default_fonts)
+    ),
+    title = list(style = list(fontFamily = header_font, color = "#005FAD",
+                              fontSize = "24px")),
+    subtitle = list(style = list(fontFamily = default_fonts, fontSize = "16px",
+                                 color = "#666666")),
+    legend = list(align = "center", verticalAlign = "bottom"),
+    caption = list(align = "right"),
+    plotOptions = list(
+      series = list(states = list(inactive = list(opacity = 1))),
+      line = list(marker = list(enabled = TRUE)),
+      spline = list(marker = list(enabled = TRUE)),
+      area = list(marker = list(enabled = TRUE)),
+      areaspline = list(marker = list(enabled = TRUE))
+    )
+  )
+)
 
 render_image <- JS("
   function(){
@@ -58,7 +58,7 @@ render_image_remove <- JS("function(){logo.element.remove();}")
 hc_setup <- function(x) {
   hc_add_dependency(x, name = "modules/exporting.js") |>
     hc_add_dependency(name = "modules/offline-exporting.js") |>
-    hc_add_dependency(name = "modules/accessibility.js") |>
+    # hc_add_dependency(name = "modules/accessibility.js") |>
     hc_exporting(
       enabled = TRUE,
       buttons = list(contextButton = list(menuItems = list("downloadPNG", "printChart"))),
@@ -81,32 +81,27 @@ hc_setup <- function(x) {
       title = "",
       labels = list(format = "{value:,.0f}")
     ) |>
-    hc_exporting(
-      chartOptions = list(
-        chart = list(
-          events = list(
-            load = render_image
-          )
+  hc_exporting(
+    chartOptions = list(
+      chart = list(
+        events = list(
+          load = render_image
         )
       )
-    ) |>
-    hc_chart(
-      events = list(
-        beforePrint = render_image_print,
-        afterPrint = render_image_remove
-      )
     )
+  ) |>
+  hc_chart(
+    events = list(
+      beforePrint = render_image_print,
+      afterPrint = render_image_remove
+    )
+  )
 }
 
 offense_pal <- tibble(
   color = jr_pal[c(2,3,4,5)],
   crime = c("Homicide", "Robbery", "Rape", "Aggravated assault")
 )
-
-# offense_pal <- tibble(
-#   color = jr_pal[c(5,4,3,2)],
-#   crime = c("Aggravated assault","Rape","Robbery","Homicide")
-# )
 
 reactable_template <- function(df, sort_col = "rate", ...) {
   reactable(

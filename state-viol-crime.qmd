@@ -243,9 +243,8 @@ to_plot |>
     min = y_min,
     max = y_max,
     endOnTick = FALSE
-  ) 
-# |>
-#   hc_setup()
+  ) |>
+  hc_setup()
 
 ```
 
@@ -307,9 +306,8 @@ to_plot_2 |>
   ) |>
   hc_title(text = paste0("Homicide in ", state_name_text)) |>
   hc_subtitle(text = "Homicide incidents reported to police per 100,000 residents") |> 
-  hc_caption(text = "FBI Uniform Crime Reporting Program SRS state estimates") 
-# |>
-#   hc_setup()
+  hc_caption(text = "FBI Uniform Crime Reporting Program SRS state estimates") |>
+  hc_setup()
 
 ```
 
@@ -346,10 +344,8 @@ to_plot_3 |>
     min = y_min,
     max = y_max,
     endOnTick = FALSE
-  ) 
-
-# |>
-#   hc_setup()
+  ) |>
+  hc_setup()
 ```
 
 ## Robbery
@@ -384,10 +380,8 @@ to_plot_4 |>
     min = y_min,
     max = y_max,
     endOnTick = FALSE
-  ) 
-
-# |>
-#   hc_setup()
+  ) |>
+  hc_setup()
 ```
 
 ## Rape
@@ -423,10 +417,8 @@ to_plot_5 |>
     min = y_min,
     max = y_max,
     endOnTick = FALSE
-  ) 
-
-# |>
-#   hc_setup()
+  ) |>
+  hc_setup()
 ```
 
 ## By offense
@@ -449,10 +441,8 @@ to_plot |>
   hc_title(text = paste0("Violent crime in ", state_name_text, ", by offense")) |>
   hc_subtitle(text = "Crime reported to police per 100,000 residents") |> 
   hc_caption(text = "FBI Uniform Crime Reporting Program SRS state estimates") |> 
-  hc_legend(reversed = "true") 
-
-# |> 
-#   hc_setup()
+  hc_legend(reversed = "true") |>
+  hc_setup()
 ```
 
 :::
@@ -536,7 +526,9 @@ to_plot |>
     max = y_max,
     endOnTick = FALSE,
     labels = list(format = "{value:,.0f}%")
-  )
+  ) |>
+  hc_setup()
+
 ```
 
 ```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
@@ -600,7 +592,8 @@ to_plot |>
     max = 100,
     endOnTick = FALSE,
     labels = list(format = "{value:,.0f}%")
-  )
+  ) |>
+  hc_setup()
 ```
 
 ```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
@@ -717,9 +710,8 @@ hcmap(
         this.point.tooltip +
         '</div>';}"),
         useHTML = TRUE
-      )  
-# |>
-#   hc_setup()
+      ) |>
+  hc_setup()
 
 ```
 
@@ -745,7 +737,6 @@ cat("### Overall Rates")
 ```
 
 ```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz}
-#| column: body-outset
 
 srs_solved_by_agency_to_table |> 
   ### overwrite rate  with NA if agency is missing population (current value is .inf)
@@ -768,7 +759,11 @@ srs_solved_by_agency_to_table |>
   reactable_template(
     sort_col = list("population" = "desc"),
     columns = list(
-      agency_name = colDef(name = "Agency", minWidth = 250),
+      agency_name = colDef(name = "Agency", minWidth = 250,
+                             sticky = "left",
+      # Add a right border style to visually distinguish the sticky column
+      style = list(borderRight = "1px solid #eee"),
+      headerStyle = list(borderRight = "1px solid #eee")),
       # agency_type = colDef(name = "Agency Type"),
       county_clean = colDef(name = "County", minWidth = 108),
       population = colDef(name = "Jurisdiction Population", minWidth = 130), 
@@ -802,7 +797,6 @@ cat("### By Offense")
 
 
 ```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz}
-#| column: body-outset
 
 #############################################
 ### import and prep agency-level df for table
@@ -960,9 +954,10 @@ df_nibrs_violent_unsolved_by_agency_and_type_to_table_2023_final |>
 
 :::
 
+
 <br>
 
-```{r, results='asis' }
+```{r, results='asis'}
 cat("## Law enforcement resources in", state_name_text)
 ```
 
@@ -1074,10 +1069,8 @@ to_plot |>
       title = "",
       labels = list(format = "{value:,.0f}")
     ) |> 
-  hc_legend(enabled = FALSE)
-
-# |>
-#   hc_setup()
+  hc_legend(enabled = FALSE) |>
+  hc_setup()
 
 ```
 
@@ -1189,9 +1182,8 @@ to_plot |>
     hc_yAxis(
       title = "",
       labels = list(format = "{value:,.0f}")
-    )  
-# |>
-#   hc_setup()
+    ) |>
+  hc_setup()
 
 ```
 
@@ -1225,7 +1217,6 @@ cat("### Officer Workload")
 ```{r,  results='asis'}
 cat(paste0(
   "The number of officers per 1k violent crimes in ", state_name_text," has", change_staffing_per_violent_offense_text_clear, " by ", pct_change_staffing_per_violent_offense_abs_value," from ", min_year_resources, " to ",max_year_resources,"." 
-  
 ))
 ```
 
@@ -1289,9 +1280,8 @@ to_plot |>
     hc_yAxis(
       title = "",
       labels = list(format = "{value:,.0f}")
-    ) 
-# |>
-#   hc_setup()
+    ) |>
+  hc_setup()
 
 
 ```
@@ -1360,10 +1350,6 @@ shr_1976_2022_state_age <- read_rds(file.path(sp_data_site_updates_path,"shr_197
 ```
 
 ```{r }
-
-### create not in function to use below via negate
-`%nin%` <- Negate(`%in%`)
-
 
 ### create function to clean up and visualize SHR data
 ### this function will prepare a df for plotting -- grouping by 
@@ -1445,9 +1431,8 @@ to_plot |>
     endOnTick = FALSE,
           title = "",
       labels = list(format = "{value}%")
-  )
-# |>
-#   hc_setup()
+  ) |>
+  hc_setup()
 
 ```
 
@@ -1497,9 +1482,8 @@ to_plot |>
     endOnTick = FALSE,
           title = "",
       labels = list(format = "{value}%")
-  )
-# |>
-#   hc_setup()
+  ) |>
+  hc_setup()
 
 
 ```
@@ -1553,12 +1537,8 @@ to_plot |>
     endOnTick = FALSE,
           title = "",
       labels = list(format = "{value}%")
-  )
-# |>
-#   hc_setup()
-
-
-
+  ) |>
+  hc_setup()
 
 ```
 
@@ -1610,11 +1590,8 @@ to_plot |>
     endOnTick = FALSE,
           title = "",
       labels = list(format = "{value}%")
-  )
-# |>
-#   hc_setup()
-
-
+  ) |>
+  hc_setup()
 
 
 ```
@@ -1672,11 +1649,8 @@ to_plot |>
     endOnTick = FALSE,
           title = "",
       labels = list(format = "{value}%")
-  ) 
-# |>
-#   hc_setup()
-
-
+  ) |>
+  hc_setup()
 
 
 ```
