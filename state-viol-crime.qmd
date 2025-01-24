@@ -1167,7 +1167,7 @@ to_plot |>
   ) |> 
   hc_title(text = paste0("Officers per Capita in ", state_name_text)) |>
   hc_subtitle(text = "Officers per 10k residents, 2013–2023") |> 
-  hc_caption(text = "FBI Uniform Crime Reporting Program SRS state estimates and FBI Uniform Crime Reporting Program Police Employee Data") |> 
+  hc_caption(text = "FBI Uniform Crime Reporting Program SRS state estimates<br>FBI Uniform Crime Reporting Program Police Employee Data") |> 
   hc_yAxis(
     min = y_min,
     max = y_max,
@@ -1267,7 +1267,7 @@ to_plot |>
   ) |> 
   hc_title(text = paste0("Officer Workload in ", state_name_text)) |>
   hc_subtitle(text = "Officers per 1k violent crimes, 2013–2023") |> 
-  hc_caption(text = "FBI Uniform Crime Reporting Program SRS state estimates and FBI Uniform Crime Reporting Program Police Employee Data") |> 
+  hc_caption(text = "FBI Uniform Crime Reporting Program SRS state estimates<br>FBI Uniform Crime Reporting Program Police Employee Data") |> 
   hc_yAxis(
     min = y_min,
     max = y_max,
