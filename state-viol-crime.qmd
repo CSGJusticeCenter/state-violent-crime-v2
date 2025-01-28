@@ -10,7 +10,7 @@ mainfont: "GT-America"
 linkcolor: "#00355a"
 anchor-sections: false
 params:
-  state: "NC"
+  state: "NE"
 execute:
   echo: false
   warning: false
@@ -101,8 +101,11 @@ srs_solved_by_agency_to_table <- read_rds(file.path(sp_data_to_plot_path,
                                              "viol_crime_unsolved_by_agency_to_table.rds")) |>  
   filter(state_name == state) 
 
-### create object with states to exclude
+### create object with states to exclude from solve rate analysis
 states_to_exclude_from_solved_rate_viz <- c("Illinois")
+
+### create object with states to exclude from UCR officer surveys due to missingness
+states_to_exclude_from_ucr_officer_count_analysis <- c("Nebraska")
 
 # create title of page
 # we don't have IL clearance rate data so take that out of title
@@ -121,6 +124,75 @@ low_reporting_dynamic <- case_when(
   )
 
 axis_expansion_mult <- 0.5
+```
+
+```{r }
+### import df_nibrs_violent_unsolved_by_agency_and_type_to_table_2023 for second table
+df_nibrs_violent_unsolved_by_agency_and_type_to_table_2023 <- read_rds(file.path(sp_data_site_updates_path,"website_update_viol_crime_unsolved_by_agency_and_type.rds"))
+
+### import asslgf_clean for lea expenditure analysis
+asslgf_clean <- read_rds(file.path(sp_data_site_updates_path,"website_update_state_level_police_expenditure_inflation_adjusted.rds")) |> 
+  mutate(state_abbr = toupper(state_abbr)) |> 
+  filter(year>=2013,
+         state_abbr==state_abbr_params) 
+
+### import ucr_employee_data_by_state_clean for officer workload analysis
+ucr_employee_data_by_state_clean <- read_rds(file.path(sp_data_site_updates_path,"website_update_lea_staffing_workload_by_state.rds")) |> 
+  mutate(state_abbr = toupper(state_abbr)) |> 
+  filter(year>=2013,
+         state_abbr==state_abbr_params) 
+
+```
+
+```{r }
+### import csg region information 
+### to include bar for region's data alongside state's data in supplemental homicide section
+csg_regions_filtered <- read_csv(file.path(sp_data_to_plot_path,"csg-regions.csv")) |>
+  mutate(state_abbr = csgjcr::csg_state_convert(state_name,
+                                                "name",
+                                                "abbr"),
+         region_to_keep = paste0(csg_region[state_abbr==state_abbr_params])) |> 
+  ### keep only states in same region as state we're analyzing
+  ### drop state for current page -- we want all states in region aside from this state
+  filter(region_to_keep==csg_region,
+         state_abbr!=state_abbr_params) |> 
+  dplyr::select(-region_to_keep) |> 
+  mutate(csg_region = paste0("Other ",csg_region," States"))
+
+```
+
+
+```{r }
+### now import all supplemental homicide dfs for visualization
+### these files were cleaned and created here: R/12-prep-files-for-website-updates-2024.qmd
+
+### shr_1976_2022_state_overall
+shr_1976_2022_state_overall <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2022_state_overall_clear.rds")) 
+
+### shr_1976_2022_state_relationship
+shr_1976_2022_state_relationship <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2022_state_victim_offender_relationship.rds")) 
+
+### shr_1976_2022_state_single_multiple_victims
+shr_1976_2022_state_single_multiple_victims <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2022_state_single_multiple_victims.rds")) 
+
+### shr_1976_2022_state_weapon
+shr_1976_2022_state_weapon <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2022_state_weapon.rds")) 
+
+### shr_1976_2022_state_circumstance
+shr_1976_2022_state_circumstance <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2022_state_incident_circumstance.rds")) 
+
+### shr_1976_2022_state_race
+shr_1976_2022_state_race <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2022_state_victim_race_eth.rds")) 
+
+### shr_1976_2022_state_gender
+shr_1976_2022_state_gender <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2022_state_victim_gender.rds")) 
+
+### shr_1976_2022_state_race_sex
+shr_1976_2022_state_race_sex <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2022_state_victim_race_gender.rds")) 
+
+### shr_1976_2022_state_age
+shr_1976_2022_state_age <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2022_state_victim_age.rds")) 
+
 ```
 
 ---
@@ -799,12 +871,10 @@ cat("### By Offense")
 ```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz}
 
 #############################################
-### import and prep agency-level df for table
+### prep agency-level df for table
 #############################################
 
-### write out
-df_nibrs_violent_unsolved_by_agency_and_type_to_table_2023 <- read_rds(file.path(sp_data_site_updates_path,"website_update_viol_crime_unsolved_by_agency_and_type.rds"))
-
+### clean up rates and select columns we need
 df_nibrs_violent_unsolved_by_agency_and_type_to_table_2023_final <-
   df_nibrs_violent_unsolved_by_agency_and_type_to_table_2023 |> 
   filter(state_abbr==state_abbr_params,
@@ -835,6 +905,7 @@ df_nibrs_violent_unsolved_by_agency_and_type_to_table_2023_final <-
          solved_rate_robbery) 
 
 ### determine median solve rates by violent offense type for state
+### we'll use these state averages to develop an agency-level comparison in the table
 state_median_solved_rate_aggravated_assault <- median(df_nibrs_violent_unsolved_by_agency_and_type_to_table_2023_final$solved_rate_aggravated_assault,
                                                       na.rm=TRUE)
 
@@ -848,7 +919,7 @@ state_median_solved_rate_robbery <- median(df_nibrs_violent_unsolved_by_agency_a
                                                       na.rm=TRUE)
 
 
-### prep df for table
+### final prep df for table
 df_nibrs_violent_unsolved_by_agency_and_type_to_table_2023_final |> 
   mutate(across(c(solved_rate_aggravated_assault,
                   solved_rate_homicide,
@@ -967,12 +1038,7 @@ cat("## Law enforcement resources in", state_name_text)
 
 
 ```{r}
-### import asslgf_clean
-asslgf_clean <- read_rds(file.path(sp_data_site_updates_path,"website_update_state_level_police_expenditure_inflation_adjusted.rds")) |> 
-  mutate(state_abbr = toupper(state_abbr)) |> 
-  filter(year>=2013,
-         state_abbr==state_abbr_params) 
-
+### clean up df for plotting
 asslgf_clean_percent_change <- asslgf_clean |> 
   filter(year %in% range(year)) |> 
   arrange(year)
@@ -1078,14 +1144,8 @@ to_plot |>
 <br>
 
 ```{r}
-### import website_update_lea_staffing_workload_by_state.rds
 
-### import
-ucr_employee_data_by_state_clean <- read_rds(file.path(sp_data_site_updates_path,"website_update_lea_staffing_workload_by_state.rds")) |> 
-  mutate(state_abbr = toupper(state_abbr)) |> 
-  filter(year>=2013,
-         state_abbr==state_abbr_params) 
-
+### clean up ucr_employee_data_by_state_clean for text output below
 ucr_employee_data_by_state_clean_percent_change <- ucr_employee_data_by_state_clean |> 
   filter(year %in% range(year)) |> 
   arrange(year)
@@ -1110,12 +1170,12 @@ change_staffing_text_clear <- case_when(
 
 <br>
 
-```{r,  results='asis'}
+```{r, eval=!state %in% states_to_exclude_from_ucr_officer_count_analysis, results='asis'}
 cat("### Officers per Capita")
 ```
 
 
-```{r,  results='asis'}
+```{r, eval=!state %in% states_to_exclude_from_ucr_officer_count_analysis, results='asis'}
 cat(paste0(
   "The number of officers per 10k residents in ", state_name_text," has", change_staffing_text_clear, " by ", pct_change_staffing_abs_value," from ", min_year_resources, " to ",max_year_resources,"." 
   
@@ -1123,7 +1183,7 @@ cat(paste0(
 ```
 
 
-```{r }
+```{r, eval=!state %in% states_to_exclude_from_ucr_officer_count_analysis}
 
 to_plot <- ucr_employee_data_by_state_clean |> 
   # filter(state_abbr==state_abbr,
@@ -1191,6 +1251,7 @@ to_plot |>
 
 ```{r}
 ### create pct_change_staffing_per_violent_offense and change_staffing_per_violent_offense_text_clear
+### for text below
 
 pct_change_staffing_per_violent_offense <- scales::percent((ucr_employee_data_by_state_clean_percent_change$officer_per_violent_offense_1k[ucr_employee_data_by_state_clean_percent_change$year==max_year_resources] - ucr_employee_data_by_state_clean_percent_change$officer_per_violent_offense_1k[ucr_employee_data_by_state_clean_percent_change$year==min_year_resources]) / ucr_employee_data_by_state_clean_percent_change$officer_per_violent_offense_1k[ucr_employee_data_by_state_clean_percent_change$year==min_year_resources],
                                        accuracy = 1)
@@ -1209,19 +1270,19 @@ change_staffing_per_violent_offense_text_clear <- case_when(
 
 <br>
 
-```{r,  results='asis'}
+```{r, eval=!state %in% states_to_exclude_from_ucr_officer_count_analysis, results='asis'}
 cat("### Officer Workload")
 ```
 
 
-```{r,  results='asis'}
+```{r, eval=!state %in% states_to_exclude_from_ucr_officer_count_analysis, results='asis'}
 cat(paste0(
   "The number of officers per 1k violent crimes in ", state_name_text," has", change_staffing_per_violent_offense_text_clear, " by ", pct_change_staffing_per_violent_offense_abs_value," from ", min_year_resources, " to ",max_year_resources,"." 
 ))
 ```
 
 
-```{r }
+```{r, eval=!state %in% states_to_exclude_from_ucr_officer_count_analysis}
 to_plot <- ucr_employee_data_by_state_clean |> 
   # filter(state_abbr==state_abbr,
   #        year>=2013) |>
@@ -1300,99 +1361,10 @@ cat("## Exploration of homicide solve rates in", state_name_text)
 ### Race and Ethnicity 
 
 ```{r }
-### import csg region information
-### to include bar for region's data alongside state's
-csg_regions_filtered <- read_csv(file.path(sp_data_to_plot_path,"csg-regions.csv")) |>
-  mutate(state_abbr = csgjcr::csg_state_convert(state_name,
-                                                "name",
-                                                "abbr"),
-         region_to_keep = paste0(csg_region[state_abbr==state_abbr_params])) |> 
-  ### keep only states in same region as state we're analyzing
-  ### drop state for current page -- we want all states in region aside from this state
-  filter(region_to_keep==csg_region,
-         state_abbr!=state_abbr_params) |> 
-  dplyr::select(-region_to_keep) |> 
-  mutate(csg_region = paste0("Other ",csg_region," States"))
-
-```
-
-
-```{r }
-### now import dfs for visualization
-
-### shr_1976_2022_state_overall
-shr_1976_2022_state_overall <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2022_state_overall_clear.rds")) 
-
-### shr_1976_2022_state_relationship
-shr_1976_2022_state_relationship <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2022_state_victim_offender_relationship.rds")) 
-
-### shr_1976_2022_state_single_multiple_victims
-shr_1976_2022_state_single_multiple_victims <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2022_state_single_multiple_victims.rds")) 
-
-### shr_1976_2022_state_weapon
-shr_1976_2022_state_weapon <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2022_state_weapon.rds")) 
-
-### shr_1976_2022_state_circumstance
-shr_1976_2022_state_circumstance <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2022_state_incident_circumstance.rds")) 
-
-### shr_1976_2022_state_race
-shr_1976_2022_state_race <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2022_state_victim_race_eth.rds")) 
-
-### shr_1976_2022_state_gender
-shr_1976_2022_state_gender <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2022_state_victim_gender.rds")) 
-
-### shr_1976_2022_state_race_sex
-shr_1976_2022_state_race_sex <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2022_state_victim_race_gender.rds")) 
-
-### shr_1976_2022_state_age
-shr_1976_2022_state_age <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2022_state_victim_age.rds")) 
-
-```
-
-```{r }
-
-### create function to clean up and visualize SHR data
-### this function will prepare a df for plotting -- grouping by 
-### varying incident or demographic characteristics
-function_shr_grouping_for_plot <- function(df, var){
-  
-  df |> 
-  left_join(csg_regions_filtered,
-            by = "state_abbr") |> 
-  mutate(group_for_plot = case_when(state_abbr==state_abbr_params ~ state_abbr,
-                                    state_abbr!=state_abbr_params & !is.na(csg_region) ~ csg_region,
-                                    TRUE ~ "drop")) |> 
-  filter(!!sym(var)%nin%c("Unknown","Missing"),
-         year>=2018,
-         group_for_plot!="drop") |> 
-  dplyr::select(group_for_plot,
-                year,
-                n_total_incidents,
-                n_total_cleared,
-                !!sym(var)) |> 
-  group_by(group_for_plot,
-           !!sym(var)) |> 
-  ### sum across years by group
-  summarize(n_total_cleared = sum(n_total_cleared, na.rm=TRUE),
-            n_total_incidents = sum(n_total_incidents, na.rm=TRUE),
-            clearance_rate = n_total_cleared/n_total_incidents) |> 
-  ungroup() |> 
-  # bind_rows(srs_by_cat_us) |> 
-  mutate(
-    tooltip = paste0(
-      "<b>",group_for_plot,"–",!!sym(var),"</b><br>",
-      "Solve Rate: ", scales::percent(clearance_rate, 
-                                                        accuracy = 1)),
-    clearance_rate = clearance_rate*100
-    ) 
-  
-}
-
-```
-
-```{r }
 
 ### clean up df for plot via function
+### this function will prepare a df for plotting -- grouping by
+### varying incident or demographic characteristics
 to_plot <- function_shr_grouping_for_plot(df = shr_1976_2022_state_race,
                                           var = "victim_1_race_clean") 
 

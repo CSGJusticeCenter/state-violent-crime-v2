@@ -58,7 +58,7 @@ render_image_remove <- JS("function(){logo.element.remove();}")
 hc_setup <- function(x) {
   hc_add_dependency(x, name = "modules/exporting.js") |>
     hc_add_dependency(name = "modules/offline-exporting.js") |>
-    # hc_add_dependency(name = "modules/accessibility.js") |>
+    hc_add_dependency(name = "modules/accessibility.js") |>
     hc_exporting(
       enabled = TRUE,
       buttons = list(contextButton = list(menuItems = list("downloadPNG", "printChart"))),
@@ -147,8 +147,8 @@ function_shr_grouping_for_plot <- function(df, var){
   df |>
     left_join(csg_regions_filtered,
               by = "state_abbr") |>
-    mutate(group_for_plot = case_when(state_abbr==state_abbr ~ state_abbr,
-                                      state_abbr!=state_abbr & !is.na(csg_region) ~ csg_region,
+    mutate(group_for_plot = case_when(state_abbr==state_abbr_params ~ state_abbr,
+                                      state_abbr!=state_abbr_params & !is.na(csg_region) ~ csg_region,
                                       TRUE ~ "drop")) |>
     filter(!!sym(var)%nin%c("Unknown","Missing"),
            year>=2018,
