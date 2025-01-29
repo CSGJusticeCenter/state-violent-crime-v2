@@ -123,12 +123,26 @@ reactable_template <- function(df, sort_col = "rate", ...) {
 }
 
 ### function for percent change
+add_plus_sign_percent_change <- function(value) {
+
+  if (!is.numeric(value))
+    paste0(value)
+
+  if (!is.na(value) & value >= 0)
+    paste0("+", round(value,digits = 0),"%")
+
+  else
+    paste0(round(value,digits=0),"%")
+
+}
+
+## function for percent point change
 add_plus_sign_percent_point_change <- function(value) {
 
   if (!is.numeric(value))
     paste0(value)
 
-  if (!is.na(value) & value > 0)
+  if (!is.na(value) & value >= 0)
     paste0("+", round(value,digits = 0))
 
   else
@@ -137,6 +151,35 @@ add_plus_sign_percent_point_change <- function(value) {
 
 ### create not in function to use below via negate
 `%nin%` <- Negate(`%in%`)
+
+### create function to clean up and visualize SHR data
+### this function will prepare a df for plotting -- grouping by
+### varying incident or demographic characteristics
+function_shr_grouping_for_national_plot <- function(df, var){
+
+  df |>
+    filter(!!sym(var)%nin%c("Unknown","Missing"),
+           year>=2018) |>
+    dplyr::select(year,
+                  n_total_incidents,
+                  n_total_cleared,
+                  !!sym(var)) |>
+    group_by(!!sym(var)) |>
+    ### sum across years by group
+    summarize(n_total_cleared = sum(n_total_cleared, na.rm=TRUE),
+              n_total_incidents = sum(n_total_incidents, na.rm=TRUE),
+              clearance_rate = n_total_cleared/n_total_incidents) |>
+    ungroup() |>
+    # bind_rows(srs_by_cat_us) |>
+    mutate(
+      tooltip = paste0(
+        "<b>","United States","–",!!sym(var),"</b><br>",
+        "Solve Rate: ", scales::percent(clearance_rate,
+                                        accuracy = 1)),
+      clearance_rate = clearance_rate*100
+    )
+
+}
 
 
 ### create function to clean up and visualize SHR data
