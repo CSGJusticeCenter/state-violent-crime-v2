@@ -1106,6 +1106,8 @@ to_plot |>
 
 ## Violent crime and solved violent crime by state, 2023
 
+The following tables include violent crime rates and solve rates by state and offense. For more information on violent crime solve rates for each offense by state, [visit state-specific pages here](https://projects.csgjusticecenter.org/tools-for-states-to-address-crime/50-state-crime-data/#:~:text=Trends%20in%20solved%20violent%20crime,a%20level%20similar%20to%202020.).  
+
 ::: {.panel-tabset}
 
 ```{r, results='asis'}
@@ -1323,6 +1325,7 @@ Data regarding crime and solve rates come from the FBI's [Uniform Crime Reportin
 cat("## Trends in law enforcement resources")
 ```
 
+State expenditures include spending on police, sheriffs, and highway patrols. The charts below also include staffing per 10,000 residents and per 1,000 violent crimes. These factors may show the level of policing a community receives, potentially influencing both crime and solve rates and providing insight into how law enforcement resources impact violent crime.  
 
 ::: {.panel-tabset}
 
@@ -1560,7 +1563,7 @@ change_staffing_per_violent_offense_text_clear <- case_when(
 <br>
 
 ```{r, results='asis'}
-cat("### Officer Workload")
+cat("### Officers per Violent Offense")
 ```
 
 
@@ -1606,7 +1609,7 @@ to_plot |>
         )
       )    
   ) |> 
-  hc_title(text = paste0("Officer Workload")) |>
+  hc_title(text = paste0("Officers per Violent Offense")) |>
   hc_subtitle(text = "Officers per 1k violent crimes, 2013–2023") |> 
   hc_caption(text = "FBI Uniform Crime Reporting Program SRS state estimates<br>FBI Uniform Crime Reporting Program Police Employee Data") |> 
   hc_yAxis(
@@ -1643,6 +1646,12 @@ to_plot |>
 ```{r, results='asis' }
 cat("## Trends in homicide solve rates")
 ```
+
+The following chart includes homicide solve rates by race/ethnicity, gender, age, weapon type, and number of victims. For more information, see the data and methodology sections below.  
+
+<br>
+
+In the United States, homicide solve rates are highest when the victim is White and are lowest when the victim is Black. Homicide solve rates are highest when the victim is a woman and lowest when the victim is a man. 
 
 ::: {.panel-tabset}
 

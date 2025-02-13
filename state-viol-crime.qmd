@@ -10,7 +10,7 @@ mainfont: "GT-America"
 linkcolor: "#00355a"
 anchor-sections: false
 params:
-  state: "NE"
+  state: "NC"
 execute:
   echo: false
   warning: false
@@ -158,6 +158,22 @@ csg_regions_filtered <- read_csv(file.path(sp_data_to_plot_path,"csg-regions.csv
          state_abbr!=state_abbr_params) |> 
   dplyr::select(-region_to_keep) |> 
   mutate(csg_region = paste0("Other ",csg_region," States"))
+
+### create label for later dynamic text
+csg_regions_raw <- read_csv(file.path(sp_data_to_plot_path,"csg-regions.csv")) |>
+  mutate(state_abbr = csgjcr::csg_state_convert(state_name,
+                                                "name",
+                                                "abbr"),
+         region_to_keep = paste0(csg_region[state_abbr==state_abbr_params])) |> 
+  ### keep only states in same region as state we're analyzing
+  ### drop state for current page -- we want all states in region aside from this state
+  filter(region_to_keep==csg_region,
+         state_abbr!=state_abbr_params) |> 
+  dplyr::select(-region_to_keep)
+
+csg_region <- paste0(csg_regions_raw$csg_region[1])
+
+csg_region_full <- paste0("CSG ",csg_region," Region")
 
 ```
 
@@ -524,7 +540,18 @@ cat("## Solved violent crime in", state_name_text)
 ```
 
 ```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz}
+
+### create state-specific labels for text output
 solved_rate_max <- paste0(comma(min_max_viol_crime$pct_solved[2] * 100, 1), " percent")
+
+state_average_agg_assault_solve_rate <- paste0(scales::comma(srs_state$pct_solved[srs_state$year==max(srs_state$year) & srs_state$group=="Aggravated assault"]*100,1))
+  
+
+state_average_homicide_solve_rate <- paste0(scales::comma(srs_state$pct_solved[srs_state$year==max(srs_state$year) & srs_state$group=="Homicide"]*100,1))
+
+state_average_rape_solve_rate <- paste0(scales::comma(srs_state$pct_solved[srs_state$year==max(srs_state$year) & srs_state$group=="Rape"]*100,1))
+
+
 ```
 
 ```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
@@ -610,6 +637,7 @@ cat("
 ```
 
 ```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz}
+
 to_plot <- srs_state |> 
   filter(year != 2021) |> 
   left_join(offense_pal, by = c("group" = "crime")) |> 
@@ -797,7 +825,10 @@ cat("## Solved violent crime by agency in", state_name_text)
 ```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
 
 cat(paste0(
-  "In the following table, violent crime incident rates, as well as violent crime solve rates, are included for each of the ", total_agencies, " law enforcement agencies that reported data in ",state_name_text," in 2023. Please note that rates calculated for agencies with smaller jurisdiction populations, as well as fewer overall incidents, are less reliable than those for larger jurisdictions and should be interpreted with caution."))
+  "In the following table, violent crime incident rates, as well as violent crime solve rates, are included for each of the ", total_agencies, " law enforcement agencies that reported data in ",state_name_text," in 2023. Violent crime solve rates by offense differ across agencies across the state.The average solve rate for aggravated assault is ",state_average_agg_assault_solve_rate ," percent. Homicide is ",state_average_homicide_solve_rate," percent, and rape is ",state_average_rape_solve_rate, " percent.  
+  
+
+Please note that rates calculated for agencies with smaller jurisdiction populations, as well as fewer overall incidents, are less reliable than those for larger jurisdictions and should be interpreted with caution."))
 ```
 
 
@@ -869,7 +900,6 @@ cat("### By Offense")
 
 
 ```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz}
-
 #############################################
 ### prep agency-level df for table
 #############################################
@@ -1032,13 +1062,8 @@ df_nibrs_violent_unsolved_by_agency_and_type_to_table_2023_final |>
 cat("## Law enforcement resources in", state_name_text)
 ```
 
-
-::: {.panel-tabset}
-
-
-
 ```{r}
-### clean up df for plotting
+### create dynamic labels for text blurb below
 asslgf_clean_percent_change <- asslgf_clean |> 
   filter(year %in% range(year)) |> 
   arrange(year)
@@ -1046,34 +1071,117 @@ asslgf_clean_percent_change <- asslgf_clean |>
 max_year_resources <- max(asslgf_clean_percent_change$year)
 min_year_resources <- min(asslgf_clean_percent_change$year)
 
-pct_change_spending <- scales::percent((asslgf_clean_percent_change$n_inflation_adjusted_2022_dollars[asslgf_clean_percent_change$year==max_year_resources] - asslgf_clean_percent_change$n_inflation_adjusted_2022_dollars[asslgf_clean_percent_change$year==min_year_resources]) / asslgf_clean_percent_change$n_inflation_adjusted_2022_dollars[asslgf_clean_percent_change$year==min_year_resources],
+pct_change_spending <- scales::percent(((asslgf_clean_percent_change$n_inflation_adjusted_2022_dollars[asslgf_clean_percent_change$year==max_year_resources] - asslgf_clean_percent_change$n_inflation_adjusted_2022_dollars[asslgf_clean_percent_change$year==min_year_resources]) / asslgf_clean_percent_change$n_inflation_adjusted_2022_dollars[asslgf_clean_percent_change$year==min_year_resources]),
                                        accuracy = 1)
 
-pct_change_spending_abs_value <- scales::percent(abs((asslgf_clean_percent_change$n_inflation_adjusted_2022_dollars[asslgf_clean_percent_change$year==max_year_resources] - asslgf_clean_percent_change$n_inflation_adjusted_2022_dollars[asslgf_clean_percent_change$year==min_year_resources]) / asslgf_clean_percent_change$n_inflation_adjusted_2022_dollars[asslgf_clean_percent_change$year==min_year_resources]),
+pct_change_spending_abs_value <- scales::comma(abs((asslgf_clean_percent_change$n_inflation_adjusted_2022_dollars[asslgf_clean_percent_change$year==max_year_resources] - asslgf_clean_percent_change$n_inflation_adjusted_2022_dollars[asslgf_clean_percent_change$year==min_year_resources]) / asslgf_clean_percent_change$n_inflation_adjusted_2022_dollars[asslgf_clean_percent_change$year==min_year_resources])*100,
                                        accuracy = 1)
 
 
 change_spending_text_clear <- case_when(
-  pct_change_spending >= 0 ~ paste0(" increased"),
-  pct_change_spending < 0 ~ paste0(" decreased")
+  pct_change_spending >= 0 ~ paste0("increased"),
+  pct_change_spending < 0 ~ paste0("decreased")
   # TRUE ~ " changed"
   )
 
 
 ```
 
+```{r}
+
+### clean up ucr_employee_data_by_state_clean for text output below
+ucr_employee_data_by_state_clean_percent_change <- ucr_employee_data_by_state_clean |>
+  filter(year %in% range(year)) |>
+  arrange(year)
+
+# max_year_resources <- max(ucr_employee_data_by_state_clean_percent_change$year)
+# min_year_resources <- min(ucr_employee_data_by_state_clean_percent_change$year)
+# 
+# pct_change_staffing <- scales::percent((ucr_employee_data_by_state_clean_percent_change$officer_pop_rate_per_10k[ucr_employee_data_by_state_clean_percent_change$year==max_year_resources] - ucr_employee_data_by_state_clean_percent_change$officer_pop_rate_per_10k[ucr_employee_data_by_state_clean_percent_change$year==min_year_resources]) / ucr_employee_data_by_state_clean_percent_change$officer_pop_rate_per_10k[ucr_employee_data_by_state_clean_percent_change$year==min_year_resources],
+#                                        accuracy = 1)
+# 
+# pct_change_staffing_abs_value <- scales::percent(abs((ucr_employee_data_by_state_clean_percent_change$officer_pop_rate_per_10k[ucr_employee_data_by_state_clean_percent_change$year==max_year_resources] - ucr_employee_data_by_state_clean_percent_change$officer_pop_rate_per_10k[ucr_employee_data_by_state_clean_percent_change$year==min_year_resources]) / ucr_employee_data_by_state_clean_percent_change$officer_pop_rate_per_10k[ucr_employee_data_by_state_clean_percent_change$year==min_year_resources]),
+#                                        accuracy = 1)
+# 
+# 
+# change_staffing_text_clear <- case_when(
+#   pct_change_staffing >= 0 ~ paste0("increased"),
+#   pct_change_staffing < 0 ~ paste0("decreased")
+#   # TRUE ~ " has stayed nearly the same"
+#   )
+
+```
+
+
+```{r}
+
+### code min and max years for labels below
+max_year_resources_staff_per_offense <- max(ucr_employee_data_by_state_clean_percent_change$year)
+min_year_resources_staff_per_offense <- min(ucr_employee_data_by_state_clean_percent_change$year)
+
+### now create pct_change_staffing_per_violent_offense and change_staffing_per_violent_offense_text_clear
+### for text below
+
+pct_change_staffing_per_violent_offense <- scales::percent((ucr_employee_data_by_state_clean_percent_change$officer_per_violent_offense_1k[ucr_employee_data_by_state_clean_percent_change$year==max_year_resources_staff_per_offense] - ucr_employee_data_by_state_clean_percent_change$officer_per_violent_offense_1k[ucr_employee_data_by_state_clean_percent_change$year==min_year_resources_staff_per_offense]) / ucr_employee_data_by_state_clean_percent_change$officer_per_violent_offense_1k[ucr_employee_data_by_state_clean_percent_change$year==min_year_resources_staff_per_offense],
+                                       accuracy = 1)
+
+
+pct_change_staffing_per_violent_offense_abs_value <- scales::comma(abs((ucr_employee_data_by_state_clean_percent_change$officer_per_violent_offense_1k[ucr_employee_data_by_state_clean_percent_change$year==max_year_resources_staff_per_offense] - ucr_employee_data_by_state_clean_percent_change$officer_per_violent_offense_1k[ucr_employee_data_by_state_clean_percent_change$year==min_year_resources_staff_per_offense]) / ucr_employee_data_by_state_clean_percent_change$officer_per_violent_offense_1k[ucr_employee_data_by_state_clean_percent_change$year==min_year_resources_staff_per_offense])*100,
+                                       accuracy = 1)
+
+change_staffing_per_violent_offense_text_clear <- case_when(
+  pct_change_staffing_per_violent_offense >= 0 ~ paste0("increased"),
+  pct_change_staffing_per_violent_offense < 0 ~ paste0("decreased")
+  # TRUE ~ " has stayed nearly the same"
+  )
+
+
+change_staffing_per_violent_offense_text_clear_1 <- case_when(
+  pct_change_staffing_per_violent_offense >= 0 ~ paste0("increase"),
+  pct_change_staffing_per_violent_offense < 0 ~ paste0("decrease")
+  # TRUE ~ " has stayed nearly the same"
+  )
+
+change_staffing_per_violent_offense_text_clear_2 <- case_when(
+  pct_change_staffing_per_violent_offense >= 0 ~ paste0("an increase"),
+  pct_change_staffing_per_violent_offense < 0 ~ paste0("a decrease")
+  # TRUE ~ " has stayed nearly the same"
+  )
+
+### now code opposite for discussion below
+change_staffing_per_violent_offense_text_clear_3 <- case_when(
+  pct_change_staffing_per_violent_offense >= 0 ~ paste0("a decrease"),
+  pct_change_staffing_per_violent_offense < 0 ~ paste0("an increase")
+  # TRUE ~ " has stayed nearly the same"
+  )
+
+```
+
+```{r, results='asis'}
+
+cat(paste0(
+  state_name_text," ", change_spending_text_clear, " spending on law enforcement by ", pct_change_spending_abs_value ," percent from 2013 to 2021, adjusting for inflation. Expenditures include local, state, and federal spending on local police departments, sheriffs’ offices, and state police agencies such as highway patrols and other state investigative law enforcement agencies.  
+
+Law enforcement resources also refer to the state’s staffing per 10,000 residents and per 1,000 violent crimes. These factors may show the level of policing a community receives, potentially influencing both crime and solve rates."))
+```
+
+
+```{r, eval=!state %in% states_to_exclude_from_ucr_officer_count_analysis, results='asis'}
+cat(paste0(
+"Additionally, the number of officers per 1k violent crimes in ",state_name_text," has ",change_staffing_per_violent_offense_text_clear," by ",pct_change_staffing_per_violent_offense_abs_value, " percent from 2013 to 2023. This ",change_staffing_per_violent_offense_text_clear_1," may be due to a combination of ",change_staffing_per_violent_offense_text_clear_2," in law enforcement officers and/or ",change_staffing_per_violent_offense_text_clear_3," in reported violent crimes. 
+
+Law enforcement staffing can impact how agencies allocate resources to solve violent crime. For example, severe staff shortages can reduce investigative personnel or increase the number of cases that individual officers are managing."
+))
+```
+
+::: {.panel-tabset}
+
+
+
 <br>
 
 ```{r, results='asis'}
 cat("### Expenditures")
-```
-
-
-```{r, results='asis'}
-cat(paste0(
-  state_name_text, change_spending_text_clear, " spending by ", pct_change_spending_abs_value," from ", min_year_resources, " to ",max_year_resources, ", adjusting for inflation." 
-  
-))
 ```
 
 
@@ -1140,47 +1248,12 @@ to_plot |>
 
 ```
 
-
-<br>
-
-```{r}
-
-### clean up ucr_employee_data_by_state_clean for text output below
-ucr_employee_data_by_state_clean_percent_change <- ucr_employee_data_by_state_clean |> 
-  filter(year %in% range(year)) |> 
-  arrange(year)
-
-max_year_resources <- max(ucr_employee_data_by_state_clean_percent_change$year)
-min_year_resources <- min(ucr_employee_data_by_state_clean_percent_change$year)
-
-pct_change_staffing <- scales::percent((ucr_employee_data_by_state_clean_percent_change$officer_pop_rate_per_10k[ucr_employee_data_by_state_clean_percent_change$year==max_year_resources] - ucr_employee_data_by_state_clean_percent_change$officer_pop_rate_per_10k[ucr_employee_data_by_state_clean_percent_change$year==min_year_resources]) / ucr_employee_data_by_state_clean_percent_change$officer_pop_rate_per_10k[ucr_employee_data_by_state_clean_percent_change$year==min_year_resources],
-                                       accuracy = 1)
-
-pct_change_staffing_abs_value <- scales::percent(abs((ucr_employee_data_by_state_clean_percent_change$officer_pop_rate_per_10k[ucr_employee_data_by_state_clean_percent_change$year==max_year_resources] - ucr_employee_data_by_state_clean_percent_change$officer_pop_rate_per_10k[ucr_employee_data_by_state_clean_percent_change$year==min_year_resources]) / ucr_employee_data_by_state_clean_percent_change$officer_pop_rate_per_10k[ucr_employee_data_by_state_clean_percent_change$year==min_year_resources]),
-                                       accuracy = 1)
-
-
-change_staffing_text_clear <- case_when(
-  pct_change_staffing >= 0 ~ paste0(" increased"),
-  pct_change_staffing < 0 ~ paste0(" decreased")
-  # TRUE ~ " has stayed nearly the same"
-  )
-
-```
-
 <br>
 
 ```{r, eval=!state %in% states_to_exclude_from_ucr_officer_count_analysis, results='asis'}
 cat("### Officers per Capita")
 ```
 
-
-```{r, eval=!state %in% states_to_exclude_from_ucr_officer_count_analysis, results='asis'}
-cat(paste0(
-  "The number of officers per 10k residents in ", state_name_text," has", change_staffing_text_clear, " by ", pct_change_staffing_abs_value," from ", min_year_resources, " to ",max_year_resources,"." 
-  
-))
-```
 
 
 ```{r, eval=!state %in% states_to_exclude_from_ucr_officer_count_analysis}
@@ -1249,36 +1322,8 @@ to_plot |>
 
 <br>
 
-```{r}
-### create pct_change_staffing_per_violent_offense and change_staffing_per_violent_offense_text_clear
-### for text below
-
-pct_change_staffing_per_violent_offense <- scales::percent((ucr_employee_data_by_state_clean_percent_change$officer_per_violent_offense_1k[ucr_employee_data_by_state_clean_percent_change$year==max_year_resources] - ucr_employee_data_by_state_clean_percent_change$officer_per_violent_offense_1k[ucr_employee_data_by_state_clean_percent_change$year==min_year_resources]) / ucr_employee_data_by_state_clean_percent_change$officer_per_violent_offense_1k[ucr_employee_data_by_state_clean_percent_change$year==min_year_resources],
-                                       accuracy = 1)
-
-
-pct_change_staffing_per_violent_offense_abs_value <- scales::percent(abs((ucr_employee_data_by_state_clean_percent_change$officer_per_violent_offense_1k[ucr_employee_data_by_state_clean_percent_change$year==max_year_resources] - ucr_employee_data_by_state_clean_percent_change$officer_per_violent_offense_1k[ucr_employee_data_by_state_clean_percent_change$year==min_year_resources]) / ucr_employee_data_by_state_clean_percent_change$officer_per_violent_offense_1k[ucr_employee_data_by_state_clean_percent_change$year==min_year_resources]),
-                                       accuracy = 1)
-
-change_staffing_per_violent_offense_text_clear <- case_when(
-  pct_change_staffing_per_violent_offense >= 0 ~ paste0(" increased"),
-  pct_change_staffing_per_violent_offense < 0 ~ paste0(" decreased")
-  # TRUE ~ " has stayed nearly the same"
-  )
-
-```
-
-<br>
-
 ```{r, eval=!state %in% states_to_exclude_from_ucr_officer_count_analysis, results='asis'}
-cat("### Officer Workload")
-```
-
-
-```{r, eval=!state %in% states_to_exclude_from_ucr_officer_count_analysis, results='asis'}
-cat(paste0(
-  "The number of officers per 1k violent crimes in ", state_name_text," has", change_staffing_per_violent_offense_text_clear, " by ", pct_change_staffing_per_violent_offense_abs_value," from ", min_year_resources, " to ",max_year_resources,"." 
-))
+cat("### Officers per Violent Offense")
 ```
 
 
@@ -1317,7 +1362,7 @@ to_plot |>
         )
       )    
   ) |> 
-  hc_title(text = paste0("Officer Workload in ", state_name_text)) |>
+  hc_title(text = paste0("Officers per violent offense in ", state_name_text)) |>
   hc_subtitle(text = "Officers per 1k violent crimes, 2013–2023") |> 
   hc_caption(text = "FBI Uniform Crime Reporting Program SRS state estimates<br>FBI Uniform Crime Reporting Program Police Employee Data") |> 
   hc_yAxis(
@@ -1354,6 +1399,10 @@ to_plot |>
 ```{r, results='asis' }
 cat("## Exploration of homicide solve rates in", state_name_text)
 ```
+
+
+Explore homicide solve rates by available victim demographics and case characteristics for `r state_name_text` and other states in the [`r csg_region_full`](https://www.csg.org/regional-offices). Solve rates are included by race/ethnicity, gender, age, weapon type, and number of victims. For more information, see the data sources and methodology below. See all CSG regions here: https://www.csg.org/regional-offices" 
+
 
 ::: {.panel-tabset}
 
