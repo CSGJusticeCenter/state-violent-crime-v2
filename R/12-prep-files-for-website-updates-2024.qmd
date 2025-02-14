@@ -793,11 +793,6 @@ shr_2022_state_ucr <- shr_2022_state |>
   filter(!is.na(`State`))
 
 
-# ### export out
-# writexl::write_xlsx(shr_2022_state_ucr,
-#                     file.path(sharepoint_jr_clearance_av_meeting_viz,
-#                               "shr_reported_homicides_ucr_srs_coverage_2022.xlsx"))
-
 ### write out
 write_rds(shr_2022_state_ucr,
           file.path(sp_data_site_updates_path,
