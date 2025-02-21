@@ -10,7 +10,7 @@ mainfont: "GT-America"
 linkcolor: "#00355a"
 anchor-sections: false
 params:
-  state: "NC"
+  state: "LA"
 execute:
   echo: false
   warning: false
@@ -840,7 +840,6 @@ cat("### Overall Rates")
 ```
 
 ```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz}
-#| column: body-outset
 
 srs_solved_by_agency_to_table |> 
   ### overwrite rate  with NA if agency is missing population (current value is .inf)
@@ -868,7 +867,6 @@ srs_solved_by_agency_to_table |>
       # Add a right border style to visually distinguish the sticky column
       style = list(borderRight = "1px solid #eee"),
       headerStyle = list(borderRight = "1px solid #eee")),
-      # agency_type = colDef(name = "Agency Type"),
       county_clean = colDef(name = "County", minWidth = 108),
       population = colDef(name = "Jurisdiction Population", minWidth = 130), 
       n_reported = colDef(name = "Violent Incidents Reported (2023)"), 
@@ -880,7 +878,6 @@ srs_solved_by_agency_to_table |>
         ),
       solved_rate_percent_point_change_2019_2023 = colDef(
         name = "Percentage point change in solve rate (2019 to 2023)",
-        # format = colFormat(digits = 0, percent = TRUE)
         cell = add_plus_sign_percent_point_change
         )
       )
@@ -899,7 +896,6 @@ cat("### By Offense")
 
 
 ```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz}
-#| column: body-outset
 
 #############################################
 ### prep agency-level df for table
@@ -1170,7 +1166,7 @@ cat("### Expenditures")
 to_plot <- asslgf_clean |> 
   mutate(
     tooltip = paste0(
-      "<b>", state_name.x, " – ", year, "</b><br>",
+      "<b>", state_name, " – ", year, "</b><br>",
       "Inflation-adjusted expenditure: ", scales::dollar(n_inflation_adjusted_latest_year_dollars, 
                                                         accuracy = 1,
                                                         prefix = '$')))
@@ -1203,8 +1199,7 @@ to_plot |>
     endOnTick = FALSE,
     labels = list(
       formatter = JS("function() { return '$' + (this.value / 1000000000) + 'B'; }")
-    ))
-  ) |> 
+    )) |> 
     hc_tooltip(formatter = JS("function(){return(this.point.tooltip)}")) |>
     hc_plotOptions(
       series = list(animation = FALSE),

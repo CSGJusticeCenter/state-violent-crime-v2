@@ -1683,9 +1683,6 @@ to_plot |>
   hchart(
     "column",
     hcaes(victim_1_sex_clean, clearance_rate),
-    # color = jr_pal[1],
-    # dashStyle = c("solid"),
-    # opacity = c(1, 0.75),
     accessibility = list(
       point = list(
         valueDescriptionFormat = "year: {point.x:.0f}, rate: {point.y:.1f}"
@@ -1693,9 +1690,7 @@ to_plot |>
       )    
   ) |> 
   hc_title(text = paste0("Homicide solve rates by gender")) |>
-  # hc_subtitle(text = "Solve Rates by Gender, 2018–2022") |> 
   hc_caption(text = list("This analysis excludes records where a victim's gender is unknown<br>FBI Supplementary Homicide Report (SHR) Data (2018-2022)")) |>     
-# hc_add_theme(hc_theme_jc) |>
     hc_tooltip(formatter = JS("function(){return(this.point.tooltip)}")) |>
     hc_plotOptions(
       series = list(animation = FALSE),
