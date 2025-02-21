@@ -840,6 +840,7 @@ cat("### Overall Rates")
 ```
 
 ```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz}
+#| column: body-outset
 
 srs_solved_by_agency_to_table |> 
   ### overwrite rate  with NA if agency is missing population (current value is .inf)
@@ -898,6 +899,8 @@ cat("### By Offense")
 
 
 ```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz}
+#| column: body-outset
+
 #############################################
 ### prep agency-level df for table
 #############################################
@@ -956,11 +959,7 @@ df_nibrs_violent_unsolved_by_agency_and_type_to_table_2023_final |>
                   ), 
                 ~ replace(.x, is.nan(.x), NA))
          ) |> 
-  # ungroup() |> 
-  # arrange(desc(jurisdiction_population)) |>
   reactable_template(
-    # columnGroups = list(
-    # colGroup("Aggravated Assault Solve Rate (2023)", columns = c("state_average"), sticky = "left")),
     sort_col = list("jurisdiction_population" = "desc"),
     columns = list(
       agency_name = colDef(name = "Agency", minWidth = 250,
@@ -1069,10 +1068,10 @@ asslgf_clean_percent_change <- asslgf_clean |>
 max_year_resources <- max(asslgf_clean_percent_change$year)
 min_year_resources <- min(asslgf_clean_percent_change$year)
 
-pct_change_spending <- scales::percent(((asslgf_clean_percent_change$n_inflation_adjusted_2022_dollars[asslgf_clean_percent_change$year==max_year_resources] - asslgf_clean_percent_change$n_inflation_adjusted_2022_dollars[asslgf_clean_percent_change$year==min_year_resources]) / asslgf_clean_percent_change$n_inflation_adjusted_2022_dollars[asslgf_clean_percent_change$year==min_year_resources]),
+pct_change_spending <- scales::percent(((asslgf_clean_percent_change$n_inflation_adjusted_latest_year_dollars[asslgf_clean_percent_change$year==max_year_resources] - asslgf_clean_percent_change$n_inflation_adjusted_latest_year_dollars[asslgf_clean_percent_change$year==min_year_resources]) / asslgf_clean_percent_change$n_inflation_adjusted_latest_year_dollars[asslgf_clean_percent_change$year==min_year_resources]),
                                        accuracy = 1)
 
-pct_change_spending_abs_value <- scales::comma(abs((asslgf_clean_percent_change$n_inflation_adjusted_2022_dollars[asslgf_clean_percent_change$year==max_year_resources] - asslgf_clean_percent_change$n_inflation_adjusted_2022_dollars[asslgf_clean_percent_change$year==min_year_resources]) / asslgf_clean_percent_change$n_inflation_adjusted_2022_dollars[asslgf_clean_percent_change$year==min_year_resources])*100,
+pct_change_spending_abs_value <- scales::comma(abs((asslgf_clean_percent_change$n_inflation_adjusted_latest_year_dollars[asslgf_clean_percent_change$year==max_year_resources] - asslgf_clean_percent_change$n_inflation_adjusted_latest_year_dollars[asslgf_clean_percent_change$year==min_year_resources]) / asslgf_clean_percent_change$n_inflation_adjusted_latest_year_dollars[asslgf_clean_percent_change$year==min_year_resources])*100,
                                        accuracy = 1)
 
 
@@ -1091,22 +1090,6 @@ change_spending_text_clear <- case_when(
 ucr_employee_data_by_state_clean_percent_change <- ucr_employee_data_by_state_clean |>
   filter(year %in% range(year)) |>
   arrange(year)
-
-# max_year_resources <- max(ucr_employee_data_by_state_clean_percent_change$year)
-# min_year_resources <- min(ucr_employee_data_by_state_clean_percent_change$year)
-# 
-# pct_change_staffing <- scales::percent((ucr_employee_data_by_state_clean_percent_change$officer_pop_rate_per_10k[ucr_employee_data_by_state_clean_percent_change$year==max_year_resources] - ucr_employee_data_by_state_clean_percent_change$officer_pop_rate_per_10k[ucr_employee_data_by_state_clean_percent_change$year==min_year_resources]) / ucr_employee_data_by_state_clean_percent_change$officer_pop_rate_per_10k[ucr_employee_data_by_state_clean_percent_change$year==min_year_resources],
-#                                        accuracy = 1)
-# 
-# pct_change_staffing_abs_value <- scales::percent(abs((ucr_employee_data_by_state_clean_percent_change$officer_pop_rate_per_10k[ucr_employee_data_by_state_clean_percent_change$year==max_year_resources] - ucr_employee_data_by_state_clean_percent_change$officer_pop_rate_per_10k[ucr_employee_data_by_state_clean_percent_change$year==min_year_resources]) / ucr_employee_data_by_state_clean_percent_change$officer_pop_rate_per_10k[ucr_employee_data_by_state_clean_percent_change$year==min_year_resources]),
-#                                        accuracy = 1)
-# 
-# 
-# change_staffing_text_clear <- case_when(
-#   pct_change_staffing >= 0 ~ paste0("increased"),
-#   pct_change_staffing < 0 ~ paste0("decreased")
-#   # TRUE ~ " has stayed nearly the same"
-#   )
 
 ```
 
@@ -1185,18 +1168,14 @@ cat("### Expenditures")
 
 ```{r }
 to_plot <- asslgf_clean |> 
-  # bind_rows(srs_by_cat_us) |> 
   mutate(
-    # incidents_reported_rate_total = incidents_reported_rate_total * 1e5,
     tooltip = paste0(
       "<b>", state_name.x, " – ", year, "</b><br>",
-      "Inflation-adjusted expenditure: ", scales::dollar(n_inflation_adjusted_2022_dollars, 
+      "Inflation-adjusted expenditure: ", scales::dollar(n_inflation_adjusted_latest_year_dollars, 
                                                         accuracy = 1,
-                                                        prefix = '$'))
-    # state_name = fct_relevel(state_name, "United States", after = Inf)
-    )
+                                                        prefix = '$')))
 
-rng <- range(to_plot$n_inflation_adjusted_2022_dollars)
+rng <- range(to_plot$n_inflation_adjusted_latest_year_dollars)
 mult <- diff(rng) * axis_expansion_mult
 
 y_min <- rng[1] - mult
@@ -1206,10 +1185,8 @@ y_max <- rng[2] + mult
 to_plot |> 
   hchart(
     "spline",
-    hcaes(year, n_inflation_adjusted_2022_dollars),
+    hcaes(year, n_inflation_adjusted_latest_year_dollars),
     color = jr_pal[1],
-    # dashStyle = c("solid"),
-    # opacity = c(1, 0.75),
     accessibility = list(
       point = list(
         valueDescriptionFormat = "year: {point.x:.0f}, rate: {point.y:.1f}"
@@ -1220,11 +1197,14 @@ to_plot |>
   hc_subtitle(text = "Inflation-adjusted law enforcement expenditures, 2013–2021") |> 
   hc_caption(text = "US Census Bureau Annual Survey of State and Local Government Finances") |> 
   hc_yAxis(
+    title = "",
     min = y_min,
     max = y_max,
-    endOnTick = FALSE
+    endOnTick = FALSE,
+    labels = list(
+      formatter = JS("function() { return '$' + (this.value / 1000000000) + 'B'; }")
+    ))
   ) |> 
-    # hc_add_theme(hc_theme_jc) |>
     hc_tooltip(formatter = JS("function(){return(this.point.tooltip)}")) |>
     hc_plotOptions(
       series = list(animation = FALSE),
@@ -1237,10 +1217,6 @@ to_plot |>
       title = "",
       labels = list(y = 25)
     ) |>
-    hc_yAxis(
-      title = "",
-      labels = list(format = "{value:,.0f}")
-    ) |> 
   hc_legend(enabled = FALSE) |>
   hc_setup()
 
@@ -1257,16 +1233,11 @@ cat("### Officers per Capita")
 ```{r, eval=!state %in% states_to_exclude_from_ucr_officer_count_analysis}
 
 to_plot <- ucr_employee_data_by_state_clean |> 
-  # filter(state_abbr==state_abbr,
-  #        year>=2013) |> 
-  # bind_rows(srs_by_cat_us) |> 
   mutate(
-    # incidents_reported_rate_total = incidents_reported_rate_total * 1e5,
     tooltip = paste0(
       "<b>", state_abbr, " – ", year, "</b><br>",
       "Officers per 10k residents: ", scales::comma(officer_pop_rate_per_10k, 
-                                                        accuracy = 1))
-    # state_name = fct_relevel(state_name, "United States", after = Inf)
+                                                        accuracy = .1))
     )
 
 rng <- range(to_plot$officer_pop_rate_per_10k)
@@ -1281,8 +1252,6 @@ to_plot |>
     "spline",
     hcaes(year, officer_pop_rate_per_10k),
     color = jr_pal[1],
-    # dashStyle = c("solid"),
-    # opacity = c(1, 0.75),
     accessibility = list(
       point = list(
         valueDescriptionFormat = "year: {point.x:.0f}, rate: {point.y:.1f}"
@@ -1297,7 +1266,6 @@ to_plot |>
     max = y_max,
     endOnTick = FALSE
   ) |> 
-    # hc_add_theme(hc_theme_jc) |>
     hc_tooltip(formatter = JS("function(){return(this.point.tooltip)}")) |>
     hc_plotOptions(
       series = list(animation = FALSE),
@@ -1327,16 +1295,11 @@ cat("### Officers per Violent Offense")
 
 ```{r, eval=!state %in% states_to_exclude_from_ucr_officer_count_analysis}
 to_plot <- ucr_employee_data_by_state_clean |> 
-  # filter(state_abbr==state_abbr,
-  #        year>=2013) |>
-  # bind_rows(srs_by_cat_us) |> 
   mutate(
-    # incidents_reported_rate_total = incidents_reported_rate_total * 1e5,
     tooltip = paste0(
       "<b>", state_abbr, " – ", year, "</b><br>",
       "Officers per 1k violent crimes: ", scales::comma(officer_per_violent_offense_1k, 
-                                                        accuracy = 1))
-    # state_name = fct_relevel(state_name, "United States", after = Inf)
+                                                        accuracy = .1))
     )
 
 rng <- range(to_plot$officer_per_violent_offense_1k)
@@ -1352,8 +1315,6 @@ to_plot |>
     "spline",
     hcaes(year, officer_per_violent_offense_1k),
     color = jr_pal[1],
-    # dashStyle = c("solid"),
-    # opacity = c(1, 0.75),
     accessibility = list(
       point = list(
         valueDescriptionFormat = "year: {point.x:.0f}, rate: {point.y:.1f}"
@@ -1368,7 +1329,6 @@ to_plot |>
     max = y_max,
     endOnTick = FALSE
   ) |> 
-    # hc_add_theme(hc_theme_jc) |>
     hc_tooltip(formatter = JS("function(){return(this.point.tooltip)}")) |>
     hc_plotOptions(
       series = list(animation = FALSE),
@@ -1399,7 +1359,7 @@ cat("## Exploration of homicide solve rates in", state_name_text)
 ```
 
 
-Explore homicide solve rates by available victim demographics and case characteristics for `r state_name_text` and other states in the [`r csg_region_full`](https://www.csg.org/regional-offices). Solve rates are included by race/ethnicity, gender, age, weapon type, and number of victims. For more information, see the data sources and methodology below. See all CSG regions here: https://www.csg.org/regional-offices" 
+Explore homicide solve rates by available victim demographics and case characteristics for `r state_name_text` and other states in the [`r csg_region_full`](https://www.csg.org/regional-offices). Solve rates are included by race/ethnicity, gender, age, weapon type, and number of victims. For more information, see the data sources and methodology below. See all CSG regions here: https://www.csg.org/regional-offices
 
 
 ::: {.panel-tabset}
@@ -1706,6 +1666,12 @@ Agency- and county-level violent crime and solve rate data presented above are r
 Each law enforcement agency is grouped by the county where they are based using the Law Enforcement Agency Identifiers Crosswalk developed by the Bureau of Justice Statistics in 2012. The overall county population used for calculation of county-level rates is based on the sum of the jurisdiction populations for agencies reporting data for all 12 months in 2023.
 
 Counties with fewer than 25 reported violent incidents in 2023 are excluded from the map, as calculations of solve rates are not reliable. 
+
+Data regarding state law enforcement expenditure were downloaded from the U.S. Census Bureau [Annual Survey of State and Local Government Finances](https://www.census.gov/programs-surveys/gov-finances.html){target="_parent"}.
+
+Officer employment analysis is restricted to sworn law enforcement officers and was downloaded from the FBI's [Uniform Crime Reporting (UCR) Program police employee data files](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019/topic-pages/police-employee-data){target="_parent"}.
+
+Data on homicide solve rate trends and case characteristics come from the FBI's [Supplementary Homicide Reporting (SHR) Program](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019/topic-pages/expanded-homicide){target="_parent"}.
 
 :::
 

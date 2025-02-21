@@ -1115,6 +1115,7 @@ cat("### Overall Rates")
 ```
 
 ```{r}
+#| column: body-outset
 
 ### create state-level table
 srs_state_to_map |> 
@@ -1141,8 +1142,6 @@ srs_state_to_map |>
       n_reported_2023 = colDef(name = "Violent Incidents Reported (2023)"), 
       viol_crime_rate_percent_change_2019_2023 = colDef(
         name = "Percent change in violent crime rate (2019 to 2023)",
-        # format = colFormat(suffix = "%", 
-        #                    digits = 0),
         cell = add_plus_sign_percent_change
         ),
       solved_rate_2023 = colDef(
@@ -1151,7 +1150,6 @@ srs_state_to_map |>
         ),
       solved_rate_percent_point_change_2019_2023 = colDef(
         name = "Percentage point change in solve rate (2019 to 2023)",
-        # format = colFormat(digits = 0),
         cell = add_plus_sign_percent_point_change,
         )
       )
@@ -1172,25 +1170,16 @@ cat("### By Offense")
 
 
 ```{r }
+#| column: body-outset
 
-#############################################
+
+###################################################################################
 ### prep df_nibrs_violent_unsolved_by_state_and_type_to_table_2023_final for table
-#############################################
+###################################################################################
 
-### clean up rates and select columns we need
+### clean up rates 
 df_nibrs_violent_unsolved_by_state_and_type_to_table_2023_final <-
   df_nibrs_violent_unsolved_by_state_and_type_to_table_2023 |> 
-  ### remove state name and other additional columns
-  ### we just needed it to filter on param
-  select(state_name,
-         n_reported_rate_aggravated_assault,
-         solved_rate_aggravated_assault, 
-         n_reported_rate_homicide, 
-         solved_rate_homicide, 
-         n_reported_rate_rape, 
-         solved_rate_rape, 
-         n_reported_rate_robbery, 
-         solved_rate_robbery) |> 
   ### recode all solved incident data to NA if state %in% states_to_exclude_from_solved_rate_viz
   mutate(
     across(c(solved_rate_aggravated_assault,
@@ -1198,9 +1187,7 @@ df_nibrs_violent_unsolved_by_state_and_type_to_table_2023_final <-
              solved_rate_rape,
              solved_rate_robbery),
                 ~ if_else(state_name%in%states_to_exclude_from_solved_rate_viz,
-                          NA, .)
-           )
-    )
+                          NA, .)))
 
 ### determine median solve rates by violent offense type for state
 ### we'll use these state averages to develop an agency-level comparison in the table
@@ -1340,10 +1327,10 @@ asslgf_clean_percent_change <- asslgf_clean_national |>
 max_year_resources <- max(asslgf_clean_percent_change$year)
 min_year_resources <- min(asslgf_clean_percent_change$year)
 
-pct_change_spending <- scales::percent((asslgf_clean_percent_change$n_inflation_adjusted_2022_dollars[asslgf_clean_percent_change$year==max_year_resources] - asslgf_clean_percent_change$n_inflation_adjusted_2022_dollars[asslgf_clean_percent_change$year==min_year_resources]) / asslgf_clean_percent_change$n_inflation_adjusted_2022_dollars[asslgf_clean_percent_change$year==min_year_resources],
+pct_change_spending <- scales::percent((asslgf_clean_percent_change$n_inflation_adjusted_latest_year_dollars[asslgf_clean_percent_change$year==max_year_resources] - asslgf_clean_percent_change$n_inflation_adjusted_latest_year_dollars[asslgf_clean_percent_change$year==min_year_resources]) / asslgf_clean_percent_change$n_inflation_adjusted_latest_year_dollars[asslgf_clean_percent_change$year==min_year_resources],
                                        accuracy = 1)
 
-pct_change_spending_abs_value <- scales::percent(abs((asslgf_clean_percent_change$n_inflation_adjusted_2022_dollars[asslgf_clean_percent_change$year==max_year_resources] - asslgf_clean_percent_change$n_inflation_adjusted_2022_dollars[asslgf_clean_percent_change$year==min_year_resources]) / asslgf_clean_percent_change$n_inflation_adjusted_2022_dollars[asslgf_clean_percent_change$year==min_year_resources]),
+pct_change_spending_abs_value <- scales::percent(abs((asslgf_clean_percent_change$n_inflation_adjusted_latest_year_dollars[asslgf_clean_percent_change$year==max_year_resources] - asslgf_clean_percent_change$n_inflation_adjusted_latest_year_dollars[asslgf_clean_percent_change$year==min_year_resources]) / asslgf_clean_percent_change$n_inflation_adjusted_latest_year_dollars[asslgf_clean_percent_change$year==min_year_resources]),
                                        accuracy = 1)
 
 
@@ -1371,19 +1358,17 @@ cat(paste0(
 
 
 ```{r }
+
 to_plot <- asslgf_clean_national |> 
-  # bind_rows(srs_by_cat_us) |> 
   mutate(
-    # incidents_reported_rate_total = incidents_reported_rate_total * 1e5,
     tooltip = paste0(
       "<b>", "United States", " – ", year, "</b><br>",
-      "Inflation-adjusted expenditure: ", scales::dollar(n_inflation_adjusted_2022_dollars, 
+      "Inflation-adjusted expenditure: ", scales::dollar(n_inflation_adjusted_latest_year_dollars, 
                                                         accuracy = 1,
                                                         prefix = '$'))
-    # state_name = fct_relevel(state_name, "United States", after = Inf)
     )
 
-rng <- range(to_plot$n_inflation_adjusted_2022_dollars)
+rng <- range(to_plot$n_inflation_adjusted_latest_year_dollars)
 mult <- diff(rng) * axis_expansion_mult
 
 y_min <- rng[1] - mult
@@ -1393,10 +1378,8 @@ y_max <- rng[2] + mult
 to_plot |> 
   hchart(
     "spline",
-    hcaes(year, n_inflation_adjusted_2022_dollars),
+    hcaes(year, n_inflation_adjusted_latest_year_dollars),
     color = jr_pal[1],
-    # dashStyle = c("solid"),
-    # opacity = c(1, 0.75),
     accessibility = list(
       point = list(
         valueDescriptionFormat = "year: {point.x:.0f}, rate: {point.y:.1f}"
@@ -1409,9 +1392,11 @@ to_plot |>
   hc_yAxis(
     min = y_min,
     max = y_max,
-    endOnTick = FALSE
-  ) |> 
-    # hc_add_theme(hc_theme_jc) |>
+    endOnTick = FALSE,
+    title = "",
+    labels = list(
+      formatter = JS("function() { return '$' + (this.value / 1000000000) + 'B'; }")
+    )) |> 
     hc_tooltip(formatter = JS("function(){return(this.point.tooltip)}")) |>
     hc_plotOptions(
       series = list(animation = FALSE),
@@ -1424,10 +1409,6 @@ to_plot |>
       title = "",
       labels = list(y = 25)
     ) |>
-    hc_yAxis(
-      title = "",
-      labels = list(format = "{value:,.0f}")
-    ) |> 
   hc_legend(enabled = FALSE) |>
   hc_setup()
 
@@ -1478,16 +1459,11 @@ cat(paste0(
 ```{r }
 
 to_plot <- ucr_employee_data_national_clean |> 
-  # filter(state_abbr==state_abbr,
-  #        year>=2013) |> 
-  # bind_rows(srs_by_cat_us) |> 
   mutate(
-    # incidents_reported_rate_total = incidents_reported_rate_total * 1e5,
     tooltip = paste0(
       "<b>", "United States", " – ", year, "</b><br>",
       "Officers per 10k residents: ", scales::comma(officer_pop_rate_per_10k, 
-                                                        accuracy = 1))
-    # state_name = fct_relevel(state_name, "United States", after = Inf)
+                                                        accuracy = .1))
     )
 
 rng <- range(to_plot$officer_pop_rate_per_10k)
@@ -1502,8 +1478,6 @@ to_plot |>
     "spline",
     hcaes(year, officer_pop_rate_per_10k),
     color = jr_pal[1],
-    # dashStyle = c("solid"),
-    # opacity = c(1, 0.75),
     accessibility = list(
       point = list(
         valueDescriptionFormat = "year: {point.x:.0f}, rate: {point.y:.1f}"
@@ -1518,7 +1492,6 @@ to_plot |>
     max = y_max,
     endOnTick = FALSE
   ) |> 
-    # hc_add_theme(hc_theme_jc) |>
     hc_tooltip(formatter = JS("function(){return(this.point.tooltip)}")) |>
     hc_plotOptions(
       series = list(animation = FALSE),
@@ -1576,16 +1549,11 @@ cat(paste0(
 
 ```{r }
 to_plot <- ucr_employee_data_national_clean |> 
-  # filter(state_abbr==state_abbr,
-  #        year>=2013) |>
-  # bind_rows(srs_by_cat_us) |> 
   mutate(
-    # incidents_reported_rate_total = incidents_reported_rate_total * 1e5,
     tooltip = paste0(
       "<b>", "United States", " – ", year, "</b><br>",
       "Officers per 1k violent crimes: ", scales::comma(officer_per_violent_offense_1k, 
-                                                        accuracy = 1))
-    # state_name = fct_relevel(state_name, "United States", after = Inf)
+                                                        accuracy = .1))
     )
 
 rng <- range(to_plot$officer_per_violent_offense_1k)
@@ -1601,8 +1569,6 @@ to_plot |>
     "spline",
     hcaes(year, officer_per_violent_offense_1k),
     color = jr_pal[1],
-    # dashStyle = c("solid"),
-    # opacity = c(1, 0.75),
     accessibility = list(
       point = list(
         valueDescriptionFormat = "year: {point.x:.0f}, rate: {point.y:.1f}"
@@ -1617,7 +1583,6 @@ to_plot |>
     max = y_max,
     endOnTick = FALSE
   ) |> 
-    # hc_add_theme(hc_theme_jc) |>
     hc_tooltip(formatter = JS("function(){return(this.point.tooltip)}")) |>
     hc_plotOptions(
       series = list(animation = FALSE),
@@ -1649,7 +1614,6 @@ cat("## Trends in homicide solve rates")
 
 The following chart includes homicide solve rates by race/ethnicity, gender, age, weapon type, and number of victims. For more information, see the data and methodology sections below.  
 
-<br>
 
 In the United States, homicide solve rates are highest when the victim is White and are lowest when the victim is Black. Homicide solve rates are highest when the victim is a woman and lowest when the victim is a man. 
 
@@ -1942,4 +1906,11 @@ c) Identified the suspect’s exact location so that the person could be taken i
 d) Encountered a circumstance outside the control of law enforcement that prohibits the agency from arresting, charging, and prosecuting the person
     
 Examples of exceptional clearances include the death of the person who committed the crime; the victim’s refusal to cooperate with the prosecution after the person who committed the crime has been identified; or the denial of extradition.
+
+Data regarding state law enforcement expenditure were downloaded from the U.S. Census Bureau [Annual Survey of State and Local Government Finances](https://www.census.gov/programs-surveys/gov-finances.html){target="_parent"}.
+
+Officer employment analysis is restricted to sworn law enforcement officers and was downloaded from the FBI's [Uniform Crime Reporting (UCR) Program police employee data files](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019/topic-pages/police-employee-data){target="_parent"}.
+
+Data on homicide solve rate trends and case characteristics come from the FBI's [Supplementary Homicide Reporting (SHR) Program](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019/topic-pages/expanded-homicide){target="_parent"}.
+
 :::
