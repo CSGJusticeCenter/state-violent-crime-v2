@@ -825,7 +825,7 @@ cat("## Solved violent crime by agency in", state_name_text)
 ```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
 
 cat(paste0(
-  "In the following table, violent crime incident rates, as well as violent crime solve rates, are included for each of the ", total_agencies, " law enforcement agencies that reported data in ",state_name_text," in 2023. Violent crime solve rates by offense differ across agencies across the state.The average solve rate for aggravated assault is ",state_average_agg_assault_solve_rate ," percent. Homicide is ",state_average_homicide_solve_rate," percent, and rape is ",state_average_rape_solve_rate, " percent.  
+  "In the following table, violent crime incident rates, as well as violent crime solve rates, are included for each of the ", total_agencies, " law enforcement agencies that reported data in ",state_name_text," in 2023. Violent crime solve rates by offense differ across agencies across the state. The average solve rate for aggravated assault is ",state_average_agg_assault_solve_rate ," percent. Homicide is ",state_average_homicide_solve_rate," percent, and rape is ",state_average_rape_solve_rate, " percent.  
   
 
 Please note that rates calculated for agencies with smaller jurisdiction populations, as well as fewer overall incidents, are less reliable than those for larger jurisdictions and should be interpreted with caution."))
@@ -836,7 +836,7 @@ Please note that rates calculated for agencies with smaller jurisdiction populat
 
 
 ```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
-cat("### Overall Rates")
+cat("### Overall rates")
 ```
 
 ```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz}
@@ -886,13 +886,13 @@ srs_solved_by_agency_to_table |>
 ```
 
 ```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
-cat("### By Offense")
+cat("### By offense")
 ```
 
 
-<span style="color:#E17619"> Orange </span> indicates a solve rate less than the state average 
+<span style="color:#E17619"> Orange </span> indicates a solve rate less than the state average.
 
-<span style="color:#15607A"> Blue </span> indicates a solve rate greater than or equal to the state average 
+<span style="color:#15607A"> Blue </span> indicates a solve rate greater than or equal to the state average.
 
 
 ```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz}
@@ -1189,7 +1189,7 @@ to_plot |>
         )
       )    
   ) |> 
-  hc_title(text = paste0("Law Enforcement Expenditure in ", state_name_text)) |>
+  hc_title(text = paste0("Law enforcement expenditures in ", state_name_text)) |>
   hc_subtitle(text = "Inflation-adjusted law enforcement expenditures, 2013–2021") |> 
   hc_caption(text = "US Census Bureau Annual Survey of State and Local Government Finances") |> 
   hc_yAxis(
@@ -1220,7 +1220,7 @@ to_plot |>
 <br>
 
 ```{r, eval=!state %in% states_to_exclude_from_ucr_officer_count_analysis, results='asis'}
-cat("### Officers per Capita")
+cat("### Officers per capita")
 ```
 
 
@@ -1253,7 +1253,7 @@ to_plot |>
         )
       )    
   ) |> 
-  hc_title(text = paste0("Officers per Capita in ", state_name_text)) |>
+  hc_title(text = paste0("Officers per capita in ", state_name_text)) |>
   hc_subtitle(text = "Officers per 10k residents, 2013–2023") |> 
   hc_caption(text = "FBI Uniform Crime Reporting Program SRS state estimates<br>FBI Uniform Crime Reporting Program Police Employee Data") |> 
   hc_yAxis(
@@ -1284,7 +1284,7 @@ to_plot |>
 <br>
 
 ```{r, eval=!state %in% states_to_exclude_from_ucr_officer_count_analysis, results='asis'}
-cat("### Officers per Violent Offense")
+cat("### Officers per violent offense")
 ```
 
 
@@ -1354,13 +1354,13 @@ cat("## Exploration of homicide solve rates in", state_name_text)
 ```
 
 
-Explore homicide solve rates by available victim demographics and case characteristics for `r state_name_text` and other states in the [`r csg_region_full`](https://www.csg.org/regional-offices). Solve rates are included by race/ethnicity, gender, age, weapon type, and number of victims. For more information, see the data sources and methodology below. See all CSG regions here: https://www.csg.org/regional-offices
+Explore homicide solve rates by available victim demographics and case characteristics for `r state_name_text` and other states in the [`r csg_region_full`](https://www.csg.org/regional-offices). Solve rates are included by race and ethnicity, gender, age, weapon type, and number of victims. For more information, see the data sources and methodology below.
 
 
 ::: {.panel-tabset}
 
 
-### Race and Ethnicity 
+### Race and ethnicity 
 
 ```{r }
 
@@ -1385,8 +1385,8 @@ to_plot |>
       )    
   ) |> 
   hc_title(text = paste0("Homicide solve rates by race and ethnicity")) |>
-  # hc_subtitle(text = "Solve Rates by Race/Ethnicity, 2018–2022") |> 
-  hc_caption(text = list("This analysis excludes records where a victim's race/ethnicity is unknown<br>FBI Supplementary Homicide Report (SHR) Data (2018-2022)")) |>     # hc_add_theme(hc_theme_jc) |>
+  hc_subtitle(text = "2018–2022") |>
+  hc_caption(text = list("This analysis excludes records where a victim's race and ethnicity is unknown<br>FBI Supplementary Homicide Report (SHR) Data (2018-2022)")) |>     # hc_add_theme(hc_theme_jc) |>
     hc_tooltip(formatter = JS("function(){return(this.point.tooltip)}")) |>
     hc_plotOptions(
       series = list(animation = FALSE),
@@ -1435,7 +1435,7 @@ to_plot |>
       )    
   ) |> 
   hc_title(text = paste0("Homicide solve rates by gender")) |>
-  # hc_subtitle(text = "Solve Rates by Gender, 2018–2022") |> 
+  hc_subtitle(text = "2018–2022") |>
   hc_caption(text = list("This analysis excludes records where a victim's gender is unknown<br>FBI Supplementary Homicide Report (SHR) Data (2018-2022)")) |>     
 # hc_add_theme(hc_theme_jc) |>
     hc_tooltip(formatter = JS("function(){return(this.point.tooltip)}")) |>
@@ -1489,7 +1489,7 @@ to_plot |>
       )    
   ) |> 
   hc_title(text = paste0("Homicide solve rates by age")) |>
-  # hc_subtitle(text = "Solve Rates by Age, 2018–2022") |> 
+  hc_subtitle(text = "2018–2022") |>
   hc_caption(text = list("This analysis excludes records where a victim's age is unknown<br>FBI Supplementary Homicide Report (SHR) Data (2018-2022)")) |> 
   hc_caption(text = "FBI Supplementary Homicide Report (SHR) Data") |> 
     # hc_add_theme(hc_theme_jc) |>
@@ -1542,7 +1542,7 @@ to_plot |>
       )    
   ) |> 
   hc_title(text = paste0("Homicide solve rates by weapon")) |>
-  # hc_subtitle(text = "Solve Rates by Weapon, 2018–2022") |> 
+  hc_subtitle(text = "2018–2022") |>
   hc_caption(text = list("This analysis includes the most common weapons across states in recent years<br>FBI Supplementary Homicide Report (SHR) Data (2018-2022)")) |> 
   # hc_caption(text = "FBI Supplementary Homicide Report (SHR) Data") |> 
     # hc_add_theme(hc_theme_jc) |>
@@ -1571,7 +1571,7 @@ to_plot |>
 ```
 
 
-### Number of Victims
+### Number of victims
 
 ```{r }
 
@@ -1600,7 +1600,7 @@ to_plot |>
       )    
   ) |> 
   hc_title(text = paste0("Homicide solve rates by number of victims")) |>
-  # hc_subtitle(text = "Solve Rates by Number of Victims, 2018–2022") |> 
+  hc_subtitle(text = "2018–2022") |>
   hc_caption(text = "FBI Supplementary Homicide Report (SHR) Data (2018-2022)") |> 
     # hc_add_theme(hc_theme_jc) |>
     hc_tooltip(formatter = JS("function(){return(this.point.tooltip)}")) |>
@@ -1639,7 +1639,7 @@ to_plot |>
 
 ## Data sources and methodology
 
-Data regarding crime and solve rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr){target="_parent"}. Counts of reported violent crime between 2013 and 2023 are derived from the Summary Reporting System (SRS) and the National Incident-Based Reporting System (NIBRS). The FBI generated national estimates for reported crime and clearances based on agency-level reports, and these estimates were published through 2023 in the FBI's annual report, [_Crime in the U.S._](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019){target="_parent"} and on the FBI's [Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/home){target="_parent"}. For agency-level clearance data, we used [Jacob Kaplan's version of the Offenses Known and Clearances by Arrest](https://doi.org/10.7910/DVN/OESSD1) dataset.
+Data regarding crime and solve rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr){target="_parent"}. Counts of reported violent crime between 2013 and 2023 are derived from the Summary Reporting System (SRS) and the National Incident-Based Reporting System (NIBRS). The FBI generated national estimates for reported crime and clearances based on agency-level reports, and these estimates were published through 2023 in the FBI's annual report, [_Crime in the U.S._](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019){target="_parent"}, and on the FBI's [Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/home){target="_parent"}. For agency-level clearance data, we used [Jacob Kaplan's version of the Offenses Known and Clearances by Arrest](https://doi.org/10.7910/DVN/OESSD1) dataset.
 
 The FBI stopped SRS data collection after data year 2020 and required law enforcement agencies to use NIBRS to report crime statistics to the FBI. This change decreased the number of agencies that submitted their crime data and thus reduced the reliability of state estimates in 2021. In 2022 and 2023, the FBI allowed agencies who were unable to submit NIBRS data to submit SRS data again. Ninety-four percent of the U.S. population was covered in the 2023 crime data submissions to the FBI, with most states providing close to complete data. However, the population upon which the estimates were derived decreased by over 10 percent in three states: Florida, Mississippi, and Wyoming, so conclusions about crime changes in those states should be interpreted with additional caution.
 
@@ -1662,7 +1662,7 @@ Each law enforcement agency is grouped by the county where they are based using 
 
 Counties with fewer than 25 reported violent incidents in 2023 are excluded from the map, as calculations of solve rates are not reliable. 
 
-Data regarding state law enforcement expenditure were downloaded from the U.S. Census Bureau [Annual Survey of State and Local Government Finances](https://www.census.gov/programs-surveys/gov-finances.html){target="_parent"}.
+Data regarding state law enforcement expenditures were downloaded from the U.S. Census Bureau [Annual Survey of State and Local Government Finances](https://www.census.gov/programs-surveys/gov-finances.html){target="_parent"}.
 
 Officer employment analysis is restricted to sworn law enforcement officers and was downloaded from the FBI's [Uniform Crime Reporting (UCR) Program police employee data files](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019/topic-pages/police-employee-data){target="_parent"}.
 

@@ -1111,7 +1111,7 @@ The following tables include violent crime rates and solve rates by state and of
 ::: {.panel-tabset}
 
 ```{r, results='asis'}
-cat("### Overall Rates")
+cat("### Overall rates")
 ```
 
 ```{r}
@@ -1160,13 +1160,13 @@ srs_state_to_map |>
 
 
 ```{r, results='asis'}
-cat("### By Offense")
+cat("### By offense")
 ```
 
 
-<span style="color:#E17619"> Orange </span> indicates a solve rate less than the state average across the United States
+<span style="color:#E17619"> Orange </span> indicates a solve rate less than the state average across the United States.
 
-<span style="color:#15607A"> Blue </span> indicates a solve rate greater than or equal to the state average across the United States
+<span style="color:#15607A"> Blue </span> indicates a solve rate greater than or equal to the state average across the United States.
 
 
 ```{r }
@@ -1330,7 +1330,7 @@ min_year_resources <- min(asslgf_clean_percent_change$year)
 pct_change_spending <- scales::percent((asslgf_clean_percent_change$n_inflation_adjusted_latest_year_dollars[asslgf_clean_percent_change$year==max_year_resources] - asslgf_clean_percent_change$n_inflation_adjusted_latest_year_dollars[asslgf_clean_percent_change$year==min_year_resources]) / asslgf_clean_percent_change$n_inflation_adjusted_latest_year_dollars[asslgf_clean_percent_change$year==min_year_resources],
                                        accuracy = 1)
 
-pct_change_spending_abs_value <- scales::percent(abs((asslgf_clean_percent_change$n_inflation_adjusted_latest_year_dollars[asslgf_clean_percent_change$year==max_year_resources] - asslgf_clean_percent_change$n_inflation_adjusted_latest_year_dollars[asslgf_clean_percent_change$year==min_year_resources]) / asslgf_clean_percent_change$n_inflation_adjusted_latest_year_dollars[asslgf_clean_percent_change$year==min_year_resources]),
+pct_change_spending_abs_value <- scales::comma(abs((asslgf_clean_percent_change$n_inflation_adjusted_latest_year_dollars[asslgf_clean_percent_change$year==max_year_resources] - asslgf_clean_percent_change$n_inflation_adjusted_latest_year_dollars[asslgf_clean_percent_change$year==min_year_resources]) / asslgf_clean_percent_change$n_inflation_adjusted_latest_year_dollars[asslgf_clean_percent_change$year==min_year_resources])*100,
                                        accuracy = 1)
 
 
@@ -1346,13 +1346,13 @@ change_spending_text_clear <- case_when(
 <br>
 
 ```{r, results='asis'}
-cat("### State Expenditures")
+cat("### State expenditures")
 ```
 
 
 ```{r, results='asis'}
 cat(paste0(
-  "Overall, state spending on law enforcement",change_spending_text_clear, " across the United States", " by ", pct_change_spending_abs_value," from ", min_year_resources, " to ",max_year_resources, ", adjusting for inflation." 
+  "Overall, state spending on law enforcement",change_spending_text_clear, " across the United States", " by ", pct_change_spending_abs_value," percent from ", min_year_resources, " to ",max_year_resources, ", adjusting for inflation." 
 ))
 ```
 
@@ -1386,7 +1386,7 @@ to_plot |>
         )
       )    
   ) |> 
-  hc_title(text = paste0("State Law Enforcement Expenditure")) |>
+  hc_title(text = paste0("State law enforcement expenditures")) |>
   hc_subtitle(text = "Inflation-adjusted law enforcement expenditures, 2013–2021") |> 
   hc_caption(text = "US Census Bureau Annual Survey of State and Local Government Finances") |> 
   hc_yAxis(
@@ -1430,7 +1430,7 @@ min_year_resources <- min(ucr_employee_data_by_state_clean_percent_change$year)
 pct_change_staffing <- scales::percent((ucr_employee_data_by_state_clean_percent_change$officer_pop_rate_per_10k[ucr_employee_data_by_state_clean_percent_change$year==max_year_resources] - ucr_employee_data_by_state_clean_percent_change$officer_pop_rate_per_10k[ucr_employee_data_by_state_clean_percent_change$year==min_year_resources]) / ucr_employee_data_by_state_clean_percent_change$officer_pop_rate_per_10k[ucr_employee_data_by_state_clean_percent_change$year==min_year_resources],
                                        accuracy = 1)
 
-pct_change_staffing_abs_value <- scales::percent(abs((ucr_employee_data_by_state_clean_percent_change$officer_pop_rate_per_10k[ucr_employee_data_by_state_clean_percent_change$year==max_year_resources] - ucr_employee_data_by_state_clean_percent_change$officer_pop_rate_per_10k[ucr_employee_data_by_state_clean_percent_change$year==min_year_resources]) / ucr_employee_data_by_state_clean_percent_change$officer_pop_rate_per_10k[ucr_employee_data_by_state_clean_percent_change$year==min_year_resources]),
+pct_change_staffing_abs_value <- scales::comma(abs((ucr_employee_data_by_state_clean_percent_change$officer_pop_rate_per_10k[ucr_employee_data_by_state_clean_percent_change$year==max_year_resources] - ucr_employee_data_by_state_clean_percent_change$officer_pop_rate_per_10k[ucr_employee_data_by_state_clean_percent_change$year==min_year_resources]) / ucr_employee_data_by_state_clean_percent_change$officer_pop_rate_per_10k[ucr_employee_data_by_state_clean_percent_change$year==min_year_resources])*100,
                                        accuracy = 1)
 
 
@@ -1445,13 +1445,13 @@ change_staffing_text_clear <- case_when(
 <br>
 
 ```{r, results='asis'}
-cat("### Officers per Capita")
+cat("### Officers per capita")
 ```
 
 
 ```{r, results='asis'}
 cat(paste0(
-  "The number of officers per 10k residents in jurisdictions across the United States has", change_staffing_text_clear, " by ", pct_change_staffing_abs_value," from ", min_year_resources, " to ",max_year_resources,"." 
+  "The number of officers per 10k residents in jurisdictions across the United States has", change_staffing_text_clear, " by ", pct_change_staffing_abs_value," percent from ", min_year_resources, " to ",max_year_resources,"." 
 ))
 ```
 
@@ -1484,7 +1484,7 @@ to_plot |>
         )
       )    
   ) |> 
-  hc_title(text = paste0("Officers per Capita")) |>
+  hc_title(text = paste0("Officers per capita")) |>
   hc_subtitle(text = "Officers per 10k residents, 2013–2023") |> 
   hc_caption(text = "FBI Uniform Crime Reporting Program SRS state estimates<br>FBI Uniform Crime Reporting Program Police Employee Data") |> 
   hc_yAxis(
@@ -1522,7 +1522,7 @@ pct_change_staffing_per_violent_offense <- scales::percent((ucr_employee_data_by
                                        accuracy = 1)
 
 
-pct_change_staffing_per_violent_offense_abs_value <- scales::percent(abs((ucr_employee_data_by_state_clean_percent_change$officer_per_violent_offense_1k[ucr_employee_data_by_state_clean_percent_change$year==max_year_resources] - ucr_employee_data_by_state_clean_percent_change$officer_per_violent_offense_1k[ucr_employee_data_by_state_clean_percent_change$year==min_year_resources]) / ucr_employee_data_by_state_clean_percent_change$officer_per_violent_offense_1k[ucr_employee_data_by_state_clean_percent_change$year==min_year_resources]),
+pct_change_staffing_per_violent_offense_abs_value <- scales::comma(abs((ucr_employee_data_by_state_clean_percent_change$officer_per_violent_offense_1k[ucr_employee_data_by_state_clean_percent_change$year==max_year_resources] - ucr_employee_data_by_state_clean_percent_change$officer_per_violent_offense_1k[ucr_employee_data_by_state_clean_percent_change$year==min_year_resources]) / ucr_employee_data_by_state_clean_percent_change$officer_per_violent_offense_1k[ucr_employee_data_by_state_clean_percent_change$year==min_year_resources])*100,
                                        accuracy = 1)
 
 change_staffing_per_violent_offense_text_clear <- case_when(
@@ -1536,13 +1536,13 @@ change_staffing_per_violent_offense_text_clear <- case_when(
 <br>
 
 ```{r, results='asis'}
-cat("### Officers per Violent Offense")
+cat("### Officers per violent offense")
 ```
 
 
 ```{r, results='asis'}
 cat(paste0(
-  "The number of officers per 1k violent crimes in jurisdictions across the United States has", change_staffing_per_violent_offense_text_clear, " by ", pct_change_staffing_per_violent_offense_abs_value," from ", min_year_resources, " to ",max_year_resources,"." 
+  "The number of officers per 1k violent crimes in jurisdictions across the United States has", change_staffing_per_violent_offense_text_clear, " by ", pct_change_staffing_per_violent_offense_abs_value," percent from ", min_year_resources, " to ",max_year_resources,"." 
 ))
 ```
 
@@ -1575,7 +1575,7 @@ to_plot |>
         )
       )    
   ) |> 
-  hc_title(text = paste0("Officers per Violent Offense")) |>
+  hc_title(text = paste0("Officers per violent offense")) |>
   hc_subtitle(text = "Officers per 1k violent crimes, 2013–2023") |> 
   hc_caption(text = "FBI Uniform Crime Reporting Program SRS state estimates<br>FBI Uniform Crime Reporting Program Police Employee Data") |> 
   hc_yAxis(
@@ -1612,7 +1612,7 @@ to_plot |>
 cat("## Trends in homicide solve rates")
 ```
 
-The following chart includes homicide solve rates by race/ethnicity, gender, age, weapon type, and number of victims. For more information, see the data and methodology sections below.  
+The following chart includes homicide solve rates by race and ethnicity, gender, age, weapon type, and number of victims. For more information, see the data and methodology sections below.  
 
 
 In the United States, homicide solve rates are highest when the victim is White and are lowest when the victim is Black. Homicide solve rates are highest when the victim is a woman and lowest when the victim is a man. 
@@ -1620,7 +1620,7 @@ In the United States, homicide solve rates are highest when the victim is White 
 ::: {.panel-tabset}
 
 
-### Race and Ethnicity 
+### Race and ethnicity 
 
 ```{r }
 
@@ -1644,8 +1644,8 @@ to_plot |>
       )    
   ) |> 
   hc_title(text = paste0("Homicide solve rates by race and ethnicity")) |>
-  # hc_subtitle(text = "Solve Rates by Race/Ethnicity, 2018–2022") |> 
-  hc_caption(text = list("This analysis excludes records where a victim's race/ethnicity is unknown<br>FBI Supplementary Homicide Report (SHR) Data (2018-2022)")) |>     # hc_add_theme(hc_theme_jc) |>
+  hc_subtitle(text = "2018–2022") |>
+  hc_caption(text = list("This analysis excludes records where a victim's race and ethnicity is unknown<br>FBI Supplementary Homicide Report (SHR) Data (2018-2022)")) |>     # hc_add_theme(hc_theme_jc) |>
     hc_tooltip(formatter = JS("function(){return(this.point.tooltip)}")) |>
     hc_plotOptions(
       series = list(animation = FALSE),
@@ -1690,6 +1690,7 @@ to_plot |>
       )    
   ) |> 
   hc_title(text = paste0("Homicide solve rates by gender")) |>
+  hc_subtitle(text = "2018–2022") |>
   hc_caption(text = list("This analysis excludes records where a victim's gender is unknown<br>FBI Supplementary Homicide Report (SHR) Data (2018-2022)")) |>     
     hc_tooltip(formatter = JS("function(){return(this.point.tooltip)}")) |>
     hc_plotOptions(
@@ -1741,7 +1742,7 @@ to_plot |>
       )    
   ) |> 
   hc_title(text = paste0("Homicide solve rates by age")) |>
-  # hc_subtitle(text = "Solve Rates by Age, 2018–2022") |> 
+  hc_subtitle(text = "2018–2022") |>
   hc_caption(text = list("This analysis excludes records where a victim's age is unknown<br>FBI Supplementary Homicide Report (SHR) Data (2018-2022)")) |> 
   hc_caption(text = "FBI Supplementary Homicide Report (SHR) Data") |> 
     # hc_add_theme(hc_theme_jc) |>
@@ -1793,7 +1794,7 @@ to_plot |>
       )    
   ) |> 
   hc_title(text = paste0("Homicide solve rates by weapon")) |>
-  # hc_subtitle(text = "Solve Rates by Weapon, 2018–2022") |> 
+  hc_subtitle(text = "2018–2022") |>
   hc_caption(text = list("This analysis includes the most common weapons across states in recent years<br>FBI Supplementary Homicide Report (SHR) Data (2018-2022)")) |> 
   # hc_caption(text = "FBI Supplementary Homicide Report (SHR) Data") |> 
     # hc_add_theme(hc_theme_jc) |>
@@ -1822,7 +1823,7 @@ to_plot |>
 ```
 
 
-### Number of Victims
+### Number of victims
 
 ```{r }
 
@@ -1850,7 +1851,7 @@ to_plot |>
       )    
   ) |> 
   hc_title(text = paste0("Homicide solve rates by number of victims")) |>
-  # hc_subtitle(text = "Solve Rates by Number of Victims, 2018–2022") |> 
+  hc_subtitle(text = "2018–2022") |>
   hc_caption(text = "FBI Supplementary Homicide Report (SHR) Data (2018-2022)") |> 
     # hc_add_theme(hc_theme_jc) |>
     hc_tooltip(formatter = JS("function(){return(this.point.tooltip)}")) |>
@@ -1887,7 +1888,7 @@ to_plot |>
 
 ## Data sources and methodology
 
-Data regarding crime and solve rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr){target="_parent"}. Counts of reported violent crime between 2013 and 2023 are derived from the Summary Reporting System (SRS) and the National Incident-Based Reporting System (NIBRS). The FBI generated national estimates for reported crime and clearances based on agency-level reports, and these estimates were published through 2023 in the FBI's annual report, [_Crime in the U.S._](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019){target="_parent"} and on the FBI's [Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/home){target="_parent"}. For agency-level clearance data, we used [Jacob Kaplan's version of the Offenses Known and Clearances by Arrest](https://doi.org/10.7910/DVN/OESSD1) dataset.
+Data regarding crime and solve rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr){target="_parent"}. Counts of reported violent crime between 2013 and 2023 are derived from the Summary Reporting System (SRS) and the National Incident-Based Reporting System (NIBRS). The FBI generated national estimates for reported crime and clearances based on agency-level reports, and these estimates were published through 2023 in the FBI's annual report, [_Crime in the U.S._](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019){target="_parent"}, and on the FBI's [Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/home){target="_parent"}. For agency-level clearance data, we used [Jacob Kaplan's version of the Offenses Known and Clearances by Arrest](https://doi.org/10.7910/DVN/OESSD1) dataset.
 
 The FBI stopped SRS data collection after data year 2020 and required law enforcement agencies to use NIBRS to report crime statistics to the FBI. This change decreased the number of agencies that submitted their crime data and thus reduced the reliability of state estimates in 2021. In 2022 and 2023, the FBI allowed agencies who were unable to submit NIBRS data to submit SRS data again. Ninety-four percent of the U.S. population was covered in the 2023 crime data submissions to the FBI, with most states providing close to complete data. However, the population upon which the estimates were derived decreased by over 10 percent in three states: Florida, Mississippi, and Wyoming, so conclusions about crime changes in those states should be interpreted with additional caution.
 
@@ -1902,7 +1903,7 @@ d) Encountered a circumstance outside the control of law enforcement that prohib
     
 Examples of exceptional clearances include the death of the person who committed the crime; the victim’s refusal to cooperate with the prosecution after the person who committed the crime has been identified; or the denial of extradition.
 
-Data regarding state law enforcement expenditure were downloaded from the U.S. Census Bureau [Annual Survey of State and Local Government Finances](https://www.census.gov/programs-surveys/gov-finances.html){target="_parent"}.
+Data regarding state law enforcement expenditures were downloaded from the U.S. Census Bureau [Annual Survey of State and Local Government Finances](https://www.census.gov/programs-surveys/gov-finances.html){target="_parent"}.
 
 Officer employment analysis is restricted to sworn law enforcement officers and was downloaded from the FBI's [Uniform Crime Reporting (UCR) Program police employee data files](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019/topic-pages/police-employee-data){target="_parent"}.
 
