@@ -484,7 +484,10 @@ ucr_employee_data_raw <- readr::read_csv(file.path(sharepoint_jr_clearance_ucr_e
                 officer_ct, 
                 civilian_ct) |> 
   filter(year>=earliest_year_to_keep) |> 
-  mutate(officer_pop_rate_per_10k = (officer_ct/population)*10000)
+  mutate(officer_pop_rate_per_10k = (officer_ct/population)*10000,
+         state_name = csgjcr::csg_state_convert(state_abbr,
+                                                from = "abbr",
+                                                to = "name")) 
 
 ### calculate officers per 10k residents nationally
 ucr_employee_data_raw_national <- ucr_employee_data_raw |>
@@ -513,7 +516,7 @@ ucr_employee_data_raw_national <- ucr_employee_data_raw |>
 ### to employee data
 ########################################
 
-## state-level
+## agency-level
 df_nibrs_violent_unsolved_by_year_agency_offense_type <- df_nibrs_kaplan |> 
   filter(group %in% c("Homicide", "Rape", "Robbery", "Aggravated assault"),
          number_of_months_reported==12,
@@ -532,7 +535,7 @@ ucr_employee_data_clean <- left_join(ucr_employee_data_raw,
   mutate(officer_per_violent_offense_1k = (officer_ct/n_all_violent_reported)*1000)
 
 
-## national 
+## national-level
 ## use national violent crime file (srs_state)
 srs_by_cat_us <- srs_state |>
   filter(crime_cat == "Violent", 
@@ -552,6 +555,47 @@ ucr_employee_data_clean_national <- left_join(ucr_employee_data_raw_national,
   mutate(officer_per_violent_offense_1k = (officer_ct/n_all_violent_reported)*1000)
 
 
+########################################
+### now create state-level file for join
+### to employee data
+########################################
+
+### import and clean file at state-level
+### calculate officers per 10k residents in agency jurisdiction
+ucr_employee_data_raw_state <- ucr_employee_data_raw |> 
+  group_by(state_name,
+           state_abbr,
+           year) |> 
+  summarise(officer_ct = sum(officer_ct,na.rm=TRUE),
+            population = sum(population,na.rm=TRUE),
+            officer_pop_rate_per_10k = (officer_ct/population)*10000) |> 
+  ungroup()
+
+### prep offense data at state level for join
+df_nibrs_violent_unsolved_by_year_agency_offense_type_state <- df_nibrs_kaplan |> 
+  filter(group %in% c("Homicide", "Rape", "Robbery", "Aggravated assault"),
+         number_of_months_reported==12,
+         year >= 2012) |> 
+  dplyr::group_by(state_abbr,
+                  year) |> 
+  summarize(n_all_violent_reported = sum(n_reported,
+                             na.rm = TRUE),
+            n_cleared = sum(n_cleared,
+                             na.rm = TRUE),
+            n_homicide_reported = sum(n_reported[group=="Homicide"])) |> 
+  ungroup() |> 
+  mutate(solve_rate = n_cleared/n_all_violent_reported)
+
+### now calculate officers per violent crime and homicide over time
+### by state
+ucr_employee_data_by_state_clean <- left_join(ucr_employee_data_raw_state,
+                                     df_nibrs_violent_unsolved_by_year_agency_offense_type_state,
+                                     by = c("state_abbr",
+                                            "year")) |> 
+  mutate(officer_per_violent_offense_1k = (officer_ct/n_all_violent_reported)*1000,
+         officer_per_homicide_100 = (officer_ct/n_homicide_reported)*100)
+
+
 
 ### write out
 
@@ -559,9 +603,13 @@ ucr_employee_data_clean_national <- left_join(ucr_employee_data_raw_national,
 write_rds(ucr_employee_data_clean_national,
           file.path(sp_data_site_updates_path,"website_update_lea_staffing_workload_national.rds"))
 
-## state level
+## agency level
 write_rds(ucr_employee_data_clean,
           file.path(sp_data_site_updates_path,"website_update_lea_staffing_workload.rds"))
+
+### state level
+write_rds(ucr_employee_data_by_state_clean,
+          file.path(sp_data_site_updates_path,"website_update_lea_staffing_workload_by_state.rds"))
 
 ```
 
@@ -619,6 +667,8 @@ shr_1976_2022 <- read_rds(file.path(sharepoint_jr_clearance_ucr_shr, "shr_1976_2
          ### clean up weapon type
          offender_1_weapon_clean = ifelse(offender_1_weapon%in%c("Handgun","Firearm, Type Not Stated", "Rifle", "Other Gun", "Shotgun"), 
                                           "Firearm",offender_1_weapon),
+         offender_1_weapon_clean = ifelse(offender_1_weapon=="Narcotics/Drugs - Includes Sleeping Pills", 
+                                          "Narcotics/Drugs",offender_1_weapon_clean),
   ### clean race/ethnicity and gender
   ### use factor function to assign labels to values
   victim_1_race_clean = case_when(
@@ -655,8 +705,11 @@ shr_1976_2022 <- read_rds(file.path(sharepoint_jr_clearance_ucr_shr, "shr_1976_2
     TRUE ~ as.numeric(NA)),
     victim_1_age_bin = factor(victim_1_age_bin,
          levels = c(1,2,3,4),
-         labels = c("18 to 24", "25 to 34", "35 to 45", "46+"))) |> 
-  dplyr::rename(circumstance_of_homicide = offender_1_circumstance)
+         labels = c("18 to 24", "25 to 34", "35 to 45", "46+")),
+  ### defining multiple victims as instances where victim_2 has information populated for any demographics
+  victim_multiple_flag = ifelse((!is.na(victim_2_age)|!is.na(victim_2_ethnic_origin)|!is.na(victim_2_race)|!is.na(victim_2_sex)),
+                                       "Multiple Victims","Single Victim")) |> 
+  dplyr::rename(circumstance_of_homicide = offender_1_circumstance) 
 
 
 ### clean up shr
@@ -695,6 +748,7 @@ shr_2022_state_ucr <- shr_2022_state |>
 write_rds(shr_2022_state_ucr,
           file.path(sp_data_site_updates_path,
                     "shr_reported_homicides_ucr_srs_coverage_2022.xlsx"))
+
 ```
 
 
@@ -769,9 +823,11 @@ shr_1976_2022_national_circumstance <- function_clean_shr_1976_2022_national_by_
 ### race
 shr_1976_2022_national_race <- function_clean_shr_1976_2022_national_by_group(df = shr_1976_2022,
                                                                                       grouping_var = "victim_1_race_clean")
+
 ### gender
 shr_1976_2022_national_gender <- function_clean_shr_1976_2022_national_by_group(df = shr_1976_2022,
                                                                                       grouping_var = "victim_1_sex_clean")
+
 ### age
 shr_1976_2022_national_age <- function_clean_shr_1976_2022_national_by_group(df = shr_1976_2022,
                                                                                       grouping_var = "victim_1_age_bin")
@@ -822,6 +878,10 @@ write_rds(shr_1976_2022_national_age,
 ### overall
 shr_1976_2022_state_overall <- shr_1976_2022 |> 
   dplyr::rename(state_abbr=state_abb) |> 
+  ### add state name for eventual viz, as well
+  mutate(state_name = csgjcr::csg_state_convert(state_abbr,
+                                                from = "abbr",
+                                                to = "name")) |> 
   ### calculate clearance rate
   ### code any incident where offender information is populated (e.g. age, sex, or race/ethnicity) as cleared
   mutate(cleared_flag = ifelse(offender_1_age!="unknown" & !is.na(offender_1_age) & 
@@ -830,12 +890,13 @@ shr_1976_2022_state_overall <- shr_1976_2022 |>
                                1,0),
          cleared_flag = ifelse(is.na(cleared_flag),
                                0,cleared_flag)) |> 
-  group_by(state_abbr,
+  group_by(state_name,
+           state_abbr,
            year) |> 
   summarize(n_total_incidents = n(),
             n_total_cleared = sum(cleared_flag,na.rm = TRUE),
             clearance_rate = n_total_cleared/n_total_incidents) |> 
-  ungroup()
+  ungroup() 
 
 ```
 
@@ -848,6 +909,10 @@ function_clean_shr_1976_2022_state_by_group <- function(df, grouping_var){
   
   df |> 
   dplyr::rename(state_abbr=state_abb) |> 
+  ### add state name for eventual viz, as well
+  mutate(state_name = csgjcr::csg_state_convert(state_abbr,
+                                                from = "abbr",
+                                                to = "name")) |> 
   ### calculate clearance rate
   ### code any incident where offender information is populated (e.g. age, sex, or race/ethnicity) as cleared
   mutate(cleared_flag = ifelse(offender_1_age!="unknown" & !is.na(offender_1_age) & 
@@ -856,7 +921,8 @@ function_clean_shr_1976_2022_state_by_group <- function(df, grouping_var){
                                1,0),
          cleared_flag = ifelse(is.na(cleared_flag),
                                0,cleared_flag)) |> 
-  group_by(state_abbr,
+  group_by(state_name,
+           state_abbr,
            year,
            !!sym(grouping_var)) |> 
   summarize(n_total_incidents = n(),
@@ -881,12 +947,18 @@ shr_1976_2022_state_weapon <- function_clean_shr_1976_2022_state_by_group(df = s
 shr_1976_2022_state_circumstance <- function_clean_shr_1976_2022_state_by_group(df = shr_1976_2022,
                                                                                       grouping_var = "circumstance_of_homicide")
 
+### single victim vs multiple victims
+shr_1976_2022_state_single_multiple_victims <- function_clean_shr_1976_2022_state_by_group(df = shr_1976_2022,
+                                                                                      grouping_var = "victim_multiple_flag")
+
 ### race
 shr_1976_2022_state_race <- function_clean_shr_1976_2022_state_by_group(df = shr_1976_2022,
                                                                                       grouping_var = "victim_1_race_clean")
+
 ### gender
 shr_1976_2022_state_gender <- function_clean_shr_1976_2022_state_by_group(df = shr_1976_2022,
                                                                                       grouping_var = "victim_1_sex_clean")
+
 ### age
 shr_1976_2022_state_age <- function_clean_shr_1976_2022_state_by_group(df = shr_1976_2022,
                                                                                       grouping_var = "victim_1_age_bin")

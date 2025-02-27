@@ -142,6 +142,12 @@ ucr_employee_data_by_state_clean <- read_rds(file.path(sp_data_site_updates_path
   filter(year>=2013,
          state_abbr==state_abbr_params) 
 
+### import ucr_employee_data_national_clean for officer workload analysis -- US-wide
+ucr_employee_data_national_clean <- read_rds(file.path(sp_data_site_updates_path,"website_update_lea_staffing_workload_national.rds")) |> 
+  filter(year>=2013) |>
+  mutate(state_name = "United States",
+         state_abbr = "U.S.")
+
 ```
 
 ```{r }
@@ -1224,15 +1230,16 @@ cat("### Officers per capita")
 ```
 
 
-
 ```{r, eval=!state %in% states_to_exclude_from_ucr_officer_count_analysis}
 
 to_plot <- ucr_employee_data_by_state_clean |> 
+  bind_rows(ucr_employee_data_national_clean) |> 
   mutate(
     tooltip = paste0(
-      "<b>", state_abbr, " – ", year, "</b><br>",
+      "<b>", state_name, " – ", year, "</b><br>",
       "Officers per 10k residents: ", scales::comma(officer_pop_rate_per_10k, 
-                                                        accuracy = .1))
+                                                        accuracy = .1)),
+        state_name = fct_relevel(state_name, "United States", after = Inf)
     )
 
 rng <- range(to_plot$officer_pop_rate_per_10k)
@@ -1245,8 +1252,11 @@ y_max <- rng[2] + mult
 to_plot |> 
   hchart(
     "spline",
-    hcaes(year, officer_pop_rate_per_10k),
-    color = jr_pal[1],
+    hcaes(year, officer_pop_rate_per_10k,
+          group = state_name),
+    color = jr_pal[c(1, 7)],
+    dashStyle = c("solid", "dash"),
+    opacity = c(1, 0.75),
     accessibility = list(
       point = list(
         valueDescriptionFormat = "year: {point.x:.0f}, rate: {point.y:.1f}"
@@ -1289,12 +1299,15 @@ cat("### Officers per violent offense")
 
 
 ```{r, eval=!state %in% states_to_exclude_from_ucr_officer_count_analysis}
+
 to_plot <- ucr_employee_data_by_state_clean |> 
+  bind_rows(ucr_employee_data_national_clean) |> 
   mutate(
     tooltip = paste0(
-      "<b>", state_abbr, " – ", year, "</b><br>",
+      "<b>", state_name, " – ", year, "</b><br>",
       "Officers per 1k violent crimes: ", scales::comma(officer_per_violent_offense_1k, 
-                                                        accuracy = .1))
+                                                        accuracy = .1)),
+        state_name = fct_relevel(state_name, "United States", after = Inf)
     )
 
 rng <- range(to_plot$officer_per_violent_offense_1k)
@@ -1308,9 +1321,11 @@ y_max <- rng[2] + mult
 to_plot |> 
   hchart(
     "spline",
-    hcaes(year, officer_per_violent_offense_1k),
-    color = jr_pal[1],
-    accessibility = list(
+    hcaes(year, officer_per_violent_offense_1k,
+          group = state_name),
+    color = jr_pal[c(1, 7)],
+    dashStyle = c("solid", "dash"),
+    opacity = c(1, 0.75),    accessibility = list(
       point = list(
         valueDescriptionFormat = "year: {point.x:.0f}, rate: {point.y:.1f}"
         )
@@ -1354,7 +1369,7 @@ cat("## Exploration of homicide solve rates in", state_name_text)
 ```
 
 
-Explore homicide solve rates by available victim demographics and case characteristics for `r state_name_text` and other states in the [`r csg_region_full`](https://www.csg.org/regional-offices). Solve rates are included by race and ethnicity, gender, age, weapon type, and number of victims. For more information, see the data sources and methodology below.
+Explore homicide solve rates by available victim demographics and case characteristics for `r state_name_text` and other states in the [`r csg_region_full`](https://www.csg.org/regional-offices). Grouping states by region allows policymakers to compare their state to others that may be similar. Solve rates are included by race and ethnicity, gender, age, weapon type, and number of victims. For more information, see the data sources and methodology below.
 
 
 ::: {.panel-tabset}
@@ -1524,7 +1539,7 @@ to_plot |>
 ### clean up df for plot via function
 to_plot <- function_shr_grouping_for_plot(df = shr_1976_2022_state_weapon,
                                           var = "offender_1_weapon_clean")  |> 
-   filter(offender_1_weapon_clean%in%c("Firearm","Knife Or Cutting Instrument","Person Weapons - Includes Beating", "Blunt Object","Narcotics/Drugs - Includes Sleeping Pills"))
+   filter(offender_1_weapon_clean%in%c("Firearm","Knife Or Cutting Instrument","Person Weapons - Includes Beating", "Blunt Object","Narcotics/Drugs"))
 
 
 to_plot |> 
@@ -1579,7 +1594,7 @@ to_plot |>
 to_plot <- function_shr_grouping_for_plot(df = shr_1976_2022_state_single_multiple_victims,
                                           var = "victim_multiple_flag")  |>
   filter(!is.na(victim_multiple_flag)) |> 
-### order by single victims and then multiple victims in viz
+  ### order by single victims and then multiple victims in viz
   mutate(victim_multiple_flag = factor(victim_multiple_flag,
     levels = c("Single Victim","Multiple Victims")))
 

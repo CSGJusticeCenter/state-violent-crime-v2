@@ -190,7 +190,10 @@ function_shr_grouping_for_plot <- function(df, var){
   df |>
     left_join(csg_regions_filtered,
               by = "state_abbr") |>
-    mutate(group_for_plot = case_when(state_abbr==state_abbr_params ~ state_abbr,
+    ### use state name from shr df, not regions df
+    ### we only use state name from regions df for filtering on correct region
+    ### given a state name
+    mutate(group_for_plot = case_when(state_abbr==state_abbr_params ~ state_name.x,
                                       state_abbr!=state_abbr_params & !is.na(csg_region) ~ csg_region,
                                       TRUE ~ "drop")) |>
     filter(!!sym(var)%nin%c("Unknown","Missing"),

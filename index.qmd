@@ -1115,7 +1115,6 @@ cat("### Overall rates")
 ```
 
 ```{r}
-#| column: body-outset
 
 ### create state-level table
 srs_state_to_map |> 
@@ -1170,8 +1169,6 @@ cat("### By offense")
 
 
 ```{r }
-#| column: body-outset
-
 
 ###################################################################################
 ### prep df_nibrs_violent_unsolved_by_state_and_type_to_table_2023_final for table
@@ -1777,7 +1774,7 @@ to_plot |>
 ### clean up df for plot via function
 to_plot <- function_shr_grouping_for_national_plot(df = shr_1976_2022_national_weapon,
                                           var = "offender_1_weapon_clean")  |> 
-   filter(offender_1_weapon_clean%in%c("Firearm","Knife Or Cutting Instrument","Person Weapons - Includes Beating", "Blunt Object","Narcotics/Drugs - Includes Sleeping Pills"))
+   filter(offender_1_weapon_clean%in%c("Firearm","Knife Or Cutting Instrument","Person Weapons - Includes Beating", "Blunt Object","Narcotics/Drugs"))
 
 
 to_plot |> 
