@@ -52,7 +52,7 @@ load(file=file.path(sharepoint_jr_clearance_le_agency_crosswalk, "le_agency_cros
 # in 2022 ct change the names and boundaries of their counties
 # this will upate the existing crosswalk with a new fips for each ori
 # going to upate all the ct agencies with these new fips
-ct_county_update <- read_csv("ct-county-update-ori.csv") |> 
+ct_county_update <- read_csv(file.path(sp_data_to_plot_path,"ct-county-update-ori.csv")) |> 
   select(ori, county_fips = new_county_fips)
 
 ### rename and clean dataframe

@@ -81,32 +81,27 @@ hc_setup <- function(x) {
       title = "",
       labels = list(format = "{value:,.0f}")
     ) |>
-    hc_exporting(
-      chartOptions = list(
-        chart = list(
-          events = list(
-            load = render_image
-          )
+  hc_exporting(
+    chartOptions = list(
+      chart = list(
+        events = list(
+          load = render_image
         )
       )
-    ) |>
-    hc_chart(
-      events = list(
-        beforePrint = render_image_print,
-        afterPrint = render_image_remove
-      )
     )
+  ) |>
+  hc_chart(
+    events = list(
+      beforePrint = render_image_print,
+      afterPrint = render_image_remove
+    )
+  )
 }
 
 offense_pal <- tibble(
   color = jr_pal[c(2,3,4,5)],
   crime = c("Homicide", "Robbery", "Rape", "Aggravated assault")
 )
-
-# offense_pal <- tibble(
-#   color = jr_pal[c(5,4,3,2)],
-#   crime = c("Aggravated assault","Rape","Robbery","Homicide")
-# )
 
 reactable_template <- function(df, sort_col = "rate", ...) {
   reactable(
@@ -125,4 +120,104 @@ reactable_template <- function(df, sort_col = "rate", ...) {
     ),
     ...
   )
+}
+
+### function for percent change
+add_plus_sign_percent_change <- function(value) {
+
+  if (!is.numeric(value))
+    paste0(value)
+
+  if (!is.na(value) & value >= 0)
+    paste0("+", round(value,digits = 0),"%")
+
+  else
+    paste0(round(value,digits=0),"%")
+
+}
+
+## function for percent point change
+add_plus_sign_percent_point_change <- function(value) {
+
+  if (!is.numeric(value))
+    paste0(value)
+
+  if (!is.na(value) & value >= 0)
+    paste0("+", round(value,digits = 0))
+
+  else
+    paste0(round(value,digits=0))
+}
+
+### create not in function to use below via negate
+`%nin%` <- Negate(`%in%`)
+
+### create function to clean up and visualize SHR data
+### this function will prepare a df for plotting -- grouping by
+### varying incident or demographic characteristics
+function_shr_grouping_for_national_plot <- function(df, var){
+
+  df |>
+    filter(!!sym(var)%nin%c("Unknown","Missing"),
+           year>=2018) |>
+    dplyr::select(year,
+                  n_total_incidents,
+                  n_total_cleared,
+                  !!sym(var)) |>
+    group_by(!!sym(var)) |>
+    ### sum across years by group
+    summarize(n_total_cleared = sum(n_total_cleared, na.rm=TRUE),
+              n_total_incidents = sum(n_total_incidents, na.rm=TRUE),
+              clearance_rate = n_total_cleared/n_total_incidents) |>
+    ungroup() |>
+    # bind_rows(srs_by_cat_us) |>
+    mutate(
+      tooltip = paste0(
+        "<b>","United States","–",!!sym(var),"</b><br>",
+        "Solve Rate: ", scales::percent(clearance_rate,
+                                        accuracy = 1)),
+      clearance_rate = clearance_rate*100
+    )
+
+}
+
+
+### create function to clean up and visualize SHR data
+### this function will prepare a df for plotting -- grouping by
+### varying incident or demographic characteristics
+function_shr_grouping_for_plot <- function(df, var){
+
+  df |>
+    left_join(csg_regions_filtered,
+              by = "state_abbr") |>
+    ### use state name from shr df, not regions df
+    ### we only use state name from regions df for filtering on correct region
+    ### given a state name
+    mutate(group_for_plot = case_when(state_abbr==state_abbr_params ~ state_name.x,
+                                      state_abbr!=state_abbr_params & !is.na(csg_region) ~ csg_region,
+                                      TRUE ~ "drop")) |>
+    filter(!!sym(var)%nin%c("Unknown","Missing"),
+           year>=2018,
+           group_for_plot!="drop") |>
+    dplyr::select(group_for_plot,
+                  year,
+                  n_total_incidents,
+                  n_total_cleared,
+                  !!sym(var)) |>
+    group_by(group_for_plot,
+             !!sym(var)) |>
+    ### sum across years by group
+    summarize(n_total_cleared = sum(n_total_cleared, na.rm=TRUE),
+              n_total_incidents = sum(n_total_incidents, na.rm=TRUE),
+              clearance_rate = n_total_cleared/n_total_incidents) |>
+    ungroup() |>
+    # bind_rows(srs_by_cat_us) |>
+    mutate(
+      tooltip = paste0(
+        "<b>",group_for_plot,"–",!!sym(var),"</b><br>",
+        "Solve Rate: ", scales::percent(clearance_rate,
+                                        accuracy = 1)),
+      clearance_rate = clearance_rate*100
+    )
+
 }

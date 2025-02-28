@@ -3,11 +3,14 @@ format:
   html:
     footnotes-hover: false
     css: styles.css
+    toc: true
+    toc-title: On this page
+    toc-location: left
 mainfont: "GT-America"
 linkcolor: "#00355a"
 anchor-sections: false
 params:
-  state: "CO"
+  state: "WA"
 execute:
   echo: false
   warning: false
@@ -25,13 +28,19 @@ library(csgjcr)
 library(highcharter)
 library(htmlwidgets)
 library(reactable)
+library(reactablefmtr)
+
  
 source("R/utils.R")
 
 # set path to data folder on sharepoint
 sp_data_to_plot_path <- csg_sp_path("ad_hoc_requests/state_violent_crime_marshall/data")
 
+### set project path for website update analytic file folder
+sp_data_site_updates_path <- csg_sp_path("ad_hoc_requests/state_violent_crime_marshall/data/website_updates")
+
 state <- csg_state_convert(params$state, from = "abbr", "name")
+state_abbr_params <- params$state
 state_name_text <- if_else(params$state == "DC", "the District of Columbia", state)
 
 # read in crime data
@@ -92,11 +101,14 @@ srs_solved_by_agency_to_table <- read_rds(file.path(sp_data_to_plot_path,
                                              "viol_crime_unsolved_by_agency_to_table.rds")) |>  
   filter(state_name == state) 
 
-### create object with states to exclude
+### create object with states to exclude from solve rate analysis
 states_to_exclude_from_solved_rate_viz <- c("Illinois")
 
+### create object with states to exclude from UCR officer surveys due to missingness
+states_to_exclude_from_ucr_officer_count_analysis <- c("Nebraska")
+
 # create title of page
-# we don't have IL or NY clearance rate data so take that out of title
+# we don't have IL clearance rate data so take that out of title
 doc_title <- case_when(
   state %in% states_to_exclude_from_solved_rate_viz ~ paste(state, "data on violent crime"),
   state == "District of Columbia" ~ paste(state, "data on violent crime and arrests"),
@@ -112,6 +124,97 @@ low_reporting_dynamic <- case_when(
   )
 
 axis_expansion_mult <- 0.5
+```
+
+```{r }
+### import df_nibrs_violent_unsolved_by_agency_and_type_to_table_2023 for second table
+df_nibrs_violent_unsolved_by_agency_and_type_to_table_2023 <- read_rds(file.path(sp_data_site_updates_path,"website_update_viol_crime_unsolved_by_agency_and_type.rds"))
+
+### import asslgf_clean for lea expenditure analysis
+asslgf_clean <- read_rds(file.path(sp_data_site_updates_path,"website_update_state_level_police_expenditure_inflation_adjusted.rds")) |> 
+  mutate(state_abbr = toupper(state_abbr)) |> 
+  filter(year>=2013,
+         state_abbr==state_abbr_params) 
+
+### import ucr_employee_data_by_state_clean for officer workload analysis
+ucr_employee_data_by_state_clean <- read_rds(file.path(sp_data_site_updates_path,"website_update_lea_staffing_workload_by_state.rds")) |> 
+  mutate(state_abbr = toupper(state_abbr)) |> 
+  filter(year>=2013,
+         state_abbr==state_abbr_params) 
+
+### import ucr_employee_data_national_clean for officer workload analysis -- US-wide
+ucr_employee_data_national_clean <- read_rds(file.path(sp_data_site_updates_path,"website_update_lea_staffing_workload_national.rds")) |> 
+  filter(year>=2013) |>
+  mutate(state_name = "United States",
+         state_abbr = "U.S.")
+
+```
+
+```{r }
+### import csg region information 
+### to include bar for region's data alongside state's data in supplemental homicide section
+csg_regions_filtered <- read_csv(file.path(sp_data_to_plot_path,"csg-regions.csv")) |>
+  mutate(state_abbr = csgjcr::csg_state_convert(state_name,
+                                                "name",
+                                                "abbr"),
+         region_to_keep = paste0(csg_region[state_abbr==state_abbr_params])) |> 
+  ### keep only states in same region as state we're analyzing
+  ### drop state for current page -- we want all states in region aside from this state
+  filter(region_to_keep==csg_region,
+         state_abbr!=state_abbr_params) |> 
+  dplyr::select(-region_to_keep) |> 
+  mutate(csg_region = paste0("Other ",csg_region," States"))
+
+### create label for later dynamic text
+csg_regions_raw <- read_csv(file.path(sp_data_to_plot_path,"csg-regions.csv")) |>
+  mutate(state_abbr = csgjcr::csg_state_convert(state_name,
+                                                "name",
+                                                "abbr"),
+         region_to_keep = paste0(csg_region[state_abbr==state_abbr_params])) |> 
+  ### keep only states in same region as state we're analyzing
+  ### drop state for current page -- we want all states in region aside from this state
+  filter(region_to_keep==csg_region,
+         state_abbr!=state_abbr_params) |> 
+  dplyr::select(-region_to_keep)
+
+csg_region <- paste0(csg_regions_raw$csg_region[1])
+
+csg_region_full <- paste0("CSG ",csg_region," Region")
+
+```
+
+
+```{r }
+### now import all supplemental homicide dfs for visualization
+### these files were cleaned and created here: R/12-prep-files-for-website-updates-2024.qmd
+
+### shr_1976_2022_state_overall
+shr_1976_2022_state_overall <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2022_state_overall_clear.rds")) 
+
+### shr_1976_2022_state_relationship
+shr_1976_2022_state_relationship <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2022_state_victim_offender_relationship.rds")) 
+
+### shr_1976_2022_state_single_multiple_victims
+shr_1976_2022_state_single_multiple_victims <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2022_state_single_multiple_victims.rds")) 
+
+### shr_1976_2022_state_weapon
+shr_1976_2022_state_weapon <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2022_state_weapon.rds")) 
+
+### shr_1976_2022_state_circumstance
+shr_1976_2022_state_circumstance <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2022_state_incident_circumstance.rds")) 
+
+### shr_1976_2022_state_race
+shr_1976_2022_state_race <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2022_state_victim_race_eth.rds")) 
+
+### shr_1976_2022_state_gender
+shr_1976_2022_state_gender <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2022_state_victim_gender.rds")) 
+
+### shr_1976_2022_state_race_sex
+shr_1976_2022_state_race_sex <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2022_state_victim_race_gender.rds")) 
+
+### shr_1976_2022_state_age
+shr_1976_2022_state_age <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2022_state_victim_age.rds")) 
+
 ```
 
 ---
@@ -236,6 +339,7 @@ to_plot |>
     endOnTick = FALSE
   ) |>
   hc_setup()
+
 ```
 
 ```{r}
@@ -298,6 +402,7 @@ to_plot_2 |>
   hc_subtitle(text = "Homicide incidents reported to police per 100,000 residents") |> 
   hc_caption(text = "FBI Uniform Crime Reporting Program SRS state estimates") |>
   hc_setup()
+
 ```
 
 ## Aggravated assault
@@ -430,7 +535,7 @@ to_plot |>
   hc_title(text = paste0("Violent crime in ", state_name_text, ", by offense")) |>
   hc_subtitle(text = "Crime reported to police per 100,000 residents") |> 
   hc_caption(text = "FBI Uniform Crime Reporting Program SRS state estimates") |> 
-  hc_legend(reversed = "true") |> 
+  hc_legend(reversed = "true") |>
   hc_setup()
 ```
 
@@ -441,7 +546,18 @@ cat("## Solved violent crime in", state_name_text)
 ```
 
 ```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz}
+
+### create state-specific labels for text output
 solved_rate_max <- paste0(comma(min_max_viol_crime$pct_solved[2] * 100, 1), " percent")
+
+state_average_agg_assault_solve_rate <- paste0(scales::comma(srs_state$pct_solved[srs_state$year==max(srs_state$year) & srs_state$group=="Aggravated assault"]*100,1))
+  
+
+state_average_homicide_solve_rate <- paste0(scales::comma(srs_state$pct_solved[srs_state$year==max(srs_state$year) & srs_state$group=="Homicide"]*100,1))
+
+state_average_rape_solve_rate <- paste0(scales::comma(srs_state$pct_solved[srs_state$year==max(srs_state$year) & srs_state$group=="Rape"]*100,1))
+
+
 ```
 
 ```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
@@ -509,13 +625,15 @@ to_plot |>
   ) |> 
   hc_title(text = paste("Violent crime solve rate in ", state_name_text)) |>
   hc_caption(text = "FBI Uniform Crime Reporting Program<br>Aggregated from SRS agency-level Offenses Known reports") |> 
-  hc_setup() |> 
+  # hc_setup() |> 
   hc_yAxis(
     min = y_min,
     max = y_max,
     endOnTick = FALSE,
     labels = list(format = "{value:,.0f}%")
-  )
+  ) |>
+  hc_setup()
+
 ```
 
 ```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
@@ -525,6 +643,7 @@ cat("
 ```
 
 ```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz}
+
 to_plot <- srs_state |> 
   filter(year != 2021) |> 
   left_join(offense_pal, by = c("group" = "crime")) |> 
@@ -573,13 +692,14 @@ to_plot |>
   hc_colors(unique(to_plot$color)) |> 
   hc_title(text = paste0("Violent crime solve rate in ", state_name_text, ", by offense")) |>
   hc_caption(text = "FBI Uniform Crime Reporting Program<br>Aggregated from SRS agency-level Offenses Known reports") |> 
-  hc_setup() |> 
+  # hc_setup() |> 
   hc_yAxis(
     min = 0,
     max = 100,
     endOnTick = FALSE,
     labels = list(format = "{value:,.0f}%")
-  )
+  ) |>
+  hc_setup()
 ```
 
 ```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
@@ -696,37 +816,36 @@ hcmap(
         this.point.tooltip +
         '</div>';}"),
         useHTML = TRUE
-      )  |>
+      ) |>
   hc_setup()
 
 ```
 
+<br>
+
 ```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
+
 cat("## Solved violent crime by agency in", state_name_text)
 ```
 
 ```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
+
 cat(paste0(
-  "In the following table, violent crime incident rates, as well as violent crime solve rates, are included for each of the ", total_agencies, " law enforcement agencies that reported data in ",state_name_text," in 2023. Please note that rates calculated for agencies with smaller jurisdiction populations, as well as fewer overall incidents, are less reliable than those for larger jurisdictions and should be interpreted with caution."))
+  "In the following table, violent crime incident rates, as well as violent crime solve rates, are included for each of the ", total_agencies, " law enforcement agencies that reported data in ",state_name_text," in 2023. Violent crime solve rates by offense differ across agencies across the state. The average solve rate for aggravated assault is ",state_average_agg_assault_solve_rate ," percent. Homicide is ",state_average_homicide_solve_rate," percent, and rape is ",state_average_rape_solve_rate, " percent.  
+  
+
+Please note that rates calculated for agencies with smaller jurisdiction populations, as well as fewer overall incidents, are less reliable than those for larger jurisdictions and should be interpreted with caution."))
 ```
 
-:::{.column-body-outset}
 
+::: {.panel-tabset}
+
+
+```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
+cat("### Overall rates")
+```
 
 ```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz}
-
-### function for percent change
-add_plus_sign_percent_point_change <- function(value) {
-  
-  if (!is.numeric(value)) 
-    paste0(value)
-  
-  if (!is.na(value) & value > 0)
-    paste0("+", round(value,digits = 0))
-  
-  else
-    paste0(round(value,digits=0))
-}
 
 srs_solved_by_agency_to_table |> 
   ### overwrite rate  with NA if agency is missing population (current value is .inf)
@@ -749,8 +868,11 @@ srs_solved_by_agency_to_table |>
   reactable_template(
     sort_col = list("population" = "desc"),
     columns = list(
-      agency_name = colDef(name = "Agency", minWidth = 250),
-      # agency_type = colDef(name = "Agency Type"),
+      agency_name = colDef(name = "Agency", minWidth = 250,
+                             sticky = "left",
+      # Add a right border style to visually distinguish the sticky column
+      style = list(borderRight = "1px solid #eee"),
+      headerStyle = list(borderRight = "1px solid #eee")),
       county_clean = colDef(name = "County", minWidth = 108),
       population = colDef(name = "Jurisdiction Population", minWidth = 130), 
       n_reported = colDef(name = "Violent Incidents Reported (2023)"), 
@@ -762,20 +884,782 @@ srs_solved_by_agency_to_table |>
         ),
       solved_rate_percent_point_change_2019_2023 = colDef(
         name = "Percentage point change in solve rate (2019 to 2023)",
-        # format = colFormat(digits = 0, percent = TRUE)
         cell = add_plus_sign_percent_point_change
         )
       )
     )
 
 ```
+
+```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
+cat("### By offense")
+```
+
+
+<span style="color:#E17619"> Orange </span> indicates a solve rate less than the state average.
+
+<span style="color:#15607A"> Blue </span> indicates a solve rate greater than or equal to the state average.
+
+
+```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz}
+
+#############################################
+### prep agency-level df for table
+#############################################
+
+### clean up rates and select columns we need
+df_nibrs_violent_unsolved_by_agency_and_type_to_table_2023_final <-
+  df_nibrs_violent_unsolved_by_agency_and_type_to_table_2023 |> 
+  filter(state_abbr==state_abbr_params,
+         jurisdiction_population>0) |> 
+  ### overwrite rate  with NA if agency is missing population (current value is .inf)
+  mutate(n_reported_rate_aggravated_assault = ifelse(jurisdiction_population==0,
+                                  NA,n_reported_rate_aggravated_assault),
+         n_reported_rate_homicide = ifelse(jurisdiction_population==0,
+                                  NA,n_reported_rate_homicide),
+         n_reported_rate_rape = ifelse(jurisdiction_population==0,
+                                  NA,n_reported_rate_rape),
+         n_reported_rate_robbery = ifelse(jurisdiction_population==0,
+                                  NA,n_reported_rate_robbery)) |>
+  ### remove state name and other additional columns
+  ### we just needed it to filter on param
+  select(agency_name, 
+         # agency_type, 
+         # state_abbr,
+         county, 
+         jurisdiction_population, 
+         n_reported_rate_aggravated_assault,
+         solved_rate_aggravated_assault, 
+         n_reported_rate_homicide, 
+         solved_rate_homicide, 
+         n_reported_rate_rape, 
+         solved_rate_rape, 
+         n_reported_rate_robbery, 
+         solved_rate_robbery) 
+
+### determine median solve rates by violent offense type for state
+### we'll use these state averages to develop an agency-level comparison in the table
+state_median_solved_rate_aggravated_assault <- median(df_nibrs_violent_unsolved_by_agency_and_type_to_table_2023_final$solved_rate_aggravated_assault,
+                                                      na.rm=TRUE)
+
+state_median_solved_rate_homicide <- median(df_nibrs_violent_unsolved_by_agency_and_type_to_table_2023_final$solved_rate_homicide,
+                                                      na.rm=TRUE)
+
+state_median_solved_rate_rape <- median(df_nibrs_violent_unsolved_by_agency_and_type_to_table_2023_final$solved_rate_rape,
+                                                      na.rm=TRUE)
+
+state_median_solved_rate_robbery <- median(df_nibrs_violent_unsolved_by_agency_and_type_to_table_2023_final$solved_rate_robbery,
+                                                      na.rm=TRUE)
+
+
+### final prep df for table
+df_nibrs_violent_unsolved_by_agency_and_type_to_table_2023_final |> 
+  mutate(across(c(solved_rate_aggravated_assault,
+                  solved_rate_homicide,
+                  solved_rate_rape,
+                  solved_rate_robbery
+                  ), 
+                ~ replace(.x, is.nan(.x), NA))
+         ) |> 
+  reactable_template(
+    sort_col = list("jurisdiction_population" = "desc"),
+    columns = list(
+      agency_name = colDef(name = "Agency", minWidth = 250,
+                             sticky = "left",
+      # Add a right border style to visually distinguish the sticky column
+      style = list(borderRight = "1px solid #eee"),
+      headerStyle = list(borderRight = "1px solid #eee")),
+      county = colDef(name = "County", minWidth = 108),
+      jurisdiction_population = colDef(name = "Jurisdiction Population", minWidth = 150), 
+      n_reported_rate_aggravated_assault = colDef(name = "Aggravated Assault Incidents per 100k",
+                               format = colFormat(digits = 0, separators = TRUE), minWidth = 120), 
+      solved_rate_aggravated_assault = colDef(
+        name = paste0("Aggravated Assault Solve Rate",'<br>','<br>', "(",state_abbr," Agency Average: ",scales::percent(state_median_solved_rate_aggravated_assault,accuracy=1),")"),
+        html = TRUE,
+        format = colFormat(digits = 0, percent = TRUE), 
+        minWidth = 120,
+        style = function(value) {
+      if (value >= state_median_solved_rate_aggravated_assault & !is.na(value)) {
+        color <- "#15607A"
+      } else if (value <= state_median_solved_rate_aggravated_assault & !is.na(value)) {
+        color <- "#E17619"
+      } else {
+        color <- "black"
+      }
+      list(color = color, fontWeight = "bold")
+    }
+        
+        ),
+      n_reported_rate_homicide = colDef(name = "Homicide Incidents per 100k",
+                               format = colFormat(digits = 0, separators = TRUE), 
+                               align = "center",
+          ),
+      solved_rate_homicide = colDef(
+        name = paste0("Homicide Solve Rate",'<br>','<br>',"(",state_abbr," Agency Average: ",scales::percent(state_median_solved_rate_homicide,accuracy=1),")"),
+        html = TRUE,
+        minWidth = 120,
+        format = colFormat(digits = 0, percent = TRUE),
+        align = "center",
+       style = function(value) {
+      if (value >= state_median_solved_rate_homicide & !is.na(value)) {
+        color <- "#15607A"
+      } else if (value <= state_median_solved_rate_homicide & !is.na(value)) {
+        color <- "#E17619"
+      } else {
+        color <- "black"
+      }
+      list(color = color, fontWeight = "bold")
+    }),
+
+      n_reported_rate_rape = colDef(name = "Rape Incidents per 100k",
+                               format = colFormat(digits = 0, separators = TRUE)),
+      solved_rate_rape = colDef(
+        name = paste0("Rape Solve Rate",'<br>','<br>',"(",state_abbr," Agency Average: ",scales::percent(state_median_solved_rate_rape,accuracy=1),")"),
+        html = TRUE,
+        minWidth = 155,
+        align = "left",
+        format = colFormat(digits = 0, percent = TRUE),
+        style = function(value) {
+      if (value >= state_median_solved_rate_rape & !is.na(value)) {
+        color <- "#15607A"
+      } else if (value <= state_median_solved_rate_rape & !is.na(value)) {
+        color <- "#E17619"
+      } else {
+        color <- "black"
+      }
+      list(color = color, fontWeight = "bold")
+    }),
+      n_reported_rate_robbery = colDef(name = "Robbery Incidents per 100k",
+                               format = colFormat(digits = 0, separators = TRUE)), 
+      solved_rate_robbery = colDef(
+        name = paste0("Robbery Solve Rate",'<br>','<br>',"(",state_abbr," Agency Average: ",scales::percent(state_median_solved_rate_robbery,accuracy=1),")"),
+        html = TRUE,  
+        minWidth = 120,
+        format = colFormat(digits = 0, percent = TRUE),
+                style = function(value) {
+      if (value >= state_median_solved_rate_robbery & !is.na(value)) {
+        color <- "#15607A"
+      } else if (value <= state_median_solved_rate_robbery & !is.na(value)) {
+        color <- "#E17619"
+      } else {
+        color <- "black"
+      }
+      list(color = color, fontWeight = "bold")
+    })
+    ))
+
+
+
+```
+
 :::
+
+
+<br>
+
+```{r, results='asis'}
+cat("## Law enforcement resources in", state_name_text)
+```
+
+```{r}
+### create dynamic labels for text blurb below
+asslgf_clean_percent_change <- asslgf_clean |> 
+  filter(year %in% range(year)) |> 
+  arrange(year)
+
+max_year_resources <- max(asslgf_clean_percent_change$year)
+min_year_resources <- min(asslgf_clean_percent_change$year)
+
+pct_change_spending <- scales::percent(((asslgf_clean_percent_change$n_inflation_adjusted_latest_year_dollars[asslgf_clean_percent_change$year==max_year_resources] - asslgf_clean_percent_change$n_inflation_adjusted_latest_year_dollars[asslgf_clean_percent_change$year==min_year_resources]) / asslgf_clean_percent_change$n_inflation_adjusted_latest_year_dollars[asslgf_clean_percent_change$year==min_year_resources]),
+                                       accuracy = 1)
+
+pct_change_spending_abs_value <- scales::comma(abs((asslgf_clean_percent_change$n_inflation_adjusted_latest_year_dollars[asslgf_clean_percent_change$year==max_year_resources] - asslgf_clean_percent_change$n_inflation_adjusted_latest_year_dollars[asslgf_clean_percent_change$year==min_year_resources]) / asslgf_clean_percent_change$n_inflation_adjusted_latest_year_dollars[asslgf_clean_percent_change$year==min_year_resources])*100,
+                                       accuracy = 1)
+
+
+change_spending_text_clear <- case_when(
+  pct_change_spending >= 0 ~ paste0("increased"),
+  pct_change_spending < 0 ~ paste0("decreased")
+  # TRUE ~ " changed"
+  )
+
+
+```
+
+```{r}
+
+### clean up ucr_employee_data_by_state_clean for text output below
+ucr_employee_data_by_state_clean_percent_change <- ucr_employee_data_by_state_clean |>
+  filter(year %in% range(year)) |>
+  arrange(year)
+
+```
+
+
+```{r}
+
+### code min and max years for labels below
+max_year_resources_staff_per_offense <- max(ucr_employee_data_by_state_clean_percent_change$year)
+min_year_resources_staff_per_offense <- min(ucr_employee_data_by_state_clean_percent_change$year)
+
+### now create pct_change_staffing_per_violent_offense and change_staffing_per_violent_offense_text_clear
+### for text below
+
+pct_change_staffing_per_violent_offense <- scales::percent((ucr_employee_data_by_state_clean_percent_change$officer_per_violent_offense_1k[ucr_employee_data_by_state_clean_percent_change$year==max_year_resources_staff_per_offense] - ucr_employee_data_by_state_clean_percent_change$officer_per_violent_offense_1k[ucr_employee_data_by_state_clean_percent_change$year==min_year_resources_staff_per_offense]) / ucr_employee_data_by_state_clean_percent_change$officer_per_violent_offense_1k[ucr_employee_data_by_state_clean_percent_change$year==min_year_resources_staff_per_offense],
+                                       accuracy = 1)
+
+
+pct_change_staffing_per_violent_offense_abs_value <- scales::comma(abs((ucr_employee_data_by_state_clean_percent_change$officer_per_violent_offense_1k[ucr_employee_data_by_state_clean_percent_change$year==max_year_resources_staff_per_offense] - ucr_employee_data_by_state_clean_percent_change$officer_per_violent_offense_1k[ucr_employee_data_by_state_clean_percent_change$year==min_year_resources_staff_per_offense]) / ucr_employee_data_by_state_clean_percent_change$officer_per_violent_offense_1k[ucr_employee_data_by_state_clean_percent_change$year==min_year_resources_staff_per_offense])*100,
+                                       accuracy = 1)
+
+change_staffing_per_violent_offense_text_clear <- case_when(
+  pct_change_staffing_per_violent_offense >= 0 ~ paste0("increased"),
+  pct_change_staffing_per_violent_offense < 0 ~ paste0("decreased")
+  # TRUE ~ " has stayed nearly the same"
+  )
+
+
+change_staffing_per_violent_offense_text_clear_1 <- case_when(
+  pct_change_staffing_per_violent_offense >= 0 ~ paste0("increase"),
+  pct_change_staffing_per_violent_offense < 0 ~ paste0("decrease")
+  # TRUE ~ " has stayed nearly the same"
+  )
+
+change_staffing_per_violent_offense_text_clear_2 <- case_when(
+  pct_change_staffing_per_violent_offense >= 0 ~ paste0("an increase"),
+  pct_change_staffing_per_violent_offense < 0 ~ paste0("a decrease")
+  # TRUE ~ " has stayed nearly the same"
+  )
+
+### now code opposite for discussion below
+change_staffing_per_violent_offense_text_clear_3 <- case_when(
+  pct_change_staffing_per_violent_offense >= 0 ~ paste0("a decrease"),
+  pct_change_staffing_per_violent_offense < 0 ~ paste0("an increase")
+  # TRUE ~ " has stayed nearly the same"
+  )
+
+```
+
+```{r, results='asis'}
+
+cat(paste0(
+  state_name_text," ", change_spending_text_clear, " spending on law enforcement by ", pct_change_spending_abs_value ," percent from 2013 to 2021, adjusting for inflation. Expenditures include local, state, and federal spending on local police departments, sheriffs’ offices, and state police agencies such as highway patrols and other state investigative law enforcement agencies.  
+
+Law enforcement resources also refer to the state’s staffing per 10,000 residents and per 1,000 violent crimes. These factors may show the level of policing a community receives, potentially influencing both crime and solve rates."))
+```
+
+
+```{r, eval=!state %in% states_to_exclude_from_ucr_officer_count_analysis, results='asis'}
+cat(paste0(
+"Additionally, the number of officers per 1k violent crimes in ",state_name_text," has ",change_staffing_per_violent_offense_text_clear," by ",pct_change_staffing_per_violent_offense_abs_value, " percent from 2013 to 2023. This ",change_staffing_per_violent_offense_text_clear_1," may be due to a combination of ",change_staffing_per_violent_offense_text_clear_2," in law enforcement officers and/or ",change_staffing_per_violent_offense_text_clear_3," in reported violent crimes. 
+
+Law enforcement staffing can impact how agencies allocate resources to solve violent crime. For example, severe staff shortages can reduce investigative personnel or increase the number of cases that individual officers are managing."
+))
+```
+
+::: {.panel-tabset}
+
+
+
+<br>
+
+```{r, results='asis'}
+cat("### Expenditures")
+```
+
+
+```{r }
+to_plot <- asslgf_clean |> 
+  mutate(
+    tooltip = paste0(
+      "<b>", state_name, " – ", year, "</b><br>",
+      "Inflation-adjusted expenditure: ", scales::dollar(n_inflation_adjusted_latest_year_dollars, 
+                                                        accuracy = 1,
+                                                        prefix = '$')))
+
+rng <- range(to_plot$n_inflation_adjusted_latest_year_dollars)
+mult <- diff(rng) * axis_expansion_mult
+
+y_min <- rng[1] - mult
+y_min <- if_else(y_min < 0, 0, y_min)
+y_max <- rng[2] + mult
+
+to_plot |> 
+  hchart(
+    "spline",
+    hcaes(year, n_inflation_adjusted_latest_year_dollars),
+    color = jr_pal[1],
+    accessibility = list(
+      point = list(
+        valueDescriptionFormat = "year: {point.x:.0f}, rate: {point.y:.1f}"
+        )
+      )    
+  ) |> 
+  hc_title(text = paste0("Law enforcement expenditures in ", state_name_text)) |>
+  hc_subtitle(text = "Inflation-adjusted law enforcement expenditures, 2013–2021") |> 
+  hc_caption(text = "US Census Bureau Annual Survey of State and Local Government Finances") |> 
+  hc_yAxis(
+    title = "",
+    min = y_min,
+    max = y_max,
+    endOnTick = FALSE,
+    labels = list(
+      formatter = JS("function() { return '$' + (this.value / 1000000000) + 'B'; }")
+    )) |> 
+    hc_tooltip(formatter = JS("function(){return(this.point.tooltip)}")) |>
+    hc_plotOptions(
+      series = list(animation = FALSE),
+      accessibility = list(
+        enabled = TRUE,
+        keyboardNavigation = list(enabled = TRUE)
+      )
+    ) |>
+    hc_xAxis(
+      title = "",
+      labels = list(y = 25)
+    ) |>
+  hc_legend(enabled = FALSE) |>
+  hc_setup()
+
+```
+
+<br>
+
+```{r, eval=!state %in% states_to_exclude_from_ucr_officer_count_analysis, results='asis'}
+cat("### Officers per capita")
+```
+
+
+```{r, eval=!state %in% states_to_exclude_from_ucr_officer_count_analysis}
+
+to_plot <- ucr_employee_data_by_state_clean |> 
+  bind_rows(ucr_employee_data_national_clean) |> 
+  mutate(
+    tooltip = paste0(
+      "<b>", state_name, " – ", year, "</b><br>",
+      "Officers per 10k residents: ", scales::comma(officer_pop_rate_per_10k, 
+                                                        accuracy = .1)),
+        state_name = fct_relevel(state_name, "United States", after = Inf)
+    )
+
+rng <- range(to_plot$officer_pop_rate_per_10k)
+mult <- diff(rng) * axis_expansion_mult *2.5
+
+y_min <- rng[1] - mult
+y_min <- if_else(y_min < 0, 0, y_min)
+y_max <- rng[2] + mult
+
+to_plot |> 
+  hchart(
+    "spline",
+    hcaes(year, officer_pop_rate_per_10k,
+          group = state_name),
+    color = jr_pal[c(1, 7)],
+    dashStyle = c("solid", "dash"),
+    opacity = c(1, 0.75),
+    accessibility = list(
+      point = list(
+        valueDescriptionFormat = "year: {point.x:.0f}, rate: {point.y:.1f}"
+        )
+      )    
+  ) |> 
+  hc_title(text = paste0("Officers per capita in ", state_name_text)) |>
+  hc_subtitle(text = "Officers per 10k residents, 2013–2023") |> 
+  hc_caption(text = "FBI Uniform Crime Reporting Program SRS state estimates<br>FBI Uniform Crime Reporting Program Police Employee Data") |> 
+  hc_yAxis(
+    min = y_min,
+    max = y_max,
+    endOnTick = FALSE
+  ) |> 
+    hc_tooltip(formatter = JS("function(){return(this.point.tooltip)}")) |>
+    hc_plotOptions(
+      series = list(animation = FALSE),
+      accessibility = list(
+        enabled = TRUE,
+        keyboardNavigation = list(enabled = TRUE)
+      )
+    ) |>
+    hc_xAxis(
+      title = "",
+      labels = list(y = 25)
+    ) |>
+    hc_yAxis(
+      title = "",
+      labels = list(format = "{value:,.0f}")
+    ) |>
+  hc_setup()
+
+```
+
+<br>
+
+```{r, eval=!state %in% states_to_exclude_from_ucr_officer_count_analysis, results='asis'}
+cat("### Officers per violent offense")
+```
+
+
+```{r, eval=!state %in% states_to_exclude_from_ucr_officer_count_analysis}
+
+to_plot <- ucr_employee_data_by_state_clean |> 
+  bind_rows(ucr_employee_data_national_clean) |> 
+  mutate(
+    tooltip = paste0(
+      "<b>", state_name, " – ", year, "</b><br>",
+      "Officers per 1k violent crimes: ", scales::comma(officer_per_violent_offense_1k, 
+                                                        accuracy = .1)),
+        state_name = fct_relevel(state_name, "United States", after = Inf)
+    )
+
+rng <- range(to_plot$officer_per_violent_offense_1k)
+mult <- diff(rng) * axis_expansion_mult
+
+y_min <- rng[1] - mult
+y_min <- if_else(y_min < 0, 0, y_min)
+y_max <- rng[2] + mult
+
+
+to_plot |> 
+  hchart(
+    "spline",
+    hcaes(year, officer_per_violent_offense_1k,
+          group = state_name),
+    color = jr_pal[c(1, 7)],
+    dashStyle = c("solid", "dash"),
+    opacity = c(1, 0.75),    accessibility = list(
+      point = list(
+        valueDescriptionFormat = "year: {point.x:.0f}, rate: {point.y:.1f}"
+        )
+      )    
+  ) |> 
+  hc_title(text = paste0("Officers per violent offense in ", state_name_text)) |>
+  hc_subtitle(text = "Officers per 1k violent crimes, 2013–2023") |> 
+  hc_caption(text = "FBI Uniform Crime Reporting Program SRS state estimates<br>FBI Uniform Crime Reporting Program Police Employee Data") |> 
+  hc_yAxis(
+    min = y_min,
+    max = y_max,
+    endOnTick = FALSE
+  ) |> 
+    hc_tooltip(formatter = JS("function(){return(this.point.tooltip)}")) |>
+    hc_plotOptions(
+      series = list(animation = FALSE),
+      accessibility = list(
+        enabled = TRUE,
+        keyboardNavigation = list(enabled = TRUE)
+      )
+    ) |>
+    hc_xAxis(
+      title = "",
+      labels = list(y = 25)
+    ) |>
+    hc_yAxis(
+      title = "",
+      labels = list(format = "{value:,.0f}")
+    ) |>
+  hc_setup()
+
+
+```
+
+:::
+
+<br>
+
+```{r, results='asis' }
+cat("## Exploration of homicide solve rates in", state_name_text)
+```
+
+
+Explore homicide solve rates by available victim demographics and case characteristics for `r state_name_text` and other states in the [`r csg_region_full`](https://www.csg.org/regional-offices). Grouping states by region allows policymakers to compare their state to others that may be similar. Solve rates are included by race and ethnicity, gender, age, weapon type, and number of victims. For more information, see the data sources and methodology below.
+
+
+::: {.panel-tabset}
+
+
+### Race and ethnicity 
+
+```{r }
+
+### clean up df for plot via function
+### this function will prepare a df for plotting -- grouping by
+### varying incident or demographic characteristics
+to_plot <- function_shr_grouping_for_plot(df = shr_1976_2022_state_race,
+                                          var = "victim_1_race_clean") |> 
+  ### arrange legend so that state name comes first followed by region name
+  mutate(group_for_plot = fct_relevel(group_for_plot, paste0("Other ",csg_region," States"), after = Inf))
+
+
+### now plot
+to_plot |> 
+  hchart(
+    "column",
+    hcaes(victim_1_race_clean, 
+          clearance_rate,
+          group = group_for_plot),
+    accessibility = list(
+      point = list(
+        valueDescriptionFormat = "year: {point.x:.0f}, rate: {point.y:.1f}"
+        )
+      )    
+  ) |> 
+  hc_title(text = paste0("Homicide solve rates by race and ethnicity")) |>
+  hc_subtitle(text = "2018–2022") |>
+  hc_caption(text = list("This analysis excludes records where a victim's race and ethnicity is unknown<br>FBI Supplementary Homicide Report (SHR) Data")) |>     # hc_add_theme(hc_theme_jc) |>
+    hc_tooltip(formatter = JS("function(){return(this.point.tooltip)}")) |>
+    hc_plotOptions(
+      series = list(animation = FALSE),
+      accessibility = list(
+        enabled = TRUE,
+        keyboardNavigation = list(enabled = TRUE)
+      )
+    ) |>
+    hc_xAxis(
+      title = "",
+      labels = list(y = 25)
+    ) |>
+  hc_yAxis(
+    min = 0,
+    max = 100,
+    endOnTick = FALSE,
+          title = "",
+      labels = list(format = "{value}%")
+  ) |>
+  hc_setup()
+
+```
+
+
+
+### Gender
+
+```{r }
+### clean up df for plot via function
+to_plot <- function_shr_grouping_for_plot(df = shr_1976_2022_state_gender,
+                                          var = "victim_1_sex_clean") |> 
+  ### arrange legend so that state name comes first followed by region name
+  mutate(group_for_plot = fct_relevel(group_for_plot, paste0("Other ",csg_region," States"), after = Inf))
+
+
+to_plot |> 
+  hchart(
+    "column",
+    hcaes(victim_1_sex_clean, clearance_rate,
+          group=group_for_plot),
+    # color = jr_pal[1],
+    # dashStyle = c("solid"),
+    # opacity = c(1, 0.75),
+    accessibility = list(
+      point = list(
+        valueDescriptionFormat = "year: {point.x:.0f}, rate: {point.y:.1f}"
+        )
+      )    
+  ) |> 
+  hc_title(text = paste0("Homicide solve rates by gender")) |>
+  hc_subtitle(text = "2018–2022") |>
+  hc_caption(text = list("This analysis excludes records where a victim's gender is unknown<br>FBI Supplementary Homicide Report (SHR) Data")) |>     
+# hc_add_theme(hc_theme_jc) |>
+    hc_tooltip(formatter = JS("function(){return(this.point.tooltip)}")) |>
+    hc_plotOptions(
+      series = list(animation = FALSE),
+      accessibility = list(
+        enabled = TRUE,
+        keyboardNavigation = list(enabled = TRUE)
+      )
+    ) |>
+    hc_xAxis(
+      title = "",
+      labels = list(y = 25)
+    ) |>
+  hc_yAxis(
+    min = 0,
+    max = 100,
+    endOnTick = FALSE,
+          title = "",
+      labels = list(format = "{value}%")
+  ) |>
+  hc_setup()
+
+
+```
+
+
+
+### Age
+
+
+```{r }
+
+### clean up df for plot via function
+to_plot <- function_shr_grouping_for_plot(df = shr_1976_2022_state_age,
+                                          var = "victim_1_age_bin") |> 
+  ### arrange legend so that state name comes first followed by region name
+  mutate(group_for_plot = fct_relevel(group_for_plot, paste0("Other ",csg_region," States"), after = Inf))
+
+
+to_plot |> 
+  hchart(
+    "column",
+    hcaes(victim_1_age_bin, clearance_rate,
+          group = group_for_plot),
+    # color = jr_pal[1],
+    # dashStyle = c("solid"),
+    # opacity = c(1, 0.75),
+    accessibility = list(
+      point = list(
+        valueDescriptionFormat = "year: {point.x:.0f}, rate: {point.y:.1f}"
+        )
+      )    
+  ) |> 
+  hc_title(text = paste0("Homicide solve rates by age")) |>
+  hc_subtitle(text = "2018–2022") |>
+  hc_caption(text = list("This analysis excludes records where a victim's age is unknown<br>FBI Supplementary Homicide Report (SHR) Data")) |> 
+    hc_tooltip(formatter = JS("function(){return(this.point.tooltip)}")) |>
+    hc_plotOptions(
+      series = list(animation = FALSE),
+      accessibility = list(
+        enabled = TRUE,
+        keyboardNavigation = list(enabled = TRUE)
+      )
+    ) |>
+    hc_xAxis(
+      title = "",
+      labels = list(y = 25)
+    ) |>
+  hc_yAxis(
+    min = 0,
+    max = 100,
+    endOnTick = FALSE,
+          title = "",
+      labels = list(format = "{value}%")
+  ) |>
+  hc_setup()
+
+```
+
+
+### Weapon 
+
+```{r }
+
+### clean up df for plot via function
+to_plot <- function_shr_grouping_for_plot(df = shr_1976_2022_state_weapon,
+                                          var = "offender_1_weapon_clean")  |> 
+   filter(offender_1_weapon_clean%in%c("Firearm","Knife Or Cutting Instrument","Person Weapons - Includes Beating", "Blunt Object","Narcotics/Drugs")) |> 
+  ### arrange legend so that state name comes first followed by region name
+  mutate(group_for_plot = fct_relevel(group_for_plot, paste0("Other ",csg_region," States"), after = Inf))
+
+
+to_plot |> 
+  hchart(
+    "column",
+    hcaes(offender_1_weapon_clean, clearance_rate,
+          group = group_for_plot),
+    # color = jr_pal[1],
+    # dashStyle = c("solid"),
+    # opacity = c(1, 0.75),
+    accessibility = list(
+      point = list(
+        valueDescriptionFormat = "year: {point.x:.0f}, rate: {point.y:.1f}"
+        )
+      )    
+  ) |> 
+  hc_title(text = paste0("Homicide solve rates by weapon")) |>
+  hc_subtitle(text = "2018–2022") |>
+  hc_caption(text = list("This analysis includes the most common weapons across states in recent years<br>FBI Supplementary Homicide Report (SHR) Data")) |> 
+    hc_tooltip(formatter = JS("function(){return(this.point.tooltip)}")) |>
+    hc_plotOptions(
+      series = list(animation = FALSE),
+      accessibility = list(
+        enabled = TRUE,
+        keyboardNavigation = list(enabled = TRUE)
+      )
+    ) |>
+    hc_xAxis(
+      title = "",
+      labels = list(y = 25)
+    ) |>
+  hc_yAxis(
+    min = 0,
+    max = 100,
+    endOnTick = FALSE,
+          title = "",
+      labels = list(format = "{value}%")
+  ) |>
+  hc_setup()
+
+
+```
+
+
+### Number of victims
+
+```{r }
+
+### clean up df for plot via function
+to_plot <- function_shr_grouping_for_plot(df = shr_1976_2022_state_single_multiple_victims,
+                                          var = "victim_multiple_flag")  |>
+  filter(!is.na(victim_multiple_flag)) |> 
+  ### order by single victims and then multiple victims in viz
+  mutate(victim_multiple_flag = factor(victim_multiple_flag,
+    levels = c("Single Victim","Multiple Victims"))) |> 
+  ### arrange legend so that state name comes first followed by region name
+  mutate(group_for_plot = fct_relevel(group_for_plot, paste0("Other ",csg_region," States"), after = Inf))
+
+
+
+to_plot |> 
+  hchart(
+    "column",
+    hcaes(victim_multiple_flag, clearance_rate,
+          group=group_for_plot),
+    # color = jr_pal[1],
+    # dashStyle = c("solid"),
+    # opacity = c(1, 0.75),
+    accessibility = list(
+      point = list(
+        valueDescriptionFormat = "year: {point.x:.0f}, rate: {point.y:.1f}"
+        )
+      )    
+  ) |> 
+  hc_title(text = paste0("Homicide solve rates by number of victims")) |>
+  hc_subtitle(text = "2018–2022") |>
+  hc_caption(text = "FBI Supplementary Homicide Report (SHR) Data") |> 
+    hc_tooltip(formatter = JS("function(){return(this.point.tooltip)}")) |>
+    hc_plotOptions(
+      series = list(animation = FALSE),
+      accessibility = list(
+        enabled = TRUE,
+        keyboardNavigation = list(enabled = TRUE)
+      )
+    ) |>
+    hc_xAxis(
+      title = "",
+      labels = list(y = 25),
+      categories = levels(to_plot$victim_multiple_flag)
+      # reversed = 'true',
+    ) |>
+  hc_yAxis(
+    min = 0,
+    max = 100,
+    endOnTick = FALSE,
+          title = "",
+      labels = list(format = "{value}%")
+  ) |>
+  hc_setup()
+
+
+```
+
+:::
+
+<br>
+
+
 
 ::: {.callout-note icon=false collapse=true}
 
 ## Data sources and methodology
 
-Data regarding crime and solve rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr){target="_parent"}. Counts of reported violent crime between 2013 and 2023 are derived from the Summary Reporting System (SRS) and the National Incident-Based Reporting System (NIBRS). The FBI generated national estimates for reported crime and clearances based on agency-level reports, and these estimates were published through 2023 in the FBI's annual report, [_Crime in the U.S._](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019){target="_parent"} and on the FBI's [Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/home){target="_parent"}. For agency-level clearance data, we used [Jacob Kaplan's version of the Offenses Known and Clearances by Arrest](https://doi.org/10.7910/DVN/OESSD1) dataset.
+Data regarding crime and solve rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr){target="_parent"}. Counts of reported violent crime between 2013 and 2023 are derived from the Summary Reporting System (SRS) and the National Incident-Based Reporting System (NIBRS). The FBI generated national estimates for reported crime and clearances based on agency-level reports, and these estimates were published through 2023 in the FBI's annual report, [_Crime in the U.S._](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019){target="_parent"}, and on the FBI's [Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/home){target="_parent"}. For agency-level clearance data, we used [Jacob Kaplan's version of the Offenses Known and Clearances by Arrest](https://doi.org/10.7910/DVN/OESSD1) dataset.
 
 The FBI stopped SRS data collection after data year 2020 and required law enforcement agencies to use NIBRS to report crime statistics to the FBI. This change decreased the number of agencies that submitted their crime data and thus reduced the reliability of state estimates in 2021. In 2022 and 2023, the FBI allowed agencies who were unable to submit NIBRS data to submit SRS data again. Ninety-four percent of the U.S. population was covered in the 2023 crime data submissions to the FBI, with most states providing close to complete data. However, the population upon which the estimates were derived decreased by over 10 percent in three states: Florida, Mississippi, and Wyoming, so conclusions about crime changes in those states should be interpreted with additional caution.
 
@@ -797,6 +1681,12 @@ Agency- and county-level violent crime and solve rate data presented above are r
 Each law enforcement agency is grouped by the county where they are based using the Law Enforcement Agency Identifiers Crosswalk developed by the Bureau of Justice Statistics in 2012. The overall county population used for calculation of county-level rates is based on the sum of the jurisdiction populations for agencies reporting data for all 12 months in 2023.
 
 Counties with fewer than 25 reported violent incidents in 2023 are excluded from the map, as calculations of solve rates are not reliable. 
+
+Data regarding state law enforcement expenditures were downloaded from the U.S. Census Bureau [Annual Survey of State and Local Government Finances](https://www.census.gov/programs-surveys/gov-finances.html){target="_parent"}.
+
+Officer employment analysis is restricted to sworn law enforcement officers and was downloaded from the FBI's [Uniform Crime Reporting (UCR) Program police employee data files](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019/topic-pages/police-employee-data){target="_parent"}.
+
+Data on homicide solve rate trends and case characteristics come from the FBI's [Supplementary Homicide Reporting (SHR) Program](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019/topic-pages/expanded-homicide){target="_parent"}.
 
 :::
 
