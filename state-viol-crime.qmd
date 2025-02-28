@@ -10,7 +10,7 @@ mainfont: "GT-America"
 linkcolor: "#00355a"
 anchor-sections: false
 params:
-  state: "LA"
+  state: "WA"
 execute:
   echo: false
   warning: false
@@ -1383,7 +1383,9 @@ Explore homicide solve rates by available victim demographics and case character
 ### this function will prepare a df for plotting -- grouping by
 ### varying incident or demographic characteristics
 to_plot <- function_shr_grouping_for_plot(df = shr_1976_2022_state_race,
-                                          var = "victim_1_race_clean") 
+                                          var = "victim_1_race_clean") |> 
+  ### arrange legend so that state name comes first followed by region name
+  mutate(group_for_plot = fct_relevel(group_for_plot, paste0("Other ",csg_region," States"), after = Inf))
 
 
 ### now plot
@@ -1401,7 +1403,7 @@ to_plot |>
   ) |> 
   hc_title(text = paste0("Homicide solve rates by race and ethnicity")) |>
   hc_subtitle(text = "2018–2022") |>
-  hc_caption(text = list("This analysis excludes records where a victim's race and ethnicity is unknown<br>FBI Supplementary Homicide Report (SHR) Data (2018-2022)")) |>     # hc_add_theme(hc_theme_jc) |>
+  hc_caption(text = list("This analysis excludes records where a victim's race and ethnicity is unknown<br>FBI Supplementary Homicide Report (SHR) Data")) |>     # hc_add_theme(hc_theme_jc) |>
     hc_tooltip(formatter = JS("function(){return(this.point.tooltip)}")) |>
     hc_plotOptions(
       series = list(animation = FALSE),
@@ -1432,7 +1434,9 @@ to_plot |>
 ```{r }
 ### clean up df for plot via function
 to_plot <- function_shr_grouping_for_plot(df = shr_1976_2022_state_gender,
-                                          var = "victim_1_sex_clean") 
+                                          var = "victim_1_sex_clean") |> 
+  ### arrange legend so that state name comes first followed by region name
+  mutate(group_for_plot = fct_relevel(group_for_plot, paste0("Other ",csg_region," States"), after = Inf))
 
 
 to_plot |> 
@@ -1451,7 +1455,7 @@ to_plot |>
   ) |> 
   hc_title(text = paste0("Homicide solve rates by gender")) |>
   hc_subtitle(text = "2018–2022") |>
-  hc_caption(text = list("This analysis excludes records where a victim's gender is unknown<br>FBI Supplementary Homicide Report (SHR) Data (2018-2022)")) |>     
+  hc_caption(text = list("This analysis excludes records where a victim's gender is unknown<br>FBI Supplementary Homicide Report (SHR) Data")) |>     
 # hc_add_theme(hc_theme_jc) |>
     hc_tooltip(formatter = JS("function(){return(this.point.tooltip)}")) |>
     hc_plotOptions(
@@ -1486,7 +1490,9 @@ to_plot |>
 
 ### clean up df for plot via function
 to_plot <- function_shr_grouping_for_plot(df = shr_1976_2022_state_age,
-                                          var = "victim_1_age_bin")
+                                          var = "victim_1_age_bin") |> 
+  ### arrange legend so that state name comes first followed by region name
+  mutate(group_for_plot = fct_relevel(group_for_plot, paste0("Other ",csg_region," States"), after = Inf))
 
 
 to_plot |> 
@@ -1505,9 +1511,7 @@ to_plot |>
   ) |> 
   hc_title(text = paste0("Homicide solve rates by age")) |>
   hc_subtitle(text = "2018–2022") |>
-  hc_caption(text = list("This analysis excludes records where a victim's age is unknown<br>FBI Supplementary Homicide Report (SHR) Data (2018-2022)")) |> 
-  hc_caption(text = "FBI Supplementary Homicide Report (SHR) Data") |> 
-    # hc_add_theme(hc_theme_jc) |>
+  hc_caption(text = list("This analysis excludes records where a victim's age is unknown<br>FBI Supplementary Homicide Report (SHR) Data")) |> 
     hc_tooltip(formatter = JS("function(){return(this.point.tooltip)}")) |>
     hc_plotOptions(
       series = list(animation = FALSE),
@@ -1539,7 +1543,9 @@ to_plot |>
 ### clean up df for plot via function
 to_plot <- function_shr_grouping_for_plot(df = shr_1976_2022_state_weapon,
                                           var = "offender_1_weapon_clean")  |> 
-   filter(offender_1_weapon_clean%in%c("Firearm","Knife Or Cutting Instrument","Person Weapons - Includes Beating", "Blunt Object","Narcotics/Drugs"))
+   filter(offender_1_weapon_clean%in%c("Firearm","Knife Or Cutting Instrument","Person Weapons - Includes Beating", "Blunt Object","Narcotics/Drugs")) |> 
+  ### arrange legend so that state name comes first followed by region name
+  mutate(group_for_plot = fct_relevel(group_for_plot, paste0("Other ",csg_region," States"), after = Inf))
 
 
 to_plot |> 
@@ -1558,9 +1564,7 @@ to_plot |>
   ) |> 
   hc_title(text = paste0("Homicide solve rates by weapon")) |>
   hc_subtitle(text = "2018–2022") |>
-  hc_caption(text = list("This analysis includes the most common weapons across states in recent years<br>FBI Supplementary Homicide Report (SHR) Data (2018-2022)")) |> 
-  # hc_caption(text = "FBI Supplementary Homicide Report (SHR) Data") |> 
-    # hc_add_theme(hc_theme_jc) |>
+  hc_caption(text = list("This analysis includes the most common weapons across states in recent years<br>FBI Supplementary Homicide Report (SHR) Data")) |> 
     hc_tooltip(formatter = JS("function(){return(this.point.tooltip)}")) |>
     hc_plotOptions(
       series = list(animation = FALSE),
@@ -1596,7 +1600,9 @@ to_plot <- function_shr_grouping_for_plot(df = shr_1976_2022_state_single_multip
   filter(!is.na(victim_multiple_flag)) |> 
   ### order by single victims and then multiple victims in viz
   mutate(victim_multiple_flag = factor(victim_multiple_flag,
-    levels = c("Single Victim","Multiple Victims")))
+    levels = c("Single Victim","Multiple Victims"))) |> 
+  ### arrange legend so that state name comes first followed by region name
+  mutate(group_for_plot = fct_relevel(group_for_plot, paste0("Other ",csg_region," States"), after = Inf))
 
 
 
@@ -1616,8 +1622,7 @@ to_plot |>
   ) |> 
   hc_title(text = paste0("Homicide solve rates by number of victims")) |>
   hc_subtitle(text = "2018–2022") |>
-  hc_caption(text = "FBI Supplementary Homicide Report (SHR) Data (2018-2022)") |> 
-    # hc_add_theme(hc_theme_jc) |>
+  hc_caption(text = "FBI Supplementary Homicide Report (SHR) Data") |> 
     hc_tooltip(formatter = JS("function(){return(this.point.tooltip)}")) |>
     hc_plotOptions(
       series = list(animation = FALSE),
