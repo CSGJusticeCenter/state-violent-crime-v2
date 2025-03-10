@@ -3,7 +3,9 @@ format:
   html:
     footnotes-hover: false
     css: styles.css
-    toc: false
+    toc: true
+    toc-title: On this page
+    toc-location: left
 mainfont: "GT-America"
 linkcolor: "#00355a"
 anchor-sections: false
