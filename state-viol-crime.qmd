@@ -8,7 +8,7 @@ mainfont: "GT-America"
 linkcolor: "#00355a"
 anchor-sections: false
 params:
-  state: "WA"
+  state: "NC"
 execute:
   echo: false
   warning: false
@@ -539,8 +539,12 @@ to_plot |>
 
 :::
 
-```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
+```{r, results='asis'}
 cat("## Solved violent crime in", state_name_text)
+```
+
+```{r, eval=state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
+cat(state_name_text," did not report enough data on solved crime to the FBI to make reliable estimates.")
 ```
 
 ```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz}
@@ -706,8 +710,12 @@ cat("
 ")
 ```
 
-```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
+```{r, results='asis'}
 cat("## Solved violent crime by county in", state_name_text)
+```
+
+```{r, eval=state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
+cat(state_name_text," did not report enough data on solved crime to the FBI to make reliable estimates.")
 ```
 
 ```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz}
@@ -819,11 +827,14 @@ hcmap(
 
 ```
 
-<br>
 
-```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
+```{r, results='asis'}
 
 cat("## Solved violent crime by agency in", state_name_text)
+```
+
+```{r, eval=state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
+cat(state_name_text," did not report enough data on solved crime to the FBI to make reliable estimates.")
 ```
 
 ```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
@@ -836,7 +847,12 @@ Please note that rates calculated for agencies with smaller jurisdiction populat
 ```
 
 
+```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
+cat("
 ::: {.panel-tabset}
+
+")
+```
 
 
 ```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
@@ -894,9 +910,15 @@ cat("### By offense")
 ```
 
 
+```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
+cat('
+    
 <span style="color:#E17619"> Orange </span> indicates a solve rate less than the state average.
 
 <span style="color:#15607A"> Blue </span> indicates a solve rate greater than or equal to the state average.
+
+')
+```
 
 
 ```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz}
@@ -1050,10 +1072,13 @@ df_nibrs_violent_unsolved_by_agency_and_type_to_table_2023_final |>
 
 ```
 
-:::
+```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
+cat("
+::: 
 
+")
+```
 
-<br>
 
 ```{r, results='asis'}
 cat("## Law enforcement resources in", state_name_text)
@@ -1158,9 +1183,6 @@ Law enforcement staffing can impact how agencies allocate resources to solve vio
 ::: {.panel-tabset}
 
 
-
-<br>
-
 ```{r, results='asis'}
 cat("### Expenditures")
 ```
@@ -1221,7 +1243,6 @@ to_plot |>
 
 ```
 
-<br>
 
 ```{r, eval=!state %in% states_to_exclude_from_ucr_officer_count_analysis, results='asis'}
 cat("### Officers per capita")
@@ -1289,7 +1310,6 @@ to_plot |>
 
 ```
 
-<br>
 
 ```{r, eval=!state %in% states_to_exclude_from_ucr_officer_count_analysis, results='asis'}
 cat("### Officers per violent offense")
@@ -1360,7 +1380,6 @@ to_plot |>
 
 :::
 
-<br>
 
 ```{r, results='asis' }
 cat("## Exploration of homicide solve rates in", state_name_text)
