@@ -11,6 +11,7 @@ render_state <- function(state) {
     )
 }
 
+
 # iterate over states and render
 purrr::walk(c(state.abb, "DC"), render_state)
 
