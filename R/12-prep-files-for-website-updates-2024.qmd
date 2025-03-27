@@ -697,15 +697,19 @@ shr_1976_2022 <- read_rds(file.path(sharepoint_jr_clearance_ucr_shr, "shr_1976_2
          levels = c(1,2,3),
          labels = c("Female", "Male", "Unknown")),
   ### create age bins
+  ### there appear to be juveniles in data so naming lowest age category as under 24
+  ### exclude ages over 105 -- these are likely data entry errors and should be coded as N/A
+  ### for this cleaned up variable (they'll be excluded in viz)
+  victim_1_age = as.numeric(victim_1_age),
   victim_1_age_bin = case_when(
     victim_1_age<25 ~ 1,
     victim_1_age>=25 & victim_1_age<=34 ~ 2,
     victim_1_age>34 & victim_1_age<=45 ~ 3,
-    victim_1_age>45 ~ 4,
+    victim_1_age>45 & victim_1_age<=105 ~ 4,
     TRUE ~ as.numeric(NA)),
     victim_1_age_bin = factor(victim_1_age_bin,
          levels = c(1,2,3,4),
-         labels = c("18 to 24", "25 to 34", "35 to 45", "46+")),
+         labels = c("Under 25", "25 to 34", "35 to 45", "46+")),
   ### defining multiple victims as instances where victim_2 has information populated for any demographics
   victim_multiple_flag = ifelse((!is.na(victim_2_age)|!is.na(victim_2_ethnic_origin)|!is.na(victim_2_race)|!is.na(victim_2_sex)),
                                        "Multiple Victims","Single Victim")) |> 
@@ -830,7 +834,9 @@ shr_1976_2022_national_gender <- function_clean_shr_1976_2022_national_by_group(
 
 ### age
 shr_1976_2022_national_age <- function_clean_shr_1976_2022_national_by_group(df = shr_1976_2022,
-                                                                                      grouping_var = "victim_1_age_bin")
+                                                                                      grouping_var = "victim_1_age_bin") |> 
+  ### remove rows where age is NA
+  filter(!is.na(victim_1_age_bin))
 
 ```
 
@@ -961,7 +967,9 @@ shr_1976_2022_state_gender <- function_clean_shr_1976_2022_state_by_group(df = s
 
 ### age
 shr_1976_2022_state_age <- function_clean_shr_1976_2022_state_by_group(df = shr_1976_2022,
-                                                                                      grouping_var = "victim_1_age_bin")
+                                                                                      grouping_var = "victim_1_age_bin") |> 
+  ### remove rows where age is NA
+  filter(!is.na(victim_1_age_bin))
 
 ```
 
