@@ -13,7 +13,7 @@ render_state <- function(state) {
 
 
 # iterate over states and render
-purrr::walk(c(state.abb, "DC"), render_state)
+purrr::walk(c(state.abb, "DC")[48:51], render_state)
 
 # us page
 quarto::quarto_render(

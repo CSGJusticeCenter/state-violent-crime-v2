@@ -8,7 +8,7 @@ mainfont: "GT-America"
 linkcolor: "#00355a"
 anchor-sections: false
 params:
-  state: "NC"
+  state: "WI"
 execute:
   echo: false
   warning: false
@@ -37,34 +37,58 @@ sp_data_to_plot_path <- csg_sp_path("ad_hoc_requests/state_violent_crime_marshal
 ### set project path for website update analytic file folder
 sp_data_site_updates_path <- csg_sp_path("ad_hoc_requests/state_violent_crime_marshall/data/website_updates")
 
+# Check if params exists (rendering context) or create it (interactive context)
+if (!exists("params")) {
+  params <- list(state = "NM")  # Default for interactive use
+}
+
 state <- csg_state_convert(params$state, from = "abbr", "name")
 state_abbr_params <- params$state
 state_name_text <- if_else(params$state == "DC", "the District of Columbia", state)
 
 # read in crime data
-srs_state <- read_rds(file.path(sp_data_to_plot_path, "srs_state.rds")) |> 
-  filter(state_name == state, crime_cat == "Violent", year >= 2013) |>
+
+# srs_state <- read_rds(file.path(sp_data_to_plot_path, "srs_state.rds")) |> 
+#   filter(state_name == state, crime_cat == "Violent", year >= 2013) |>
+#   mutate(
+#     incidents_solved = incidents_reported - incidents_unsolved,
+#     pct_solved = incidents_solved / incidents_reported
+#   )
+
+# srs_by_cat_state <- read_rds(file.path(sp_data_to_plot_path, "srs_by_cat_state.rds")) |> 
+#   filter(state_name == state, crime_cat == "Violent", year >= 2013) |>
+#   mutate(
+#     incidents_solved = incidents_reported - incidents_unsolved,
+#     pct_solved = incidents_solved / incidents_reported
+#   )
+
+srs_state_new <- read_rds(csg_sp_path("jr_data_library", "data", "analysis", "fbi", "srs", "fbi_srs_state.rds")) |> 
+  mutate(crime_cat = if_else(group %in% c("Aggravated assault", "Homicide", "Rape", "Robbery"), "Violent", "Property")) |> 
+  select(-state_fips, -group_cat, -starts_with("rate")) |> 
+  filter(indicator != "Unsolved rate", year >= 2014) |> 
+  pivot_wider(names_from = indicator, values_from = n) |> 
+  janitor::clean_names() |> 
+  select(
+    year, state_name, state_abbr, group, crime_cat, pop_total, pop_adult,
+    incidents_reported, incidents_unsolved, incidents_cleared) |> 
+  mutate(
+    pct_unsolved = incidents_unsolved / incidents_reported,
+    incidents_reported_rate_total = incidents_reported / pop_total,
+    incidents_reported_rate_adult = incidents_reported / pop_adult
+  )
+
+srs_state <- srs_state_new |> 
+  filter(state_name == state, crime_cat == "Violent") |>
   mutate(
     incidents_solved = incidents_reported - incidents_unsolved,
     pct_solved = incidents_solved / incidents_reported
   )
 
-srs_by_cat_state <- read_rds(file.path(sp_data_to_plot_path, "srs_by_cat_state.rds")) |> 
-  filter(state_name == state, crime_cat == "Violent", year >= 2013) |>
-  mutate(
-    incidents_solved = incidents_reported - incidents_unsolved,
-    pct_solved = incidents_solved / incidents_reported
-  )
-
-
-srs_state_all <- read_rds(file.path(sp_data_to_plot_path, "srs_state.rds")) |> 
-    filter(crime_cat == "Violent", year >= 2013)
-
-srs_by_cat_us <- srs_state_all |>
-  group_by(year, crime_cat, state_name = "United States", state_abbr = "U.S.") |>
+srs_by_cat_state <- srs_state_new |>
+  filter(state_name == state, crime_cat == "Violent") |>
+  group_by(year, state_name, state_abbr) |>
   summarize(
-    across(c(pop_total, incidents_reported, incidents_unsolved),
-    \(x) sum(x, na.rm = TRUE))
+    across(c(pop_total, incidents_reported, incidents_unsolved), \(x) sum(x, na.rm = TRUE))
   ) |>
   ungroup() |> 
   mutate(
@@ -75,16 +99,32 @@ srs_by_cat_us <- srs_state_all |>
     pct_solved = incidents_solved / incidents_reported
   )
 
-srs_us <- srs_state_all |>
+
+srs_by_cat_us <- srs_state_new |>
+  filter(crime_cat == "Violent") |>
+  group_by(year, state_name = "United States", state_abbr = "U.S.") |>
+  summarize(
+    across(c(pop_total, incidents_reported, incidents_unsolved), \(x) sum(x, na.rm = TRUE))
+  ) |>
+  mutate(
+    pop_total = pop_total / 4,
+    incidents_reported_rate_total = incidents_reported / pop_total,
+    # pct_unsolved = incidents_unsolved / incidents_reported,
+    incidents_solved = incidents_reported - incidents_unsolved,
+    pct_solved = incidents_solved / incidents_reported
+  )
+
+srs_us <- srs_state_new |>
+  filter(crime_cat == "Violent") |>
   group_by(year, state_name = "United States", state_abbr = "U.S.", group) |>
   summarize(
-    across(c(pop_total, incidents_reported, incidents_unsolved), sum, na.rm = TRUE)
+    across(c(pop_total, incidents_reported, incidents_unsolved), \(x) sum(x, na.rm = TRUE))
   ) |>
   ungroup() |> 
   mutate(
     pop_total = pop_total,
     incidents_reported_rate_total = incidents_reported / pop_total,
-    # pct_unsolved = incidents_unsolved / incidents_reported,
+    # pct_unsolved = incidents_unsolved / incidents_reported
     incidents_solved = incidents_reported - incidents_unsolved,
     pct_solved = incidents_solved / incidents_reported
   )
@@ -141,10 +181,10 @@ ucr_employee_data_by_state_clean <- read_rds(file.path(sp_data_site_updates_path
          state_abbr==state_abbr_params) 
 
 ### import ucr_employee_data_national_clean for officer workload analysis -- US-wide
-ucr_employee_data_national_clean <- read_rds(file.path(sp_data_site_updates_path,"website_update_lea_staffing_workload_national.rds")) |> 
-  filter(year>=2013) |>
-  mutate(state_name = "United States",
-         state_abbr = "U.S.")
+# ucr_employee_data_national_clean <- read_rds(file.path(sp_data_site_updates_path,"website_update_lea_staffing_workload_national.rds")) |> 
+#   filter(year>=2013) |>
+#   mutate(state_name = "United States",
+#          state_abbr = "U.S.")
 
 ```
 
@@ -243,7 +283,7 @@ change_text_crime <- case_when(
   TRUE                      ~ "nearly the same as"
   )
 
-us_state_rate_comp <- (min_max_viol_crime$incidents_reported_rate_total[2] - srs_by_cat_us[srs_by_cat_us$year==2023, ]$incidents_reported_rate_total) / srs_by_cat_us[srs_by_cat_us$year==2023, ]$incidents_reported_rate_total
+us_state_rate_comp <- (min_max_viol_crime$incidents_reported_rate_total[2] - srs_by_cat_us[srs_by_cat_us$year==2024, ]$incidents_reported_rate_total) / srs_by_cat_us[srs_by_cat_us$year==2024, ]$incidents_reported_rate_total
 
 us_state_rate_text_crime <- case_when(
   us_state_rate_comp > 0.005 &
@@ -285,7 +325,7 @@ crime_rate_max <- paste0(comma(min_max_viol_crime$incidents_reported_rate_total[
 
 In `r max_year`, `r crime_rate_max` violent crime incidents per 100,000 residents were reported to police in `r state_name_text`. This is `r change_text_crime` the violent crime rate in `r min_year`.
 
-The crime rate in `r state_name_text` in 2023 was `r us_state_rate_text_crime` the United States average.
+The crime rate in `r state_name_text` in 2024 was `r us_state_rate_text_crime` the United States average.
 
 Data regarding crime and solve rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr). Violent crime includes homicide, aggravated assault, robbery, and rape. Crime rates are calculated by dividing the number of estimated incidents by the total population for a given geography. For more information, see the data sources and methodology section below.
 
@@ -1085,6 +1125,8 @@ cat("## Law enforcement resources in", state_name_text)
 ```
 
 ```{r}
+#| eval: false
+
 ### create dynamic labels for text blurb below
 asslgf_clean_percent_change <- asslgf_clean |> 
   filter(year %in% range(year)) |> 
@@ -1164,7 +1206,7 @@ change_staffing_per_violent_offense_text_clear_3 <- case_when(
 ```
 
 ```{r, results='asis'}
-
+#| eval: false
 cat(paste0(
   state_name_text," ", change_spending_text_clear, " spending on law enforcement by ", pct_change_spending_abs_value ," percent from 2013 to 2021, adjusting for inflation. Expenditures include local, state, and federal spending on local police departments, sheriffs’ offices, and state police agencies such as highway patrols and other state investigative law enforcement agencies.  
 
@@ -1189,6 +1231,7 @@ cat("### Expenditures")
 
 
 ```{r }
+#| eval: false
 to_plot <- asslgf_clean |> 
   mutate(
     tooltip = paste0(
@@ -1250,6 +1293,7 @@ cat("### Officers per capita")
 
 
 ```{r, eval=!state %in% states_to_exclude_from_ucr_officer_count_analysis}
+#| eval: false
 
 to_plot <- ucr_employee_data_by_state_clean |> 
   bind_rows(ucr_employee_data_national_clean) |> 
@@ -1317,6 +1361,7 @@ cat("### Officers per violent offense")
 
 
 ```{r, eval=!state %in% states_to_exclude_from_ucr_officer_count_analysis}
+#| eval: false
 
 to_plot <- ucr_employee_data_by_state_clean |> 
   bind_rows(ucr_employee_data_national_clean) |> 
@@ -1395,6 +1440,7 @@ Explore homicide solve rates by available victim demographics and case character
 ### Race and ethnicity 
 
 ```{r }
+#| eval: false
 
 ### clean up df for plot via function
 ### this function will prepare a df for plotting -- grouping by
@@ -1449,6 +1495,8 @@ to_plot |>
 ### Gender
 
 ```{r }
+#| eval: false
+
 ### clean up df for plot via function
 to_plot <- function_shr_grouping_for_plot(df = shr_1976_2022_state_gender,
                                           var = "victim_1_sex_clean") |> 
@@ -1504,6 +1552,7 @@ to_plot |>
 
 
 ```{r }
+#| eval: false
 
 ### clean up df for plot via function
 to_plot <- function_shr_grouping_for_plot(df = shr_1976_2022_state_age,
@@ -1556,6 +1605,7 @@ to_plot |>
 ### Weapon 
 
 ```{r }
+#| eval: false
 
 ### clean up df for plot via function
 to_plot <- function_shr_grouping_for_plot(df = shr_1976_2022_state_weapon,
@@ -1610,6 +1660,7 @@ to_plot |>
 ### Number of victims
 
 ```{r }
+#| eval: false
 
 ### clean up df for plot via function
 to_plot <- function_shr_grouping_for_plot(df = shr_1976_2022_state_single_multiple_victims,
