@@ -666,9 +666,8 @@ ucr_srs_state <- srs_state_new |>
 ```
 
 ```{r include=FALSE,message=FALSE,warning=FALSE}
-### read in shr_1976_2022
-### downloaded from icprsr: https://www.openicpsr.org/openicpsr/project/100699/version/V14/view?path=/openicpsr/100699/fcr:versions/V14/shr_1976_2022.rds&type=file
-shr_1976_2022 <- read_rds(file.path(sharepoint_jr_clearance_ucr_shr, "shr_1976_2022.rds")) |> 
+### read in shr_1976_2024
+shr_1976_2024 <- read_rds(file.path(sp_jr_data_library, "data", "raw", "fbi", "shr", "shr_1976_2024.rds")) |> 
   ### clean up grouping vars we'll use in the next chunk
   mutate(victim_1_relation_to_offender_1 = str_to_title(victim_1_relation_to_offender_1),
          offender_1_circumstance = str_to_title(offender_1_circumstance),
@@ -681,12 +680,12 @@ shr_1976_2022 <- read_rds(file.path(sharepoint_jr_clearance_ucr_shr, "shr_1976_2
   ### clean race/ethnicity and gender
   ### use factor function to assign labels to values
   victim_1_race_clean = case_when(
-    (victim_1_race=="american indian or alaskan native") & victim_1_ethnic_origin!="hispanic" ~ 1,
-    (victim_1_race%in%c("asian","native hawaiian or other pacific islander")) & victim_1_ethnic_origin!="hispanic" ~ 2,
-    (victim_1_race=="black") & victim_1_ethnic_origin!="hispanic" ~ 3,
-    victim_1_ethnic_origin=="hispanic" ~ 4,
-    (victim_1_race=="white") & victim_1_ethnic_origin!="hispanic" ~ 5,
-    victim_1_race=="unknown" & victim_1_ethnic_origin!="hispanic" ~ 6,
+    (victim_1_race=="american indian/alaskan native") & victim_1_ethnic_origin!="hispanic or latino" ~ 1,
+    (victim_1_race%in%c("asian","native hawaiian or other pacific islander")) & victim_1_ethnic_origin!="hispanic or latino" ~ 2,
+    (victim_1_race=="black") & victim_1_ethnic_origin!="hispanic or latino" ~ 3,
+    victim_1_ethnic_origin=="hispanic or latino" ~ 4,
+    (victim_1_race=="white") & victim_1_ethnic_origin!="hispanic or latino" ~ 5,
+    victim_1_race=="unknown" & victim_1_ethnic_origin!="hispanic or latino" ~ 6,
     TRUE ~ 7),
     victim_1_race_clean = factor(victim_1_race_clean,
          levels = c(1,2,3,4,5,6,7),
@@ -727,8 +726,8 @@ shr_1976_2022 <- read_rds(file.path(sharepoint_jr_clearance_ucr_shr, "shr_1976_2
 
 ### clean up shr
 ### overall
-shr_2022_state <- shr_1976_2022 |> 
-  filter(year==2022) |> 
+shr_2024_state <- shr_1976_2024 |> 
+  filter(year==2024) |> 
   ### calculate clearance rate
   ### code any incident where offender information is populated (e.g. age, sex, or race/ethnicity) as cleared
   mutate(cleared_flag = ifelse(offender_1_age!="unknown" & !is.na(offender_1_age) & 
@@ -745,7 +744,7 @@ shr_2022_state <- shr_1976_2022 |>
   ungroup() 
 
 ### join shr and ucr data to explore the percent of all ucr reported homicides that appear in SHR
-shr_2022_state_ucr <- shr_2022_state |> 
+shr_2024_state_ucr <- shr_2024_state |> 
   left_join(ucr_srs_state,
             by = "state_abb") |> 
   mutate(`Percent Coverage (SHR/UCR SRS)` = scales::percent(n_total_incidents/incidents_reported,
@@ -758,9 +757,9 @@ shr_2022_state_ucr <- shr_2022_state |>
 
 
 ### write out
-write_rds(shr_2022_state_ucr,
+write_rds(shr_2024_state_ucr,
           file.path(sp_data_site_updates_path,
-                    "shr_reported_homicides_ucr_srs_coverage_2022.xlsx"))
+                    "shr_reported_homicides_ucr_srs_coverage_2024.xlsx"))
 
 ```
 
@@ -768,7 +767,7 @@ write_rds(shr_2022_state_ucr,
 ```{r }
 
 ### overall
-shr_1976_2022_national_overall <- shr_1976_2022 |> 
+shr_1976_2024_national_overall <- shr_1976_2024 |> 
   ### calculate clearance rate
   ### code any incident where offender information is populated (e.g. age, sex, or race/ethnicity) as cleared
   mutate(cleared_flag = ifelse(offender_1_age!="unknown" & !is.na(offender_1_age) & 
@@ -782,23 +781,13 @@ shr_1976_2022_national_overall <- shr_1976_2022 |>
             n_total_cleared = sum(cleared_flag,na.rm = TRUE),
             clearance_rate = n_total_cleared/n_total_incidents) |> 
   ungroup()
-
-# ### double check coding for age
-# table(shr_1976_2022_by_agency_over_time$offender_1_age[shr_1976_2022_by_agency_over_time$cleared_flag==0], useNA = 'always')
-# 
-# ### double check coding for race
-# table(shr_1976_2022_by_agency_over_time$offender_1_race[shr_1976_2022_by_agency_over_time$cleared_flag==0])
-# 
-# ### double check coding for sex
-# table(shr_1976_2022_by_agency_over_time$offender_1_sex[shr_1976_2022_by_agency_over_time$cleared_flag==0])
-
 ```
 
 
 ```{r }
 
 ### create function to clean up shr for national page viz
-function_clean_shr_1976_2022_national_by_group <- function(df, grouping_var){
+function_clean_shr_1976_2024_national_by_group <- function(df, grouping_var){
   
   df |> 
   ### calculate clearance rate
@@ -822,27 +811,27 @@ function_clean_shr_1976_2022_national_by_group <- function(df, grouping_var){
 ### now create files ready for viz with function
 
 ### relationship
-shr_1976_2022_national_relationship <- function_clean_shr_1976_2022_national_by_group(df = shr_1976_2022,
+shr_1976_2024_national_relationship <- function_clean_shr_1976_2024_national_by_group(df = shr_1976_2024,
                                                                                       grouping_var = "victim_1_relation_to_offender_1")
 
 ### weapon used
-shr_1976_2022_national_weapon <- function_clean_shr_1976_2022_national_by_group(df = shr_1976_2022,
+shr_1976_2024_national_weapon <- function_clean_shr_1976_2024_national_by_group(df = shr_1976_2024,
                                                                                       grouping_var = "offender_1_weapon_clean")
   
 ### circumstance of homicide
-shr_1976_2022_national_circumstance <- function_clean_shr_1976_2022_national_by_group(df = shr_1976_2022,
+shr_1976_2024_national_circumstance <- function_clean_shr_1976_2024_national_by_group(df = shr_1976_2024,
                                                                                       grouping_var = "circumstance_of_homicide")
 
 ### race
-shr_1976_2022_national_race <- function_clean_shr_1976_2022_national_by_group(df = shr_1976_2022,
+shr_1976_2024_national_race <- function_clean_shr_1976_2024_national_by_group(df = shr_1976_2024,
                                                                                       grouping_var = "victim_1_race_clean")
 
 ### gender
-shr_1976_2022_national_gender <- function_clean_shr_1976_2022_national_by_group(df = shr_1976_2022,
+shr_1976_2024_national_gender <- function_clean_shr_1976_2024_national_by_group(df = shr_1976_2024,
                                                                                       grouping_var = "victim_1_sex_clean")
 
 ### age
-shr_1976_2022_national_age <- function_clean_shr_1976_2022_national_by_group(df = shr_1976_2022,
+shr_1976_2024_national_age <- function_clean_shr_1976_2024_national_by_group(df = shr_1976_2024,
                                                                                       grouping_var = "victim_1_age_bin") |> 
   ### remove rows where age is NA
   filter(!is.na(victim_1_age_bin))
@@ -853,32 +842,32 @@ shr_1976_2022_national_age <- function_clean_shr_1976_2022_national_by_group(df 
 ### now write all dfs out for visualization
 
 ### write out
-write_rds(shr_1976_2022_national_overall,
-          file.path(sp_data_site_updates_path,"shr_1976_2022_national_overall_clear.rds"))
+write_rds(shr_1976_2024_national_overall,
+          file.path(sp_data_site_updates_path,"shr_1976_2024_national_overall_clear.rds"))
 
 ### write out
-write_rds(shr_1976_2022_national_relationship,
-          file.path(sp_data_site_updates_path,"shr_1976_2022_national_victim_offender_relationship.rds"))
+write_rds(shr_1976_2024_national_relationship,
+          file.path(sp_data_site_updates_path,"shr_1976_2024_national_victim_offender_relationship.rds"))
 
 ### write out
-write_rds(shr_1976_2022_national_weapon,
-          file.path(sp_data_site_updates_path,"shr_1976_2022_national_weapon.rds"))
+write_rds(shr_1976_2024_national_weapon,
+          file.path(sp_data_site_updates_path,"shr_1976_2024_national_weapon.rds"))
 
 ### write out
-write_rds(shr_1976_2022_national_circumstance,
-          file.path(sp_data_site_updates_path,"shr_1976_2022_national_incident_circumstance.rds"))
+write_rds(shr_1976_2024_national_circumstance,
+          file.path(sp_data_site_updates_path,"shr_1976_2024_national_incident_circumstance.rds"))
 
 ### write out
-write_rds(shr_1976_2022_national_race,
-          file.path(sp_data_site_updates_path,"shr_1976_2022_national_victim_race_eth.rds"))
+write_rds(shr_1976_2024_national_race,
+          file.path(sp_data_site_updates_path,"shr_1976_2024_national_victim_race_eth.rds"))
 
 ### write out
-write_rds(shr_1976_2022_national_gender,
-          file.path(sp_data_site_updates_path,"shr_1976_2022_national_victim_gender.rds"))
+write_rds(shr_1976_2024_national_gender,
+          file.path(sp_data_site_updates_path,"shr_1976_2024_national_victim_gender.rds"))
 
 ### write out
-write_rds(shr_1976_2022_national_age,
-          file.path(sp_data_site_updates_path,"shr_1976_2022_national_victim_age.rds"))
+write_rds(shr_1976_2024_national_age,
+          file.path(sp_data_site_updates_path,"shr_1976_2024_national_victim_age.rds"))
 
 ```
 
@@ -891,7 +880,7 @@ write_rds(shr_1976_2022_national_age,
 ########################
 
 ### overall
-shr_1976_2022_state_overall <- shr_1976_2022 |> 
+shr_1976_2024_state_overall <- shr_1976_2024 |> 
   dplyr::rename(state_abbr=state_abb) |> 
   ### add state name for eventual viz, as well
   mutate(state_name = csgjcr::csg_state_convert(state_abbr,
@@ -920,7 +909,7 @@ shr_1976_2022_state_overall <- shr_1976_2022 |>
 ```{r }
 
 ### create function to clean up shr for state page viz
-function_clean_shr_1976_2022_state_by_group <- function(df, grouping_var){
+function_clean_shr_1976_2024_state_by_group <- function(df, grouping_var){
   
   df |> 
   dplyr::rename(state_abbr=state_abb) |> 
@@ -951,31 +940,31 @@ function_clean_shr_1976_2022_state_by_group <- function(df, grouping_var){
 ### now create files ready for viz with function
 
 ### relationship
-shr_1976_2022_state_relationship <- function_clean_shr_1976_2022_state_by_group(df = shr_1976_2022,
+shr_1976_2024_state_relationship <- function_clean_shr_1976_2024_state_by_group(df = shr_1976_2024,
                                                                                       grouping_var = "victim_1_relation_to_offender_1")
 
 ### weapon used
-shr_1976_2022_state_weapon <- function_clean_shr_1976_2022_state_by_group(df = shr_1976_2022,
+shr_1976_2024_state_weapon <- function_clean_shr_1976_2024_state_by_group(df = shr_1976_2024,
                                                                                       grouping_var = "offender_1_weapon_clean")
   
 ### circumstance of homicide
-shr_1976_2022_state_circumstance <- function_clean_shr_1976_2022_state_by_group(df = shr_1976_2022,
+shr_1976_2024_state_circumstance <- function_clean_shr_1976_2024_state_by_group(df = shr_1976_2024,
                                                                                       grouping_var = "circumstance_of_homicide")
 
 ### single victim vs multiple victims
-shr_1976_2022_state_single_multiple_victims <- function_clean_shr_1976_2022_state_by_group(df = shr_1976_2022,
+shr_1976_2024_state_single_multiple_victims <- function_clean_shr_1976_2024_state_by_group(df = shr_1976_2024,
                                                                                       grouping_var = "victim_multiple_flag")
 
 ### race
-shr_1976_2022_state_race <- function_clean_shr_1976_2022_state_by_group(df = shr_1976_2022,
+shr_1976_2024_state_race <- function_clean_shr_1976_2024_state_by_group(df = shr_1976_2024,
                                                                                       grouping_var = "victim_1_race_clean")
 
 ### gender
-shr_1976_2022_state_gender <- function_clean_shr_1976_2022_state_by_group(df = shr_1976_2022,
+shr_1976_2024_state_gender <- function_clean_shr_1976_2024_state_by_group(df = shr_1976_2024,
                                                                                       grouping_var = "victim_1_sex_clean")
 
 ### age
-shr_1976_2022_state_age <- function_clean_shr_1976_2022_state_by_group(df = shr_1976_2022,
+shr_1976_2024_state_age <- function_clean_shr_1976_2024_state_by_group(df = shr_1976_2024,
                                                                                       grouping_var = "victim_1_age_bin") |> 
   ### remove rows where age is NA
   filter(!is.na(victim_1_age_bin))
@@ -987,36 +976,36 @@ shr_1976_2022_state_age <- function_clean_shr_1976_2022_state_by_group(df = shr_
 ### now write all dfs out for visualization
 
 ### write out
-write_rds(shr_1976_2022_state_overall,
-          file.path(sp_data_site_updates_path,"shr_1976_2022_state_overall_clear.rds"))
+write_rds(shr_1976_2024_state_overall,
+          file.path(sp_data_site_updates_path,"shr_1976_2024_state_overall_clear.rds"))
 
 ### write out
-write_rds(shr_1976_2022_state_relationship,
-          file.path(sp_data_site_updates_path,"shr_1976_2022_state_victim_offender_relationship.rds"))
+write_rds(shr_1976_2024_state_relationship,
+          file.path(sp_data_site_updates_path,"shr_1976_2024_state_victim_offender_relationship.rds"))
 
 ### write out
-write_rds(shr_1976_2022_state_single_multiple_victims,
-          file.path(sp_data_site_updates_path,"shr_1976_2022_state_single_multiple_victims.rds"))
+write_rds(shr_1976_2024_state_single_multiple_victims,
+          file.path(sp_data_site_updates_path,"shr_1976_2024_state_single_multiple_victims.rds"))
 
 ### write out
-write_rds(shr_1976_2022_state_weapon,
-          file.path(sp_data_site_updates_path,"shr_1976_2022_state_weapon.rds"))
+write_rds(shr_1976_2024_state_weapon,
+          file.path(sp_data_site_updates_path,"shr_1976_2024_state_weapon.rds"))
 
 ### write out
-write_rds(shr_1976_2022_state_circumstance,
-          file.path(sp_data_site_updates_path,"shr_1976_2022_state_incident_circumstance.rds"))
+write_rds(shr_1976_2024_state_circumstance,
+          file.path(sp_data_site_updates_path,"shr_1976_2024_state_incident_circumstance.rds"))
 
 ### write out
-write_rds(shr_1976_2022_state_race,
-          file.path(sp_data_site_updates_path,"shr_1976_2022_state_victim_race_eth.rds"))
+write_rds(shr_1976_2024_state_race,
+          file.path(sp_data_site_updates_path,"shr_1976_2024_state_victim_race_eth.rds"))
 
 ### write out
-write_rds(shr_1976_2022_state_gender,
-          file.path(sp_data_site_updates_path,"shr_1976_2022_state_victim_gender.rds"))
+write_rds(shr_1976_2024_state_gender,
+          file.path(sp_data_site_updates_path,"shr_1976_2024_state_victim_gender.rds"))
 
 ### write out
-write_rds(shr_1976_2022_state_age,
-          file.path(sp_data_site_updates_path,"shr_1976_2022_state_victim_age.rds"))
+write_rds(shr_1976_2024_state_age,
+          file.path(sp_data_site_updates_path,"shr_1976_2024_state_victim_age.rds"))
 
 ```
 

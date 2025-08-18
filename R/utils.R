@@ -159,7 +159,7 @@ function_shr_grouping_for_national_plot <- function(df, var){
 
   df |>
     filter(!!sym(var)%nin%c("Unknown","Missing"),
-           year>=2018) |>
+           year>=2020) |>
     dplyr::select(year,
                   n_total_incidents,
                   n_total_cleared,

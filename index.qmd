@@ -200,32 +200,32 @@ ucr_employee_data_national_clean <- read_rds(file.path(sp_data_site_updates_path
 ### now import all supplemental homicide dfs for visualization
 ### these files were cleaned and created here: R/12-prep-files-for-website-updates-2024.qmd
 
-### shr_1976_2022_national_overall
-shr_1976_2022_national_overall <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2022_national_overall_clear.rds")) 
+### shr_1976_2024_national_overall
+shr_1976_2024_national_overall <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2024_national_overall_clear.rds")) 
 
-### shr_1976_2022_national_relationship
-shr_1976_2022_national_relationship <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2022_national_victim_offender_relationship.rds")) 
+### shr_1976_2024_national_relationship
+shr_1976_2024_national_relationship <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2024_national_victim_offender_relationship.rds")) 
 
-### shr_1976_2022_national_single_multiple_victims
-shr_1976_2022_national_single_multiple_victims <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2022_national_single_multiple_victims.rds")) 
+# ### shr_1976_2024_national_single_multiple_victims
+# shr_1976_2024_national_single_multiple_victims <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2024_national_single_multiple_victims.rds")) 
 
-### shr_1976_2022_national_weapon
-shr_1976_2022_national_weapon <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2022_national_weapon.rds")) 
+### shr_1976_2024_national_weapon
+shr_1976_2024_national_weapon <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2024_national_weapon.rds")) 
 
-### shr_1976_2022_national_circumstance
-shr_1976_2022_national_circumstance <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2022_national_incident_circumstance.rds")) 
+### shr_1976_2024_national_circumstance
+shr_1976_2024_national_circumstance <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2024_national_incident_circumstance.rds")) 
 
-### shr_1976_2022_national_race
-shr_1976_2022_national_race <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2022_national_victim_race_eth.rds")) 
+### shr_1976_2024_national_race
+shr_1976_2024_national_race <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2024_national_victim_race_eth.rds")) 
 
-### shr_1976_2022_national_gender
-shr_1976_2022_national_gender <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2022_national_victim_gender.rds")) 
+### shr_1976_2024_national_gender
+shr_1976_2024_national_gender <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2024_national_victim_gender.rds")) 
 
-### shr_1976_2022_national_race_sex
-shr_1976_2022_national_race_sex <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2022_national_victim_race_gender.rds")) 
+# ### shr_1976_2024_national_race_sex
+# shr_1976_2024_national_race_sex <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2024_national_victim_race_gender.rds")) 
 
-### shr_1976_2022_national_age
-shr_1976_2022_national_age <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2022_national_victim_age.rds")) 
+### shr_1976_2024_national_age
+shr_1976_2024_national_age <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2024_national_victim_age.rds")) 
 
 ```
 
@@ -1617,7 +1617,7 @@ In the United States, homicide solve rates are highest when the victim is White 
 ### clean up df for plot via function
 ### this function will prepare a df for plotting -- grouping by
 ### varying incident or demographic characteristics
-to_plot <- function_shr_grouping_for_national_plot(df = shr_1976_2022_national_race,
+to_plot <- function_shr_grouping_for_national_plot(df = shr_1976_2024_national_race,
                                           var = "victim_1_race_clean") 
 
 
@@ -1634,8 +1634,8 @@ to_plot |>
       )    
   ) |> 
   hc_title(text = paste0("Homicide solve rates by race and ethnicity")) |>
-  hc_subtitle(text = "2018–2022") |>
-  hc_caption(text = list("This analysis excludes records where a victim's race and ethnicity is unknown<br>FBI Supplementary Homicide Report (SHR) Data (2018-2022)")) |>     # hc_add_theme(hc_theme_jc) |>
+  hc_subtitle(text = "2020–2024") |>
+  hc_caption(text = list("This analysis excludes records where a victim's race and ethnicity is unknown<br>FBI Supplementary Homicide Report (SHR) Data (2020-2024)")) |>     # hc_add_theme(hc_theme_jc) |>
     hc_tooltip(formatter = JS("function(){return(this.point.tooltip)}")) |>
     hc_plotOptions(
       series = list(animation = FALSE),
@@ -1665,7 +1665,7 @@ to_plot |>
 
 ```{r }
 ### clean up df for plot via function
-to_plot <- function_shr_grouping_for_national_plot(df = shr_1976_2022_national_gender,
+to_plot <- function_shr_grouping_for_national_plot(df = shr_1976_2024_national_gender,
                                           var = "victim_1_sex_clean") 
 
 
@@ -1680,8 +1680,8 @@ to_plot |>
       )    
   ) |> 
   hc_title(text = paste0("Homicide solve rates by gender")) |>
-  hc_subtitle(text = "2018–2022") |>
-  hc_caption(text = list("This analysis excludes records where a victim's gender is unknown<br>FBI Supplementary Homicide Report (SHR) Data (2018-2022)")) |>     
+  hc_subtitle(text = "2020–2024") |>
+  hc_caption(text = list("This analysis excludes records where a victim's gender is unknown<br>FBI Supplementary Homicide Report (SHR) Data (2020-2024)")) |>     
     hc_tooltip(formatter = JS("function(){return(this.point.tooltip)}")) |>
     hc_plotOptions(
       series = list(animation = FALSE),
@@ -1714,7 +1714,7 @@ to_plot |>
 ```{r }
 
 ### clean up df for plot via function
-to_plot <- function_shr_grouping_for_national_plot(df = shr_1976_2022_national_age,
+to_plot <- function_shr_grouping_for_national_plot(df = shr_1976_2024_national_age,
                                           var = "victim_1_age_bin")
 
 
@@ -1732,8 +1732,8 @@ to_plot |>
       )    
   ) |> 
   hc_title(text = paste0("Homicide solve rates by age")) |>
-  hc_subtitle(text = "2018–2022") |>
-  hc_caption(text = list("This analysis excludes records where a victim's age is unknown<br>FBI Supplementary Homicide Report (SHR) Data (2018-2022)")) |> 
+  hc_subtitle(text = "2020–2024") |>
+  hc_caption(text = list("This analysis excludes records where a victim's age is unknown<br>FBI Supplementary Homicide Report (SHR) Data (2020-2024)")) |> 
   hc_caption(text = "FBI Supplementary Homicide Report (SHR) Data") |> 
     # hc_add_theme(hc_theme_jc) |>
     hc_tooltip(formatter = JS("function(){return(this.point.tooltip)}")) |>
@@ -1765,12 +1765,22 @@ to_plot |>
 ```{r }
 
 ### clean up df for plot via function
-to_plot <- function_shr_grouping_for_national_plot(df = shr_1976_2022_national_weapon,
-                                          var = "offender_1_weapon_clean")  |> 
-   filter(offender_1_weapon_clean%in%c("Firearm","Knife Or Cutting Instrument","Person Weapons - Includes Beating", "Blunt Object","Narcotics/Drugs"))
-
+to_plot <- function_shr_grouping_for_national_plot(df = shr_1976_2024_national_weapon,
+                                          var = "offender_1_weapon_clean")  |>
+   filter(offender_1_weapon_clean%in%c("Firearm","Personal Weapons (Hands, Feet, Teeth, Etc.)", "Lethal Cutting Instrument (Knife, Ice Pick, Screwdriver, Ax, Etc.)","Drugs/Narcotics/Sleeping Pills", "Blunt Object (E.g., Club/Blackjack/Brass Knuckles)")) |> 
+  mutate(
+    offender_1_weapon_clean = case_match(
+      offender_1_weapon_clean,
+      "Firearm" ~ "Firearm",
+      "Personal Weapons (Hands, Feet, Teeth, Etc.)" ~ "Personal Weapons",
+      "Lethal Cutting Instrument (Knife, Ice Pick, Screwdriver, Ax, Etc.)" ~ "Lethal Cutting Instrument",
+      "Drugs/Narcotics/Sleeping Pills" ~ "Drugs/Narcotics",
+      "Blunt Object (E.g., Club/Blackjack/Brass Knuckles)" ~ "Blunt Object"
+    )
+  )
 
 to_plot |> 
+  arrange(desc(clearance_rate)) |> 
   hchart(
     "column",
     hcaes(offender_1_weapon_clean, clearance_rate),
@@ -1784,8 +1794,8 @@ to_plot |>
       )    
   ) |> 
   hc_title(text = paste0("Homicide solve rates by weapon")) |>
-  hc_subtitle(text = "2018–2022") |>
-  hc_caption(text = list("This analysis includes the most common weapons across states in recent years<br>FBI Supplementary Homicide Report (SHR) Data (2018-2022)")) |> 
+  hc_subtitle(text = "2020–2024") |>
+  hc_caption(text = list("This analysis includes the most common weapons across states in recent years<br>FBI Supplementary Homicide Report (SHR) Data (2020-2024)")) |> 
   # hc_caption(text = "FBI Supplementary Homicide Report (SHR) Data") |> 
     # hc_add_theme(hc_theme_jc) |>
     hc_tooltip(formatter = JS("function(){return(this.point.tooltip)}")) |>
@@ -1813,12 +1823,12 @@ to_plot |>
 ```
 
 
-### Number of victims
+<!-- ### Number of victims -->
 
 ```{r }
-
+#| eval: false
 ### clean up df for plot via function
-to_plot <- function_shr_grouping_for_national_plot(df = shr_1976_2022_national_single_multiple_victims,
+to_plot <- function_shr_grouping_for_national_plot(df = shr_1976_2024_national_single_multiple_victims,
                                           var = "victim_multiple_flag")  |>
   filter(!is.na(victim_multiple_flag)) |> 
 ### order by single victims and then multiple victims in viz
@@ -1841,8 +1851,8 @@ to_plot |>
       )    
   ) |> 
   hc_title(text = paste0("Homicide solve rates by number of victims")) |>
-  hc_subtitle(text = "2018–2022") |>
-  hc_caption(text = "FBI Supplementary Homicide Report (SHR) Data (2018-2022)") |> 
+  hc_subtitle(text = "2020–2024") |>
+  hc_caption(text = "FBI Supplementary Homicide Report (SHR) Data (2020-2024)") |> 
     # hc_add_theme(hc_theme_jc) |>
     hc_tooltip(formatter = JS("function(){return(this.point.tooltip)}")) |>
     hc_plotOptions(
@@ -1880,7 +1890,7 @@ to_plot |>
 
 Data regarding crime and solve rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr){target="_parent"}. Counts of reported violent crime between 2014 and 2024 are derived from the Summary Reporting System (SRS) and the National Incident-Based Reporting System (NIBRS). The FBI generated national estimates for reported crime based on agency-level reports, and these estimates were published through 2024 in the FBI's annual report, [_Crime in the U.S._](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019){target="_parent"}, and on the FBI's [Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/home){target="_parent"}. For clearance data, we used [Jacob Kaplan's version of the Offenses Known and Clearances by Arrest](https://www.openicpsr.org/openicpsr/project/100707/version/V21/view) dataset, which includes agency-level data on reported crime and clearances.
 
-The FBI stopped SRS data collection after data year 2020 and required law enforcement agencies to use NIBRS to report crime statistics to the FBI. This change decreased the number of agencies that submitted their crime data and thus reduced the reliability of state estimates in 2021. In 2022 and 2024, the FBI allowed agencies who were unable to submit NIBRS data to submit SRS data again. Ninety-six percent of the U.S. population was covered in the 2024 crime data submissions to the FBI, with most states providing close to complete data. However, the population upon which the estimates were derived decreased by over 10 percent in three states: Florida, Mississippi, and Wyoming, so conclusions about crime changes in those states should be interpreted with additional caution.
+The FBI stopped SRS data collection after data year 2020 and required law enforcement agencies to use NIBRS to report crime statistics to the FBI. This change decreased the number of agencies that submitted their crime data and thus reduced the reliability of state estimates in 2021. From 2022 through 2024, the FBI allowed agencies who were unable to submit NIBRS data to submit SRS data again. Ninety-six percent of the U.S. population was covered in the 2024 crime data submissions to the FBI, with most states providing close to complete data. However, the population upon which the estimates were derived decreased by over 10 percent in three states: Florida, Mississippi, and Wyoming, so conclusions about crime changes in those states should be interpreted with additional caution.
 
 Crime rates are calculated by dividing the number of estimated incidents by the total U.S. population. Population data come from the U.S. Census Bureau [American Community Survey 1-year estimates (table B01003)](https://www.census.gov/programs-surveys/acs/data.html){target="_parent"} and the [2020 Decennial Census Redistricting Data (table P1)](https://www.census.gov/programs-surveys/decennial-census/about/rdo/summary-files.html){target="_parent"}.
 
