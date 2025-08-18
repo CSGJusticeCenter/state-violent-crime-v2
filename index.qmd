@@ -30,27 +30,11 @@ source("R/utils.R")
 ```
 
 ```{r}
-options(scipen=999)
-
-
-# path to data folder on sharepoint
-sp_data_to_plot_path <-
-  csg_sp_path("ad_hoc_requests/state_violent_crime_marshall/data")
-
 # set project path for ad hoc request folder where we'll store data for the updated analysis
 sp_data_site_updates_path <- csg_sp_path("ad_hoc_requests/state_violent_crime_marshall/data/website_updates")
 
 state_name <- "United States"
 state_name_text <- "the United States"
-
-# read in crime data
-# srs_us <- read_rds(file.path(sp_data_to_plot_path, "srs_us.rds")) |>
-#   filter(crime_cat == "Violent", year >= 2012)
-# 
-# srs_by_cat_us <- read_rds(file.path(sp_data_to_plot_path, "srs_by_cat_us.rds")) |>
-#   filter(crime_cat == "Violent", year >= 2012)
-
-# srs_state <- read_rds(file.path(sp_data_to_plot_path, "srs_state.rdsx"))
 
 srs_state_new <- read_rds(csg_sp_path("jr_data_library", "data", "analysis", "fbi", "srs", "fbi_srs_state.rds")) |> 
   mutate(crime_cat = if_else(group %in% c("Aggravated assault", "Homicide", "Rape", "Robbery"), "Violent", "Property")) |> 
@@ -76,7 +60,6 @@ srs_by_cat_us <- srs_state_new |>
   mutate(
     pop_total = pop_total / 4,
     incidents_reported_rate_total = incidents_reported / pop_total,
-    # pct_unsolved = incidents_unsolved / incidents_reported,
     incidents_solved = incidents_reported - incidents_unsolved,
     pct_solved = incidents_solved / incidents_reported
   )
@@ -91,7 +74,6 @@ srs_us <- srs_state_new |>
   mutate(
     pop_total = pop_total,
     incidents_reported_rate_total = incidents_reported / pop_total,
-    # pct_unsolved = incidents_unsolved / incidents_reported
     incidents_solved = incidents_reported - incidents_unsolved,
     pct_solved = incidents_solved / incidents_reported
   )
@@ -200,16 +182,16 @@ axis_expansion_mult <- 0.5
 ```
 
 ```{r }
-# ### import df_nibrs_violent_unsolved_by_state_and_type_to_table_2024 for second table
-# df_nibrs_violent_unsolved_by_state_and_type_to_table_2024 <- read_rds(file.path(sp_data_site_updates_path,"website_update_viol_crime_unsolved_by_state_and_type.rds"))
+### import df_nibrs_violent_unsolved_by_state_and_type_to_table_2024 for second table
+df_nibrs_violent_unsolved_by_state_and_type_to_table_2024 <- read_rds(file.path(sp_data_site_updates_path,"website_update_viol_crime_unsolved_by_state_and_type.rds"))
 
-# ### import asslgf_clean_national for lea expenditure analysis
-# asslgf_clean_national <- read_rds(file.path(sp_data_site_updates_path,"website_update_national_level_police_expenditure_inflation_adjusted.rds")) |> 
-#   filter(year>=2013) 
+### import asslgf_clean_national for lea expenditure analysis
+asslgf_clean_national <- read_rds(file.path(sp_data_site_updates_path,"website_update_national_level_police_expenditure_inflation_adjusted.rds")) |> 
+  filter(year>=2013) 
 
-# ### import ucr_employee_data_national_clean for officer workload analysis
-# ucr_employee_data_national_clean <- read_rds(file.path(sp_data_site_updates_path,"website_update_lea_staffing_workload_national.rds")) |> 
-#   filter(year>=2013) 
+### import ucr_employee_data_national_clean for officer workload analysis
+ucr_employee_data_national_clean <- read_rds(file.path(sp_data_site_updates_path,"website_update_lea_staffing_workload_national.rds")) |> 
+  filter(year>=2013) 
 
 ```
 
@@ -1174,7 +1156,7 @@ srs_state_to_map |>
 
 ```
 
-<!-- 
+
 
 ```{r, results='asis'}
 cat("### By offense")
@@ -1187,8 +1169,6 @@ cat("### By offense")
 
 
 ```{r}
-#| eval: false
-
 ###################################################################################
 ### prep df_nibrs_violent_unsolved_by_state_and_type_to_table_2024_final for table
 ###################################################################################
@@ -1313,20 +1293,13 @@ df_nibrs_violent_unsolved_by_state_and_type_to_table_2024_final |>
       list(color = color, fontWeight = "bold")
     })
     ))
-
-
-
 ```
-
- 
- -->
-
 
 :::
 
 Data regarding crime and solve rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr). Violent crime includes homicide, aggravated assault, robbery, and rape. Crime rates are calculated by dividing the number of estimated incidents by the total population for a given geography. Solve rates are the number of reported crimes cleared by arrest or by exceptional means divided by the number of reported crimes. For more information, see the data sources and methodology section below. 
 
-<!-- <br>
+<br>
 
 ```{r, results='asis'}
 cat("## Trends in law enforcement resources")
@@ -1339,7 +1312,6 @@ State expenditures include spending on police, sheriffs, and highway patrols. Th
 
 
 ```{r}
-#| eval: false
 ### clean up df for plotting
 asslgf_clean_percent_change <- asslgf_clean_national |> 
   filter(year %in% range(year)) |> 
@@ -1367,13 +1339,11 @@ change_spending_text_clear <- case_when(
 <br>
 
 ```{r, results='asis'}
-#| eval: false
 cat("### State expenditures")
 ```
 
 
 ```{r, results='asis'}
-#| eval: false
 cat(paste0(
   "Overall, state spending on law enforcement",change_spending_text_clear, " across the United States", " by ", pct_change_spending_abs_value," percent from ", min_year_resources, " to ",max_year_resources, ", adjusting for inflation." 
 ))
@@ -1381,7 +1351,6 @@ cat(paste0(
 
 
 ```{r}
-#| eval: false
 to_plot <- asslgf_clean_national |> 
   mutate(
     tooltip = paste0(
@@ -1410,7 +1379,7 @@ to_plot |>
       )    
   ) |> 
   hc_title(text = paste0("State law enforcement expenditures")) |>
-  hc_subtitle(text = "Inflation-adjusted law enforcement expenditures, 2013–2021") |> 
+  hc_subtitle(text = "Inflation-adjusted law enforcement expenditures, 2013–2023") |> 
   hc_caption(text = "US Census Bureau Annual Survey of State and Local Government Finances") |> 
   hc_yAxis(
     min = y_min,
@@ -1441,7 +1410,6 @@ to_plot |>
 <br>
 
 ```{r}
-#| eval: false
 ### clean up ucr_employee_data_national_clean for text output below
 ucr_employee_data_by_state_clean_percent_change <- ucr_employee_data_national_clean |> 
   filter(year %in% range(year)) |> 
@@ -1468,13 +1436,11 @@ change_staffing_text_clear <- case_when(
 <br>
 
 ```{r, results='asis'}
-#| eval: false
 cat("### Officers per capita")
 ```
 
 
 ```{r, results='asis'}
-#| eval: false
 cat(paste0(
   "The number of officers per 10k residents in jurisdictions across the United States has", change_staffing_text_clear, " by ", pct_change_staffing_abs_value," percent from ", min_year_resources, " to ",max_year_resources,"." 
 ))
@@ -1482,7 +1448,6 @@ cat(paste0(
 
 
 ```{r }
-#| eval: false
 to_plot <- ucr_employee_data_national_clean |> 
   mutate(
     tooltip = paste0(
@@ -1540,7 +1505,6 @@ to_plot |>
 <br>
 
 ```{r}
-#| eval: false
 ### create pct_change_staffing_per_violent_offense and change_staffing_per_violent_offense_text_clear
 ### for text below
 
@@ -1562,13 +1526,11 @@ change_staffing_per_violent_offense_text_clear <- case_when(
 <br>
 
 ```{r, results='asis'}
-#| eval: false
 cat("### Officers per violent offense")
 ```
 
 
 ```{r, results='asis'}
-#| eval: false
 cat(paste0(
   "The number of officers per 1k violent crimes in jurisdictions across the United States has", change_staffing_per_violent_offense_text_clear, " by ", pct_change_staffing_per_violent_offense_abs_value," percent from ", min_year_resources, " to ",max_year_resources,"." 
 ))
@@ -1576,7 +1538,6 @@ cat(paste0(
 
 
 ```{r }
-#| eval: false
 to_plot <- ucr_employee_data_national_clean |> 
   mutate(
     tooltip = paste0(
@@ -1635,7 +1596,7 @@ to_plot |>
 
 :::
 
-<br> -->
+<br>
 
 ```{r, results='asis' }
 cat("## Trends in homicide solve rates")

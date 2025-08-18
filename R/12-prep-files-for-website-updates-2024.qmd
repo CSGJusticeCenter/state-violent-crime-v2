@@ -169,7 +169,7 @@ rm(da35158.0001)
 us_county_population <- get_acs(
   geography = "county",
   variables = "S0101_C01_001",
-  year = 2022,
+  year = 2023,
   geometry = TRUE,
   keep_geo_vars = TRUE,
   cb = TRUE,
@@ -195,7 +195,7 @@ us_county_population <- get_acs(
 ### this chunk produces an analytic file
 ### for the updated section of the site
 ### with clearance rates by violent crime type
-### and % change over last 5 years (2018-2023)
+### and % change over last 5 years (2019-2024)
 ### this syntax is similar to above except that 
 ### we are additionally grouping by "group" column
 ###################################################
@@ -204,8 +204,8 @@ us_county_population <- get_acs(
 ###################################################
 ### note: 'group' = type of offense
 ### create agency- and group-level file for table
-### two measures: 2023 unsolved rate 
-### and 2018-2023 percent change
+### two measures: 2024 unsolved rate 
+### and 2019-2024 percent change
 #################################################
 df_nibrs_violent_unsolved_by_type_year_agency <- df_nibrs_kaplan |> 
   ### keep offense types we want in final analysis
@@ -246,42 +246,42 @@ df_nibrs_violent_unsolved_by_agency_type_to_table <- df_nibrs_violent_unsolved_b
                   n_reported:solved_rate, 
                   number_of_months_reported)
 
-### first df with everything we need except for calculation of 2019 to 2023 change
-df_nibrs_violent_unsolved_by_agency_type_to_table_2023_1 <- df_nibrs_violent_unsolved_by_agency_type_to_table |> 
-  filter(year==2023)
+### first df with everything we need except for calculation of 2019 to 2024 change
+df_nibrs_violent_unsolved_by_agency_type_to_table_2024_1 <- df_nibrs_violent_unsolved_by_agency_type_to_table |> 
+  filter(year==2024)
 
-### now calculate 2019-2023 change where possible and join to df_nibrs_violent_unsolved_by_agency_to_table_2023_1
+### now calculate 2019-2024 change where possible and join to df_nibrs_violent_unsolved_by_agency_to_table_2024_1
 ### agency must have both years of data for this calculation
-df_nibrs_violent_unsolved_by_agency_type_to_table_2023_to_join <- df_nibrs_violent_unsolved_by_agency_type_to_table |> 
+df_nibrs_violent_unsolved_by_agency_type_to_table_2024_to_join <- df_nibrs_violent_unsolved_by_agency_type_to_table |> 
   filter(year%in%c(
-    2018,
-    2023)) |>
+    2019,
+    2024)) |>
   group_by(ori,
            group) |>
   mutate(years_of_data = n_distinct(year)) |>
   filter(years_of_data==2) |>
   ### currently multiplying rate by 100 instead of using scales::percent
   ### may be better way to format within hc
-  mutate(solved_rate_2018 = solved_rate[year==2018],
-         solved_rate_2023 = solved_rate[year==2023],
-         # solved_rate_percent_change_2019_2023 = ((solved_rate_2023 - solved_rate_2019)/solved_rate_2019),
-         solved_rate_percent_point_change_2018_2023 = solved_rate_2023 - solved_rate_2018,
+  mutate(solved_rate_2019 = solved_rate[year==2019],
+         solved_rate_2024 = solved_rate[year==2024],
+         # solved_rate_percent_change_2019_2024 = ((solved_rate_2024 - solved_rate_2019)/solved_rate_2019),
+         solved_rate_percent_point_change_2019_2024 = solved_rate_2024 - solved_rate_2019,
          ### convert to percent point (from decimal)
-         solved_rate_percent_point_change_2018_2023 = solved_rate_percent_point_change_2018_2023*100) |>
+         solved_rate_percent_point_change_2019_2024 = solved_rate_percent_point_change_2019_2024*100) |>
   ungroup() |>
-  ### now drop 2018
+  ### now drop 2019
   ### and keep unsolved rate from latest year
-  filter(year==2023) |> 
+  filter(year==2024) |> 
     dplyr::select(ori,
                   group,
-                  solved_rate_percent_point_change_2018_2023) |> 
-  mutate(solved_rate_percent_point_change_2018_2023 = ifelse(is.nan(solved_rate_percent_point_change_2018_2023),
-                                                       NA,solved_rate_percent_point_change_2018_2023))
+                  solved_rate_percent_point_change_2019_2024) |> 
+  mutate(solved_rate_percent_point_change_2019_2024 = ifelse(is.nan(solved_rate_percent_point_change_2019_2024),
+                                                       NA,solved_rate_percent_point_change_2019_2024))
 
 
-### now join df_nibrs_violent_unsolved_by_agency_to_table_2023 and df_nibrs_violent_unsolved_by_agency_to_table_2023_to_join
-df_nibrs_violent_unsolved_by_agency_and_type_to_table_2023 <- left_join(df_nibrs_violent_unsolved_by_agency_type_to_table_2023_1,
-                                                               df_nibrs_violent_unsolved_by_agency_type_to_table_2023_to_join,
+### now join df_nibrs_violent_unsolved_by_agency_to_table_2024 and df_nibrs_violent_unsolved_by_agency_to_table_2024_to_join
+df_nibrs_violent_unsolved_by_agency_and_type_to_table_2024 <- left_join(df_nibrs_violent_unsolved_by_agency_type_to_table_2024_1,
+                                                               df_nibrs_violent_unsolved_by_agency_type_to_table_2024_to_join,
                                                                by = c("ori",
                                                                       "group")) |> 
   ### pivot long to wide
@@ -297,7 +297,7 @@ df_nibrs_violent_unsolved_by_agency_and_type_to_table_2023 <- left_join(df_nibrs
                   population,
                   number_of_months_reported),
               names_from = group, 
-              values_from = c(n_reported,n_reported_rate,n_solved,solved_rate,solved_rate_percent_point_change_2018_2023)) |> 
+              values_from = c(n_reported,n_reported_rate,n_solved,solved_rate,solved_rate_percent_point_change_2019_2024)) |> 
   ### clean up column names from pivot
   clean_names() |> 
   ### join acs county level file to clean up county name
@@ -315,13 +315,13 @@ df_nibrs_violent_unsolved_by_agency_and_type_to_table_2023 <- left_join(df_nibrs
                   state_name,
                   state_abbr,
                   jurisdiction_population = population,
-                  n_reported_aggravated_assault:solved_rate_percent_point_change_2018_2023_robbery, 
+                  n_reported_aggravated_assault:solved_rate_percent_point_change_2019_2024_robbery, 
                   number_of_months_reported) 
 
 
 
 ### write out
-write_rds(df_nibrs_violent_unsolved_by_agency_and_type_to_table_2023,
+write_rds(df_nibrs_violent_unsolved_by_agency_and_type_to_table_2024,
           file.path(sp_data_site_updates_path,"website_update_viol_crime_unsolved_by_agency_and_type.rds"))
 
 ```
@@ -343,11 +343,23 @@ Note: This is for the national page.
 ### read in crime data
 ### using srs_state to align numbers/methods with what is already on state pages
 ### for incident rates and solve rates
-srs_state <- read_rds(file.path(sp_data_to_plot_path, "srs_state.rds"))
-
-srs_state_by_offense <- srs_state |> 
+srs_state_new <- read_rds(csg_sp_path("jr_data_library", "data", "analysis", "fbi", "srs", "fbi_srs_state.rds")) |> 
+  mutate(crime_cat = if_else(group %in% c("Aggravated assault", "Homicide", "Rape", "Robbery"), "Violent", "Property")) |> 
+  select(-state_fips, -group_cat, -starts_with("rate")) |> 
+  filter(indicator != "Unsolved rate") |> 
+  pivot_wider(names_from = indicator, values_from = n) |> 
+  janitor::clean_names() |> 
+  select(
+    year, state_name, state_abbr, group, crime_cat, pop_total, pop_adult,
+    incidents_reported, incidents_unsolved, incidents_cleared) |> 
+  mutate(
+    pct_unsolved = incidents_unsolved / incidents_reported,
+    incidents_reported_rate_total = incidents_reported / pop_total,
+    incidents_reported_rate_adult = incidents_reported / pop_adult
+  )
+srs_state_by_offense <- srs_state_new |> 
   filter(crime_cat == "Violent", 
-         year == 2023) |>
+         year == 2024) |>
   mutate(
     n_solved = incidents_reported - incidents_unsolved,
     solved_rate = n_solved / incidents_reported,
@@ -400,10 +412,11 @@ asslgf <- read_rds(file.path(sp_jr_data_library,"data","analysis","census", "ass
 
 ### import inflation index info for calculation of inflation-adjusted expenses
 #### from here: https://www.census.gov/topics/income-poverty/income/guidance/current-vs-constant-dollars.html
-inflation_index_years <- read_xls(file.path(sp_clearance_rate_data_path,"annual-index-value_annual-percent-change.xls")) |> 
-  clean_names() |> 
-  dplyr::select(year=income_year,
-                inflation_index = index)
+inflation_index_years <- read_xls(file.path(sp_clearance_rate_data_path,"annual-index-value_annual-percent-change_2023.xls"), skip = 2) |> 
+  dplyr::select(year=1,
+                inflation_index = 2) |> 
+                  filter(!is.na(inflation_index)) |> 
+                  mutate(year = as.numeric(year))
 
 ### extract inflation index for most recent year
 inflation_index_latest <- inflation_index_years$inflation_index[inflation_index_years$year==max(inflation_index_years$year)]
@@ -425,11 +438,7 @@ asslgf_clean <- asslgf |>
 ### adjust expenditure data to be inflation adjusted
 ### national-level
 asslgf_clean_national <- asslgf_clean |> 
-  ### now sum dollars across state by year for national page viz df
-  group_by(year) |> 
-  summarize(n_inflation_adjusted_latest_year_dollars = sum(n_inflation_adjusted_latest_year_dollars,
-                                                    na.rm=TRUE)) |> 
-  ungroup()
+  filter(geo_abbr == "US")
 
 ### write out
 
@@ -537,7 +546,7 @@ ucr_employee_data_clean <- left_join(ucr_employee_data_raw,
 
 ## national-level
 ## use national violent crime file (srs_state)
-srs_by_cat_us <- srs_state |>
+srs_by_cat_us <- srs_state_new |>
   filter(crime_cat == "Violent", 
          year >= earliest_year_to_keep) |>
   group_by(year) |>
@@ -647,7 +656,7 @@ write_rds(ucr_employee_data_by_state_clean,
 
 ```{r include=FALSE,message=FALSE,warning=FALSE}
 ### read in crime data
-ucr_srs_state <- read_rds(file.path(sp_data_to_plot_path, "srs_state.rds")) |> 
+ucr_srs_state <- srs_state_new |> 
   filter(group == "Homicide", 
          year == 2022) |> 
   dplyr::select(state_name,
