@@ -836,6 +836,10 @@ shr_1976_2024_national_age <- function_clean_shr_1976_2024_national_by_group(df 
   ### remove rows where age is NA
   filter(!is.na(victim_1_age_bin))
 
+### victim count
+shr_1976_2024_single_multiple_victims <- function_clean_shr_1976_2024_national_by_group(df = shr_1976_2024,
+                                                                                      grouping_var = "victim_multiple_flag")
+
 ```
 
 ```{r }
@@ -869,6 +873,9 @@ write_rds(shr_1976_2024_national_gender,
 write_rds(shr_1976_2024_national_age,
           file.path(sp_data_site_updates_path,"shr_1976_2024_national_victim_age.rds"))
 
+### write out
+write_rds(shr_1976_2024_single_multiple_victims,
+          file.path(sp_data_site_updates_path,"shr_1976_2024_national_single_multiple_victims.rds"))
 ```
 
 <br>

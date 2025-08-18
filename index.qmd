@@ -206,8 +206,9 @@ shr_1976_2024_national_overall <- read_rds(file.path(sp_data_site_updates_path,"
 ### shr_1976_2024_national_relationship
 shr_1976_2024_national_relationship <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2024_national_victim_offender_relationship.rds")) 
 
-# ### shr_1976_2024_national_single_multiple_victims
-# shr_1976_2024_national_single_multiple_victims <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2024_national_single_multiple_victims.rds")) 
+### shr_1976_2024_national_single_multiple_victims
+shr_1976_2024_national_single_multiple_victims <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2024_national_single_multiple_victims.rds")) 
+
 
 ### shr_1976_2024_national_weapon
 shr_1976_2024_national_weapon <- read_rds(file.path(sp_data_site_updates_path,"shr_1976_2024_national_weapon.rds")) 
@@ -1604,7 +1605,6 @@ cat("## Trends in homicide solve rates")
 
 The following chart includes homicide solve rates by race and ethnicity, gender, age, weapon type, and number of victims. For more information, see the data and methodology sections below.  
 
-
 In the United States, homicide solve rates are highest when the victim is White and are lowest when the victim is Black. Homicide solve rates are highest when the victim is a woman and lowest when the victim is a man. 
 
 ::: {.panel-tabset}
@@ -1823,10 +1823,10 @@ to_plot |>
 ```
 
 
-<!-- ### Number of victims -->
+### Number of victims
 
 ```{r }
-#| eval: false
+
 ### clean up df for plot via function
 to_plot <- function_shr_grouping_for_national_plot(df = shr_1976_2024_national_single_multiple_victims,
                                           var = "victim_multiple_flag")  |>
