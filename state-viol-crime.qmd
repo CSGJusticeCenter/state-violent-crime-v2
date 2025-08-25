@@ -8,7 +8,7 @@ mainfont: "GT-America"
 linkcolor: "#00355a"
 anchor-sections: false
 params:
-  state: "WI"
+  state: "DC"
 execute:
   echo: false
   warning: false
@@ -39,7 +39,7 @@ sp_data_site_updates_path <- csg_sp_path("ad_hoc_requests/state_violent_crime_ma
 
 # Check if params exists (rendering context) or create it (interactive context)
 if (!exists("params")) {
-  params <- list(state = "NM")  # Default for interactive use
+  params <- list(state = "DC")  # Default for interactive use
 }
 
 state <- csg_state_convert(params$state, from = "abbr", "name")
@@ -824,7 +824,7 @@ hcmap(
                                         blue2,
                                         blue4,
                                         blue5)),
-               labels = list(format = "{value}%",
+               labels = list(format = "{value:.0f}%",
                              style = list(fontSize = "12px",
                                           fontFamily = default_fonts))) |> 
   hc_legend(align = "center",
