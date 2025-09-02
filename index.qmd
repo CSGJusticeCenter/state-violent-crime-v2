@@ -58,7 +58,9 @@ srs_by_cat_us <- srs_state_new |>
     across(c(pop_total, incidents_reported, incidents_unsolved), \(x) sum(x, na.rm = TRUE))
   ) |>
   mutate(
-    pop_total = pop_total / 4,
+    # we summed pop_total 4 times when doing the grouped_by/summarize addition,
+    # so we now have to divide it by four to get the yearly population total.
+    pop_total = pop_total / 4, 
     incidents_reported_rate_total = incidents_reported / pop_total,
     incidents_solved = incidents_reported - incidents_unsolved,
     pct_solved = incidents_solved / incidents_reported
@@ -192,7 +194,6 @@ asslgf_clean_national <- read_rds(file.path(sp_data_site_updates_path,"website_u
 ### import ucr_employee_data_national_clean for officer workload analysis
 ucr_employee_data_national_clean <- read_rds(file.path(sp_data_site_updates_path,"website_update_lea_staffing_workload_national.rds")) |> 
   filter(year>=2013) 
-
 ```
 
 
@@ -1476,7 +1477,7 @@ to_plot |>
       )    
   ) |> 
   hc_title(text = paste0("Officers per capita")) |>
-  hc_subtitle(text = "Officers per 10k residents, 2013–2024") |> 
+  hc_subtitle(text = "Officers per 10k residents, 2013–2023") |> 
   hc_caption(text = "FBI Uniform Crime Reporting Program SRS state estimates<br>FBI Uniform Crime Reporting Program Police Employee Data") |> 
   hc_yAxis(
     min = y_min,
@@ -1567,7 +1568,7 @@ to_plot |>
       )    
   ) |> 
   hc_title(text = paste0("Officers per violent offense")) |>
-  hc_subtitle(text = "Officers per 1k violent crimes, 2013–2024") |> 
+  hc_subtitle(text = "Officers per 1k violent crimes, 2013–2023") |> 
   hc_caption(text = "FBI Uniform Crime Reporting Program SRS state estimates<br>FBI Uniform Crime Reporting Program Police Employee Data") |> 
   hc_yAxis(
     min = y_min,

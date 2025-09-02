@@ -41,7 +41,6 @@ df_nibrs_kaplan <- read_rds(file.path(sp_data_analysis_path,"fbi","kaplan","fbi_
 ### next we will pull in a law enforcement agency lookup table in order to add a few more columns
 ### namely, we want county and cleaned up agency name 
 
-
 ### import fbi law enforcement agency crosswalk from icpsr download
 ### downloaded from: https://www.icpsr.umich.edu/web/NACJD/studies/35158#
 ### we'll use this crosswalk to join county to each agency
