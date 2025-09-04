@@ -159,7 +159,7 @@ function_shr_grouping_for_national_plot <- function(df, var){
 
   df |>
     filter(!!sym(var)%nin%c("Unknown","Missing"),
-           year>=2018) |>
+           year>=2020) |>
     dplyr::select(year,
                   n_total_incidents,
                   n_total_cleared,
@@ -193,11 +193,11 @@ function_shr_grouping_for_plot <- function(df, var){
     ### use state name from shr df, not regions df
     ### we only use state name from regions df for filtering on correct region
     ### given a state name
-    mutate(group_for_plot = case_when(state_abbr==state_abbr_params ~ state_name.x,
+    mutate(group_for_plot = case_when(state_abbr==state_abbr_params ~ csg_state_convert(state_abbr, "abbr", "name"),
                                       state_abbr!=state_abbr_params & !is.na(csg_region) ~ csg_region,
                                       TRUE ~ "drop")) |>
     filter(!!sym(var)%nin%c("Unknown","Missing"),
-           year>=2018,
+           year>=2020,
            group_for_plot!="drop") |>
     dplyr::select(group_for_plot,
                   year,
