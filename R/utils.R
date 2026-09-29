@@ -155,25 +155,23 @@ add_plus_sign_percent_point_change <- function(value) {
 ### create function to clean up and visualize SHR data
 ### this function will prepare a df for plotting -- grouping by
 ### varying incident or demographic characteristics
-function_shr_grouping_for_national_plot <- function(df, var){
+### df is fbi_shr_state.rds from jr_data_library; cat is a group_cat value
+### pools years from first_year on and excludes unknown values
+function_shr_grouping_for_national_plot <- function(df, cat, first_year){
 
   df |>
-    filter(!!sym(var)%nin%c("Unknown","Missing"),
-           year>=2020) |>
-    dplyr::select(year,
-                  n_total_incidents,
-                  n_total_cleared,
-                  !!sym(var)) |>
-    group_by(!!sym(var)) |>
-    ### sum across years by group
-    summarize(n_total_cleared = sum(n_total_cleared, na.rm=TRUE),
-              n_total_incidents = sum(n_total_incidents, na.rm=TRUE),
-              clearance_rate = n_total_cleared/n_total_incidents) |>
-    ungroup() |>
-    # bind_rows(srs_by_cat_us) |>
+    filter(
+      geo_abbr == "US",
+      group_cat == cat,
+      group != "Unknown",
+      year >= first_year
+    ) |>
+    summarize(n = sum(n), .by = c(group, indicator)) |>
+    pivot_wider(names_from = indicator, values_from = n) |>
     mutate(
+      clearance_rate = `Incidents cleared` / `Incidents reported`,
       tooltip = paste0(
-        "<b>","United States","–",!!sym(var),"</b><br>",
+        "<b>","United States","–",group,"</b><br>",
         "Solve Rate: ", scales::percent(clearance_rate,
                                         accuracy = 1)),
       clearance_rate = clearance_rate*100
