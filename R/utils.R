@@ -98,6 +98,150 @@ hc_setup <- function(x) {
   )
 }
 
+# Keep chart-specific axis limits in one place. Values are in plotted units.
+chart_bounds <- function(values, expansion = 0.5, floor = NULL, ceiling = NULL) {
+  rng <- range(values, na.rm = TRUE)
+  padding <- diff(rng) * expansion
+  bounds <- c(rng[1] - padding, rng[2] + padding)
+  if (!is.null(floor)) bounds[1] <- max(bounds[1], floor)
+  if (!is.null(ceiling)) bounds[2] <- min(bounds[2], ceiling)
+  bounds
+}
+
+change_map_bounds <- function(values) {
+  extent <- max(abs(values), na.rm = TRUE)
+  c(-extent, extent)
+}
+
+state_map_chart <- function(data, map, spec) {
+  bounds <- if (isTRUE(spec$symmetric)) change_map_bounds(data[[spec$value]]) else NULL
+  axis_colors <- spec$colors
+
+  chart <- highchart() |>
+    hc_add_series_map(
+      map = map, df = data, joinBy = c("state_abb", "state_abbr"),
+      value = spec$value, nullColor = "#E8E8E8",
+      nullInteraction = isTRUE(spec$null_interaction),
+      dataLabels = list(
+        enabled = TRUE, format = "{point.state_abb}",
+        style = list(fontSize = "13px", fontFamily = default_fonts,
+                     fontWeight = 700, textOutline = 0)
+      ),
+      accessibility = list(point = list(valueDescriptionFormat = spec$accessibility))
+    ) |>
+    hc_title(text = spec$title, align = "left",
+             style = list(fontFamily = header_font, color = "#005FAD",
+                          fontSize = "24px", fontWeight = "bold")) |>
+    hc_subtitle(text = spec$subtitle, align = "left",
+                style = list(fontFamily = default_fonts, fontSize = "16px",
+                             color = "#666666")) |>
+    hc_colorAxis(
+      min = if (is.null(bounds)) 0 else bounds[1],
+      max = if (is.null(bounds)) NULL else bounds[2],
+      endOnTick = TRUE, startOnTick = TRUE,
+      stops = color_stops(length(axis_colors), axis_colors),
+      labels = list(format = spec$label_format,
+                    style = list(fontSize = "12px", fontFamily = default_fonts))
+    ) |>
+    hc_legend(align = "center", horizontalAlign = "bottom", layout = "horizontal",
+              symbolHeight = 25, symbolWidth = spec$legend_width, x = 0, y = 0) |>
+    hc_caption(text = spec$caption, align = "right",
+               style = list(fontFamily = default_fonts)) |>
+    hc_setup() |>
+    hc_tooltip(style = list(fontFamily = default_fonts)) |>
+    hc_plotOptions(series = list(
+      states = list(inactive = list(opacity = 1)), cursor = "pointer",
+      accessibility = list(enabled = TRUE,
+                           keyboardNavigation = list(enabled = TRUE)),
+      point = list(events = list(click = JS(
+        "function(){window.top.location.href = this.options.url}"
+      )))
+    ))
+
+  chart
+}
+
+offense_trend_chart <- function(data, offense, title, subtitle, color,
+                                caption = "FBI UCR Program, state crime estimates") {
+  data <- dplyr::filter(data, group == offense)
+  bounds <- chart_bounds(data$incidents_reported_rate_total, floor = 0)
+
+  data |>
+    hchart("spline", hcaes(year, incidents_reported_rate_total),
+           accessibility = list(point = list(
+             valueDescriptionFormat = "{point.state}, year: {point.x:.0f}, rate: {point.y:.1f}"
+           ))) |>
+    hc_colors(color) |>
+    hc_title(text = title) |>
+    hc_subtitle(text = subtitle) |>
+    hc_caption(text = caption) |>
+    hc_legend(enabled = FALSE) |>
+    hc_yAxis(min = bounds[1], max = bounds[2], endOnTick = FALSE) |>
+    hc_setup()
+}
+
+metric_trend_chart <- function(data, value, title, subtitle, caption,
+                               accessibility, expansion = 0.5, y_formatter = NULL) {
+  bounds <- chart_bounds(data[[value]], expansion = expansion, floor = 0)
+  chart <- data |>
+    hchart("spline", hcaes(year, !!rlang::sym(value)), color = jr_pal[1],
+           accessibility = list(point = list(valueDescriptionFormat = accessibility))) |>
+    hc_title(text = title) |>
+    hc_subtitle(text = subtitle) |>
+    hc_caption(text = caption) |>
+    hc_yAxis(min = bounds[1], max = bounds[2], endOnTick = FALSE) |>
+    hc_legend(enabled = FALSE) |>
+    hc_setup()
+
+  if (!is.null(y_formatter)) {
+    chart <- hc_yAxis(chart, labels = list(formatter = JS(y_formatter)))
+  }
+  chart
+}
+
+shr_rate_chart <- function(data, title, years, caption, categories = NULL) {
+  chart <- data |>
+    hchart("column", hcaes(group, clearance_rate),
+           accessibility = list(point = list(
+             valueDescriptionFormat = "{point.name}: {point.y:.1f}%"
+           ))) |>
+    hc_title(text = title) |>
+    hc_subtitle(text = years) |>
+    hc_caption(text = caption) |>
+    hc_yAxis(min = 0, max = 100, endOnTick = FALSE) |>
+    hc_legend(enabled = FALSE) |>
+    hc_setup()
+
+  if (!is.null(categories)) chart <- hc_xAxis(chart, categories = categories)
+  chart
+}
+
+shr_panel_chart <- function(df, spec, first_year, years) {
+  data <- function_shr_grouping_for_national_plot(df, spec$category, first_year)
+  if (!is.null(spec$exclude)) data <- dplyr::filter(data, !group %in% spec$exclude)
+  if (!is.null(spec$order)) {
+    data$group <- factor(data$group, levels = spec$order)
+    data <- dplyr::arrange(data, group)
+  }
+  if (isTRUE(spec$sort_desc)) data <- dplyr::arrange(data, dplyr::desc(clearance_rate))
+  shr_rate_chart(data, spec$title, years, spec$caption, categories = spec$categories)
+}
+
+solve_rate_column <- function(offense, median_rate, min_width = 120, align = NULL) {
+  colDef(
+    name = paste0(offense, " Solve Rate<br><br>(State Average: ",
+                  scales::percent(median_rate, accuracy = 1), ")"),
+    html = TRUE,
+    minWidth = min_width,
+    align = align,
+    format = colFormat(digits = 0, percent = TRUE),
+    style = function(value) {
+      color <- if (is.na(value)) "black" else if (value >= median_rate) "#15607A" else "#E17619"
+      list(color = color, fontWeight = "bold")
+    }
+  )
+}
+
 offense_pal <- tibble(
   color = jr_pal[c(2,3,4,5)],
   crime = c("Homicide", "Robbery", "Rape", "Aggravated assault")
@@ -149,9 +293,6 @@ add_plus_sign_percent_point_change <- function(value) {
     paste0(round(value,digits=0))
 }
 
-### create not in function to use below via negate
-`%nin%` <- Negate(`%in%`)
-
 ### create function to clean up and visualize SHR data
 ### this function will prepare a df for plotting -- grouping by
 ### varying incident or demographic characteristics
@@ -194,16 +335,16 @@ function_shr_grouping_for_plot <- function(df, var){
     mutate(group_for_plot = case_when(state_abbr==state_abbr_params ~ csg_state_convert(state_abbr, "abbr", "name"),
                                       state_abbr!=state_abbr_params & !is.na(csg_region) ~ csg_region,
                                       TRUE ~ "drop")) |>
-    filter(!!sym(var)%nin%c("Unknown","Missing"),
+    filter(!.data[[var]] %in% c("Unknown", "Missing"),
            year>=2020,
            group_for_plot!="drop") |>
     dplyr::select(group_for_plot,
                   year,
                   n_total_incidents,
                   n_total_cleared,
-                  !!sym(var)) |>
+                   all_of(var)) |>
     group_by(group_for_plot,
-             !!sym(var)) |>
+             .data[[var]]) |>
     ### sum across years by group
     summarize(n_total_cleared = sum(n_total_cleared, na.rm=TRUE),
               n_total_incidents = sum(n_total_incidents, na.rm=TRUE),
@@ -212,7 +353,7 @@ function_shr_grouping_for_plot <- function(df, var){
     # bind_rows(srs_by_cat_us) |>
     mutate(
       tooltip = paste0(
-        "<b>",group_for_plot,"–",!!sym(var),"</b><br>",
+        "<b>",group_for_plot,"–",.data[[var]],"</b><br>",
         "Solve Rate: ", scales::percent(clearance_rate,
                                         accuracy = 1)),
       clearance_rate = clearance_rate*100
