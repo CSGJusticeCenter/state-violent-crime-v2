@@ -320,6 +320,33 @@ function_shr_grouping_for_national_plot <- function(df, cat, first_year){
 
 }
 
+function_shr_grouping_for_state_plot <- function(df, cat, state_abbr,
+                                                 region_abbr, first_year,
+                                                 region_label = "Other region states",
+                                                 state_label = state_abbr) {
+  df |>
+    filter(
+      geo_abbr %in% c(state_abbr, region_abbr),
+      group_cat == cat,
+      !group %in% c("Unknown", "Missing"),
+      year >= first_year
+    ) |>
+    mutate(group_for_plot = if_else(geo_abbr == state_abbr, state_label, region_label)) |>
+    summarize(n = sum(n, na.rm = TRUE), .by = c(group_for_plot, group, indicator)) |>
+    pivot_wider(names_from = indicator, values_from = n) |>
+    filter(!is.na(`Incidents reported`), `Incidents reported` > 0,
+           !is.na(`Incidents cleared`)) |>
+    mutate(
+      group_for_plot = factor(group_for_plot, levels = c(state_label, region_label)),
+      clearance_rate = `Incidents cleared` / `Incidents reported` * 100,
+      tooltip = paste0(
+        "<b>", group_for_plot, " – ", group, "</b><br>",
+        "Solve Rate: ", scales::percent(clearance_rate / 100, accuracy = 1)
+      )
+    ) |>
+    arrange(group_for_plot, group)
+}
+
 
 ### create function to clean up and visualize SHR data
 ### this function will prepare a df for plotting -- grouping by
