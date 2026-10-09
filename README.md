@@ -10,14 +10,29 @@ Site: https://csg-state-violent-crime.netlify.app/ (password-protected; ask the 
 - Run `renv::restore()` once after cloning to install the locked package versions.
 - Data comes from the CSG SharePoint `jr_data_library`, read through `csgjcr::csg_sp_path()`, so SharePoint must be synced locally.
 
+- Deploying needs the Quarto CLI and access to the site in the CSG Netlify team.
+
 ### Build
 
 1. `R/01-prep-agency-county-data.R` builds the county map and agency tables in `data/` from the CDE agency file in `jr_data_library`. Rerun when that file refreshes.
-2. `R/02-render-site.R` renders all 51 state pages and the national page, then copies `styles.css`, `img/` and `fonts/` into `_site/`.
+2. `R/02-render-site.R` empties `_site/`, renders all 51 state pages and the national page, then copies `styles.css`, `img/` and `fonts/` into `_site/`.
 
-3. `R/03-deploy-site.R` checks that every page exists in `_site/`, then uploads it with `quarto publish netlify --no-render`. Netlify keeps past deploys, and any of them can be restored from the dashboard's Deploys list.
+Run from the project root, in the R console or with `Rscript R/02-render-site.R`. The pages also read state-level SRS, SHR, LEE and ASSLGF files directly from `jr_data_library`.
 
-Run each from the project root, e.g. `Rscript R/02-render-site.R`. The first deploy prompts for a Netlify login and the target site, then saves the site ID in `_publish.yml`. The pages also read state-level SRS, SHR, LEE and ASSLGF files directly from `jr_data_library`.
+### Deploy
+
+Pushing to GitHub does not update the site. Netlify builds are stopped, and `_site/` is uploaded from a local machine.
+
+1. Run `R/02-render-site.R` to completion.
+2. Check a few pages in `_site/` locally.
+3. In a terminal at the project root, run `Rscript R/03-deploy-site.R`.
+
+Notes:
+
+- Use a terminal (Positron's Terminal tab works), not the R console. Quarto prompts for confirmation before each upload, and those prompts don't work through the R console.
+- The script stops if any page is missing from `_site/`. Each deploy replaces the whole site, so a missing page would go offline.
+- The first deploy opens a browser for the Netlify login and asks for the target site. Pick the existing `csg-state-violent-crime` site. The site ID is saved in `_publish.yml`, which is committed.
+- To roll back, open the site's Deploys list in the Netlify dashboard and publish an earlier deploy.
 
 ### Annual update
 

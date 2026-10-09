@@ -26,9 +26,10 @@ quarto::quarto_render("index.qmd", output_file = "index.html", quiet = TRUE)
 
 ## Site output and deploy
 
-- `_site/` is git-ignored. `R/03-deploy-site.R` uploads it to Netlify with `quarto publish netlify --no-render`. Pushing to GitHub does not deploy.
-- Each deploy replaces the whole site. Deploy only after a full `R/02-render-site.R` run, never after a one-state test render on a fresh checkout.
-- Don't run the deploy script without asking. It changes the live site.
+- `_site/` is git-ignored build output. Pushing to GitHub does not deploy, because Netlify builds are stopped.
+- `R/02-render-site.R` empties `_site/` before rendering. A one-state test render on a fresh checkout leaves `_site/` with only that page.
+- `R/03-deploy-site.R` checks that every page exists, then uploads `_site/` with `quarto publish netlify --no-render`. Each deploy replaces the whole site.
+- Never run the deploy script. It changes the live site and needs interactive prompts in a terminal, so the user runs it.
 - Pages and chart exports load the logo from `img/csgjc-logo.png` on the live site.
 
 ## County map rules
