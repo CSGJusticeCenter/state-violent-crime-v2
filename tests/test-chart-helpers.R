@@ -16,11 +16,26 @@ test_that("change maps center their scale on zero", {
   expect_equal(change_map_bounds(c(NA, -2, 5)), c(-5, 5))
 })
 
-test_that("solve rate column colors compare against its own median", {
-  definition <- solve_rate_column("Homicide", 0.5)
+test_that("solve rate column colors compare against its rate and label it", {
+  definition <- solve_rate_column("Homicide", 0.5, "U.S. Rate")
+  expect_equal(definition$name, "Homicide Solve Rate<br><br>(U.S. Rate: 50%)")
   expect_equal(definition$style(0.6)$color, "#15607A")
+  expect_equal(definition$style(0.5)$color, "#15607A")
   expect_equal(definition$style(0.4)$color, "#E17619")
   expect_equal(definition$style(NA_real_)$color, "black")
+})
+
+test_that("solve rate columns map each offense to its rate and layout", {
+  layout <- list(
+    homicide = list(offense = "Homicide", align = "center"),
+    rape = list(offense = "Rape", min_width = 155)
+  )
+  columns <- solve_rate_columns(c(rape = 0.3, homicide = 0.68), "NY State Rate", layout)
+  expect_named(columns, c("solved_rate_homicide", "solved_rate_rape"))
+  expect_equal(columns$solved_rate_homicide$name, "Homicide Solve Rate<br><br>(NY State Rate: 68%)")
+  expect_equal(columns$solved_rate_homicide$align, "center")
+  expect_equal(columns$solved_rate_rape$minWidth, 155)
+  expect_equal(columns$solved_rate_rape$style(0.2)$color, "#E17619")
 })
 
 test_that("offense trend uses the selected offense and its own rate range", {
@@ -115,10 +130,22 @@ test_that("state change map uses a symmetric scale and preserves null interactio
                symmetric = TRUE, null_interaction = TRUE)
   chart <- state_map_chart(data, list(type = "FeatureCollection", features = list()), spec)
   expect_equal(chart$x$hc_opts$colorAxis$min, -4)
+  expect_equal(chart$x$hc_opts$series[[1]]$data[[1]]$tooltip, "a")
   expect_equal(chart$x$hc_opts$colorAxis$max, 4)
   expect_true(chart$x$hc_opts$series[[1]]$nullInteraction)
   expect_true(chart$x$hc_opts$plotOptions$series$accessibility$enabled)
   expect_true(chart$x$hc_opts$plotOptions$series$accessibility$keyboardNavigation$enabled)
+})
+
+test_that("state map shows the tooltip column its spec names", {
+  data <- tibble(state_abbr = "AA", rate = 5, url = "a",
+                 tooltip_rate = "rate tip", tooltip_change = "change tip")
+  spec <- list(value = "rate", tooltip = "tooltip_change", title = "Rate", subtitle = "",
+               caption = "", colors = c("white", "blue"), label_format = "{value}",
+               legend_width = 250, accessibility = "")
+  point <- state_map_chart(data, list(type = "FeatureCollection", features = list()), spec)$x$hc_opts$series[[1]]$data[[1]]
+  expect_equal(point$tooltip, "change tip")
+  expect_false(any(startsWith(names(point), "tooltip_")))
 })
 
 test_that("metric trend uses the selected column and requested padding", {

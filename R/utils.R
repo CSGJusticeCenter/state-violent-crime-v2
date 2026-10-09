@@ -113,7 +113,12 @@ change_map_bounds <- function(values) {
   c(-extent, extent)
 }
 
+### spec$tooltip names the tooltip_* column this map shows
 state_map_chart <- function(data, map, spec) {
+  if (!is.null(spec$tooltip)) {
+    data$tooltip <- data[[spec$tooltip]]
+    data <- dplyr::select(data, -dplyr::starts_with("tooltip_"))
+  }
   bounds <- if (isTRUE(spec$symmetric)) change_map_bounds(data[[spec$value]]) else NULL
   axis_colors <- spec$colors
 
@@ -296,19 +301,30 @@ shr_panel_chart <- function(spec, prep, years, series = NULL) {
   shr_rate_chart(data, spec$title, years, caption, categories = spec$categories, series = series)
 }
 
-solve_rate_column <- function(offense, median_rate, min_width = 120, align = NULL) {
+### solve rate column colored against a comparison rate
+### label names that rate in the header, e.g., "(U.S. Rate: 47%)"
+solve_rate_column <- function(offense, rate, label, min_width = 120, align = NULL) {
   colDef(
-    name = paste0(offense, " Solve Rate<br><br>(State Average: ",
-                  scales::percent(median_rate, accuracy = 1), ")"),
+    name = paste0(offense, " Solve Rate<br><br>(", label, ": ",
+                  scales::percent(rate, accuracy = 1), ")"),
     html = TRUE,
     minWidth = min_width,
     align = align,
     format = colFormat(digits = 0, percent = TRUE),
     style = function(value) {
-      color <- if (is.na(value)) "black" else if (value >= median_rate) "#15607A" else "#E17619"
+      color <- if (is.na(value)) "black" else if (value >= rate) "#15607A" else "#E17619"
       list(color = color, fontWeight = "bold")
     }
   )
+}
+
+### solve_rate_column() for each offense in layout, named solved_rate_<offense>
+### rates is named by offense; layout gives each column's header and options
+solve_rate_columns <- function(rates, label, layout) {
+  purrr::imap(layout, \(options, offense) {
+    rlang::exec(solve_rate_column, !!!options, rate = rates[[offense]], label = label)
+  }) |>
+    rlang::set_names(paste0("solved_rate_", names(layout)))
 }
 
 offense_pal <- tibble(

@@ -583,127 +583,59 @@ cat('
 ```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz}
 #| column: body-outset
 
-#############################################
-### prep agency-level df for table
-#############################################
+### each agency is compared with the pooled state solve rate for the offense
+offenses <- c("aggravated_assault", "homicide", "rape", "robbery")
+state_solved_rate <- set_names(map_dbl(offenses, agency_state_solve_share), offenses)
 
-### clean up rates and select columns we need
-agency_offense_to_table <-
-  srs_solved_by_agency_and_offense_to_table |> 
-  filter(population > 0) |> 
-  select(agency_name, 
-         county, 
-         population, 
-         n_reported_rate_aggravated_assault,
-         solved_rate_aggravated_assault, 
-         n_reported_rate_homicide, 
-         solved_rate_homicide, 
-         n_reported_rate_rape, 
-         solved_rate_rape, 
-         n_reported_rate_robbery, 
-         solved_rate_robbery) 
+solve_rate_layout <- list(
+  aggravated_assault = list(offense = "Aggravated Assault", min_width = 100),
+  homicide = list(offense = "Homicide", min_width = 100, align = "center"),
+  rape = list(offense = "Rape", min_width = 100, align = "left"),
+  robbery = list(offense = "Robbery", min_width = 100)
+)
 
-### state solve rates by offense, used to color each agency in the table
-state_solved_rate_aggravated_assault <- agency_state_solve_share("aggravated_assault")
-state_solved_rate_homicide <- agency_state_solve_share("homicide")
-state_solved_rate_rape <- agency_state_solve_share("rape")
-state_solved_rate_robbery <- agency_state_solve_share("robbery")
-
-### final prep df for table
-agency_offense_to_table |> 
-  mutate(across(c(solved_rate_aggravated_assault,
-                  solved_rate_homicide,
-                  solved_rate_rape,
-                  solved_rate_robbery
-                  ), 
-                ~ replace(.x, is.nan(.x), NA))
-         ) |> 
+srs_solved_by_agency_and_offense_to_table |>
+  filter(population > 0) |>
+  select(
+    agency_name, county, population,
+    n_reported_rate_aggravated_assault, solved_rate_aggravated_assault,
+    n_reported_rate_homicide, solved_rate_homicide,
+    n_reported_rate_rape, solved_rate_rape,
+    n_reported_rate_robbery, solved_rate_robbery
+  ) |>
+  mutate(across(starts_with("solved_rate_"), \(x) replace(x, is.nan(x), NA))) |>
   reactable_template(
     sort_col = list("population" = "desc"),
-    columns = list(
-      agency_name = colDef(name = "Agency", minWidth = 200,
-                             sticky = "left",
-      # Add a right border style to visually distinguish the sticky column
-      style = list(borderRight = "1px solid #eee"),
-      headerStyle = list(borderRight = "1px solid #eee")),
-      county = colDef(name = "County", minWidth = 108),
-      population = colDef(name = "Jurisdiction Population", minWidth = 110), 
-      n_reported_rate_aggravated_assault = colDef(name = "Aggravated Assault Incidents per 100k",
-                               format = colFormat(digits = 0, separators = TRUE), minWidth = 100), 
-      solved_rate_aggravated_assault = colDef(
-        name = paste0("Aggravated Assault Solve Rate",'<br>','<br>', "(",state_abbr_params," State Rate: ",scales::percent(state_solved_rate_aggravated_assault,accuracy=1),")"),
-        html = TRUE,
-        format = colFormat(digits = 0, percent = TRUE), 
-        minWidth = 100,
-        style = function(value) {
-      if (value >= state_solved_rate_aggravated_assault & !is.na(value)) {
-        color <- "#15607A"
-      } else if (value <= state_solved_rate_aggravated_assault & !is.na(value)) {
-        color <- "#E17619"
-      } else {
-        color <- "black"
-      }
-      list(color = color, fontWeight = "bold")
-    }
-        
+    columns = c(
+      list(
+        ### a right border sets off the sticky column
+        agency_name = colDef(
+          name = "Agency", minWidth = 200, sticky = "left",
+          style = list(borderRight = "1px solid #eee"),
+          headerStyle = list(borderRight = "1px solid #eee")
         ),
-      n_reported_rate_homicide = colDef(name = "Homicide Incidents per 100k",
-                               format = colFormat(digits = 0, separators = TRUE), 
-                               align = "center",
-          ),
-      solved_rate_homicide = colDef(
-        name = paste0("Homicide Solve Rate",'<br>','<br>',"(",state_abbr_params," State Rate: ",scales::percent(state_solved_rate_homicide,accuracy=1),")"),
-        html = TRUE,
-        minWidth = 100,
-        format = colFormat(digits = 0, percent = TRUE),
-        align = "center",
-       style = function(value) {
-      if (value >= state_solved_rate_homicide & !is.na(value)) {
-        color <- "#15607A"
-      } else if (value <= state_solved_rate_homicide & !is.na(value)) {
-        color <- "#E17619"
-      } else {
-        color <- "black"
-      }
-      list(color = color, fontWeight = "bold")
-    }),
-
-      n_reported_rate_rape = colDef(name = "Rape Incidents per 100k",
-                               format = colFormat(digits = 0, separators = TRUE)),
-      solved_rate_rape = colDef(
-        name = paste0("Rape Solve Rate",'<br>','<br>',"(",state_abbr_params," State Rate: ",scales::percent(state_solved_rate_rape,accuracy=1),")"),
-        html = TRUE,
-        minWidth = 100,
-        align = "left",
-        format = colFormat(digits = 0, percent = TRUE),
-        style = function(value) {
-      if (value >= state_solved_rate_rape & !is.na(value)) {
-        color <- "#15607A"
-      } else if (value <= state_solved_rate_rape & !is.na(value)) {
-        color <- "#E17619"
-      } else {
-        color <- "black"
-      }
-      list(color = color, fontWeight = "bold")
-    }),
-      n_reported_rate_robbery = colDef(name = "Robbery Incidents per 100k",
-                               format = colFormat(digits = 0, separators = TRUE)), 
-      solved_rate_robbery = colDef(
-        name = paste0("Robbery Solve Rate",'<br>','<br>',"(",state_abbr_params," State Rate: ",scales::percent(state_solved_rate_robbery,accuracy=1),")"),
-        html = TRUE,  
-        minWidth = 100,
-        format = colFormat(digits = 0, percent = TRUE),
-                style = function(value) {
-      if (value >= state_solved_rate_robbery & !is.na(value)) {
-        color <- "#15607A"
-      } else if (value <= state_solved_rate_robbery & !is.na(value)) {
-        color <- "#E17619"
-      } else {
-        color <- "black"
-      }
-      list(color = color, fontWeight = "bold")
-    })
-    ))
+        county = colDef(name = "County", minWidth = 108),
+        population = colDef(name = "Jurisdiction Population", minWidth = 110),
+        n_reported_rate_aggravated_assault = colDef(
+          name = "Aggravated Assault Incidents per 100k",
+          format = colFormat(digits = 0, separators = TRUE), minWidth = 100
+        ),
+        n_reported_rate_homicide = colDef(
+          name = "Homicide Incidents per 100k",
+          format = colFormat(digits = 0, separators = TRUE), align = "center"
+        ),
+        n_reported_rate_rape = colDef(
+          name = "Rape Incidents per 100k",
+          format = colFormat(digits = 0, separators = TRUE)
+        ),
+        n_reported_rate_robbery = colDef(
+          name = "Robbery Incidents per 100k",
+          format = colFormat(digits = 0, separators = TRUE)
+        )
+      ),
+      solve_rate_columns(state_solved_rate, paste(state_abbr_params, "State Rate"), solve_rate_layout)
+    )
+  )
 
 
 
