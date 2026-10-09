@@ -118,11 +118,6 @@ srs_state_to_map <- srs_state_new |>
   ### keep one row per state with latest-year population
   filter(year == latest_year)
 
-### percent change from the first to the last year of a series
-pct_change_first_last <- function(x, year) {
-  (x[year == max(year)] - x[year == min(year)]) / x[year == min(year)]
-}
-
 ### describe a set of states for text, e.g., "12 states and the District of Columbia"
 describe_states <- function(abbr) {
   n <- sum(abbr != "DC")
@@ -1031,7 +1026,7 @@ cat("## Homicide solve rates by victim and incident characteristics")
 
 The following charts include homicide solve rates by race and ethnicity, gender, age, weapon type, and number of victims. For more information, see the data and methodology sections below.  
 
-In the United States, homicide solve rates are highest when the victim is White and are lowest when the victim is Black. Homicide solve rates are highest when the victim is a woman and lowest when the victim is a man. Homicide solve rates are higher for for victims 35 years an dholdre.
+In the United States, homicide solve rates are highest when the victim is White and are lowest when the victim is Black. Homicide solve rates are highest when the victim is a woman and lowest when the victim is a man. Homicide solve rates are higher for victims 35 years and older.
 
 ::: {.panel-tabset}
 
