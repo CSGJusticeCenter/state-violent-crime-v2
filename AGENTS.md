@@ -28,6 +28,8 @@ quarto::quarto_render("index.qmd", output_file = "index.html", quiet = TRUE)
 
 - `_site/` is git-ignored build output. Pushing to GitHub does not deploy, because Netlify builds are stopped.
 - `R/02-render-site.R` empties `_site/` before rendering. A one-state test render on a fresh checkout leaves `_site/` with only that page.
+- `R/02-render-site.R` renders pages in parallel, each in a temporary copy of the project, because Quarto stages widget libraries in a shared root `libs/` folder. `make_slot()` copies everything except dot files, `_site/`, `_archive/`, `renv/`, `libs/` and `*_files/`. A page that reads from one of those folders works in a one-page render from the root but fails in 02.
+- Render processes run with renv's sandbox and lockfile check off. The sandbox lock stalls parallel renders for minutes. These settings go only to the render processes, not the calling R session.
 - `R/03-deploy-site.R` checks that every page exists, then uploads `_site/` with the Netlify CLI. On `main` it updates the live site, then deletes branch and PR previews whose branch is gone from GitHub. On other branches it posts a preview at `<branch>--csg-state-violent-crime.netlify.app`.
 - Never run the deploy script on `main`. Ask before running it for a preview, because preview URLs are reachable outside the team.
 - Pages and chart exports load the logo from `img/csgjc-logo.png` on the live site.
