@@ -19,7 +19,7 @@ netlify login
 ### Build
 
 1. `R/01-prep-agency-county-data.R` builds the county map and agency tables in `data/` from the CDE agency file in `jr_data_library`. Rerun when that file refreshes.
-2. `R/02-render-site.R` empties `_site/`, renders all 51 state pages and the national page, then copies `styles.css`, `img/` and `fonts/` into `_site/`.
+2. `R/02-render-site.R` empties `_site/`, renders all 51 state pages and the national page four at a time, then copies `styles.css`, `img/` and `fonts/` into `_site/`. It prints each page's render time and warns about NA, NaN or Inf in page text. `Rscript R/02-render-site.R NY US` renders only the listed pages.
 
 Run from the project root, in the R console or with `Rscript R/02-render-site.R`. The pages also read state-level SRS, SHR, LEE and ASSLGF files directly from `jr_data_library`.
 
