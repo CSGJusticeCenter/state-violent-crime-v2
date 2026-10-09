@@ -21,8 +21,21 @@ test_that("solve rate column colors compare against its rate and label it", {
   expect_equal(definition$name, "Homicide Solve Rate<br><br>(U.S. Rate: 50%)")
   expect_equal(definition$style(0.6)$color, "#15607A")
   expect_equal(definition$style(0.5)$color, "#15607A")
-  expect_equal(definition$style(0.4)$color, "#E17619")
+  expect_equal(definition$style(0.4)$color, "#B85A0D")
   expect_equal(definition$style(NA_real_)$color, "black")
+  expect_equal(definition$className(0.5), "solve-rate-above")
+  expect_equal(definition$className(0.4), "solve-rate-below")
+  expect_equal(definition$className(NA_real_), "")
+})
+
+test_that("solve rate colors reach 4.5:1 contrast on white", {
+  luminance <- function(hex) {
+    v <- grDevices::col2rgb(hex)[, 1] / 255
+    v <- ifelse(v <= 0.04045, v / 12.92, ((v + 0.055) / 1.055)^2.4)
+    sum(c(0.2126, 0.7152, 0.0722) * v)
+  }
+  contrast <- vapply(solve_rate_colors, \(hex) 1.05 / (luminance(hex) + 0.05), numeric(1))
+  expect_true(all(contrast >= 4.5))
 })
 
 test_that("solve rate columns map each offense to its rate and layout", {
@@ -35,7 +48,7 @@ test_that("solve rate columns map each offense to its rate and layout", {
   expect_equal(columns$solved_rate_homicide$name, "Homicide Solve Rate<br><br>(NY State Rate: 68%)")
   expect_equal(columns$solved_rate_homicide$align, "center")
   expect_equal(columns$solved_rate_rape$minWidth, 155)
-  expect_equal(columns$solved_rate_rape$style(0.2)$color, "#E17619")
+  expect_equal(columns$solved_rate_rape$style(0.2)$color, "#B85A0D")
 })
 
 test_that("offense trend uses the selected offense and its own rate range", {

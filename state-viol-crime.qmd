@@ -459,7 +459,7 @@ hcmap_local(
   borderColor = "black",
   accessibility = list(
       point = list(
-        valueDescriptionFormat = "county: {point.county_label}, solve rate: {point.value:.1f}"
+        valueDescriptionFormat = "county: {point.county_label}, solve rate: {point.value:.1f}%"
         )
       )) |> 
   hc_title(
@@ -572,9 +572,9 @@ cat("### By offense")
 ```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
 cat('
     
-<span style="color:#E17619"> Orange </span> indicates a solve rate less than the state rate.
+<span style="color:#B85A0D">▼ Orange</span> indicates a solve rate less than the state rate.
 
-<span style="color:#15607A"> Blue </span> indicates a solve rate greater than or equal to the state rate.
+<span style="color:#15607A">▲ Blue</span> indicates a solve rate greater than or equal to the state rate.
 
 ')
 ```

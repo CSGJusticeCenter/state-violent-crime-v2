@@ -82,6 +82,18 @@ h4 {
   display: -webkit-flex !important;
 }
 
+/* arrows mark solve rates at or above and below the comparison rate in tables */
+/* the second content line gives screen readers words; browsers without that syntax keep the first */
+.solve-rate-above::before {
+  content: "\25B2\00A0";
+  content: "\25B2\00A0" / "at or above, ";
+}
+
+.solve-rate-below::before {
+  content: "\25BC\00A0";
+  content: "\25BC\00A0" / "below, ";
+}
+
 .rt-align-right {
   text-align-last: right !important;
   text-align: -webkit-right !important;

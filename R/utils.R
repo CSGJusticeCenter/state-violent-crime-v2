@@ -264,12 +264,12 @@ shr_rate_chart <- function(data, title, years, caption, categories = NULL, serie
   chart <- if (is.null(series)) {
     hchart(data, "column", hcaes(group, clearance_rate),
            accessibility = list(point = list(
-             valueDescriptionFormat = "{point.name}: {point.y:.1f}%"
+             valueDescriptionFormat = "{point.name}: solve rate {point.y:.1f}%"
            )))
   } else {
     hchart(data, "column", hcaes(group, clearance_rate, group = !!rlang::sym(series)),
            accessibility = list(point = list(
-             valueDescriptionFormat = "{point.series.name}, {point.name}: {point.y:.1f}%"
+             valueDescriptionFormat = "{point.series.name}, {point.name}: solve rate {point.y:.1f}%"
            )))
   }
 
@@ -301,9 +301,16 @@ shr_panel_chart <- function(spec, prep, years, series = NULL) {
   shr_rate_chart(data, spec$title, years, caption, categories = spec$categories, series = series)
 }
 
+### text colors for solve rates at or above and below a comparison rate
+### both reach at least 4.5:1 contrast on white
+solve_rate_colors <- c(above = "#15607A", below = "#B85A0D")
+
 ### solve rate column colored against a comparison rate
 ### label names that rate in the header, e.g., "(U.S. Rate: 47%)"
+### the solve-rate-above and solve-rate-below classes add arrows in styles.css,
+### so the comparison doesn't rely on color alone
 solve_rate_column <- function(offense, rate, label, min_width = 120, align = NULL) {
+  side <- function(value) if (value >= rate) "above" else "below"
   colDef(
     name = paste0(offense, " Solve Rate<br><br>(", label, ": ",
                   scales::percent(rate, accuracy = 1), ")"),
@@ -312,8 +319,11 @@ solve_rate_column <- function(offense, rate, label, min_width = 120, align = NUL
     align = align,
     format = colFormat(digits = 0, percent = TRUE),
     style = function(value) {
-      color <- if (is.na(value)) "black" else if (value >= rate) "#15607A" else "#E17619"
+      color <- if (is.na(value)) "black" else solve_rate_colors[[side(value)]]
       list(color = color, fontWeight = "bold")
+    },
+    class = function(value) {
+      if (is.na(value)) "" else paste0("solve-rate-", side(value))
     }
   )
 }

@@ -519,9 +519,9 @@ cat("### By offense")
 ```
 
 
-<span style="color:#E17619"> Orange </span> indicates a solve rate less than the U.S. rate.
+<span style="color:#B85A0D">▼ Orange</span> indicates a solve rate less than the U.S. rate.
 
-<span style="color:#15607A"> Blue </span> indicates a solve rate greater than or equal to the U.S. rate.
+<span style="color:#15607A">▲ Blue</span> indicates a solve rate greater than or equal to the U.S. rate.
 
 
 ```{r}
