@@ -190,8 +190,6 @@ offense_rates <- srs_state |>
     )
   ) |>
   arrange(year, group)
-
-offense_color <- function(offense) offense_pal$color[offense_pal$crime == offense]
 ```
 
 ## Homicide

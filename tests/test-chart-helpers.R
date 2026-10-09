@@ -11,6 +11,11 @@ test_that("chart bounds expand the data and respect a zero floor", {
   expect_equal(chart_bounds(c(98, 100), expansion = 0.5, ceiling = 100), c(97, 100))
 })
 
+test_that("offense colors come from the offense palette", {
+  expect_equal(offense_color("Homicide"), jr_pal[2])
+  expect_equal(offense_color("Aggravated assault"), jr_pal[5])
+})
+
 test_that("change maps center their scale on zero", {
   expect_equal(change_map_bounds(c(-4, 2)), c(-4, 4))
   expect_equal(change_map_bounds(c(NA, -2, 5)), c(-5, 5))

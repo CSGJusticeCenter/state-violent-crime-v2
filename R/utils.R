@@ -342,6 +342,8 @@ offense_pal <- tibble(
   crime = c("Homicide", "Robbery", "Rape", "Aggravated assault")
 )
 
+offense_color <- function(offense) offense_pal$color[offense_pal$crime == offense]
+
 reactable_template <- function(df, sort_col = "rate", ...) {
   reactable(
     df,
