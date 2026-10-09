@@ -156,60 +156,37 @@ Data regarding crime and solve rates come from the FBI's [Uniform Crime Reportin
 ## All violent crime
 
 ```{r}
-to_plot <- srs_by_cat_state |> 
-  bind_rows(srs_by_cat_us) |> 
+violent_rates <- srs_by_cat_state |>
+  bind_rows(srs_by_cat_us) |>
   mutate(
     incidents_reported_rate_total = incidents_reported_rate_total * 1e5,
     tooltip = paste0(
       "<b>", state_name, " – ", year, "</b><br>",
       "Violent incidents per 100k: ", comma(incidents_reported_rate_total, 1), "<br>",
       "Violent incidents reported: ", comma(incidents_reported, 1)
-      ),
-    state_name = fct_relevel(state_name, "United States", after = Inf)
     )
+  )
 
-rng <- range(to_plot$incidents_reported_rate_total)
-mult <- diff(rng) * axis_expansion_mult
-
-y_min <- rng[1] - mult
-y_min <- if_else(y_min < 0, 0, y_min)
-y_max <- rng[2] + mult
-
-to_plot |> 
-  hchart(
-    "spline",
-    hcaes(year, incidents_reported_rate_total, group = state_name),
-    color = jr_pal[c(1, 7)],
-    dashStyle = c("solid", "dash"),
-    opacity = c(1, 0.75),
-    accessibility = list(
-      point = list(
-        valueDescriptionFormat = "year: {point.x:.0f}, rate: {point.y:.1f}"
-        )
-      )    
-  ) |> 
-  hc_title(text = paste0("Violent crime in ", state_name_text)) |>
-  hc_subtitle(text = "Crime reported to police per 100,000 residents") |> 
-  hc_caption(text = "FBI UCR Program, state crime estimates") |>
-  hc_yAxis(
-    min = y_min,
-    max = y_max,
-    endOnTick = FALSE
-  ) |>
-  hc_setup()
-
+trend_chart(
+  violent_rates, "incidents_reported_rate_total",
+  paste0("Violent crime in ", state_name_text),
+  "Crime reported to police per 100,000 residents",
+  "FBI UCR Program, state crime estimates",
+  value_label = "violent incidents per 100,000 residents",
+  compare = TRUE, expansion = axis_expansion_mult
+)
 ```
 
 ```{r}
-to_plot <- srs_state |> 
-  bind_rows(srs_us) |> 
-  left_join(offense_pal, by = c("group" = "crime")) |> 
+offense_rates <- srs_state |>
+  bind_rows(srs_us) |>
+  left_join(offense_pal, by = c("group" = "crime")) |>
   group_by(year, state_abbr) |>
   mutate(
     tot_crime = sum(incidents_reported),
     pct = incidents_reported / tot_crime,
     incidents_reported_rate_total = incidents_reported_rate_total * 1e5
-    ) |> 
+  ) |>
   ungroup() |>
   mutate(
     group = fct_reorder(group, incidents_reported_rate_total),
@@ -219,179 +196,71 @@ to_plot <- srs_state |>
       "Incidents reported: ", comma(incidents_reported, 1), "<br>",
       "Total violent incidents reported: ", comma(tot_crime, 1), "<br>",
       "Share of all violent incidents: ", percent(pct, 1)
-      ),
-    state_name = fct_relevel(state_name, "United States", after = Inf)
-    ) |> 
+    )
+  ) |>
   arrange(year, group)
+
+offense_color <- function(offense) offense_pal$color[offense_pal$crime == offense]
 ```
 
 ## Homicide
 
 ```{r}
-to_plot_2 <- to_plot |> 
-  filter(group == "Homicide")
-
-rng <- range(to_plot_2$incidents_reported_rate_total)
-mult <- diff(rng) * axis_expansion_mult
-
-y_min <- rng[1] - mult
-y_min <- if_else(y_min < 0, 0, y_min)
-y_max <- rng[2] + mult
-
-to_plot_2 |> 
-  hchart(
-    "spline",
-    hcaes(year, incidents_reported_rate_total, group = state_name),
-    color = c(unique(to_plot_2$color), jr_pal[7]),
-    dashStyle = c("solid", "dash"),
-    opacity = c(1, 0.75),
-    accessibility = list(
-      point = list(
-        valueDescriptionFormat = "year: {point.x:.0f}, rate: {point.y:.1f}"
-        )
-      )      
-  ) |> 
-  hc_yAxis(
-    min = y_min,
-    max = y_max,
-    endOnTick = FALSE
-  ) |>
-  hc_title(text = paste0("Homicide in ", state_name_text)) |>
-  hc_subtitle(text = "Homicide incidents reported to police per 100,000 residents") |> 
-  hc_caption(text = "FBI UCR Program, state crime estimates") |>
-  hc_setup()
-
+offense_trend_chart(
+  offense_rates, "Homicide", paste0("Homicide in ", state_name_text),
+  "Homicide incidents reported to police per 100,000 residents",
+  offense_color("Homicide"), compare = TRUE
+)
 ```
 
 ## Aggravated assault
 
 ```{r}
-to_plot_3 <- to_plot |> 
-  filter(group == "Aggravated assault")
-
-rng <- range(to_plot_3$incidents_reported_rate_total)
-mult <- diff(rng) * axis_expansion_mult
-
-y_min <- rng[1] - mult
-y_min <- if_else(y_min < 0, 0, y_min)
-y_max <- rng[2] + mult
-
-to_plot_3 |> 
-  hchart(
-    "spline",
-    hcaes(year, incidents_reported_rate_total, group = state_name),
-    color = c(unique(to_plot_3$color), jr_pal[7]),
-    dashStyle = c("solid", "dash"),
-    opacity = c(1, 0.75),
-    accessibility = list(
-      point = list(
-        valueDescriptionFormat = "year: {point.x:.0f}, rate: {point.y:.1f}"
-        )
-      )      
-  ) |> 
-  hc_title(text = paste0("Aggravated assault in ", state_name_text)) |>
-  hc_subtitle(text = "Incidents reported to police per 100,000 residents where aggravated assault was the most serious offense") |>
-  hc_caption(text = "FBI UCR Program, state crime estimates") |>
-  hc_yAxis(
-    min = y_min,
-    max = y_max,
-    endOnTick = FALSE
-  ) |>
-  hc_setup()
+offense_trend_chart(
+  offense_rates, "Aggravated assault", paste0("Aggravated assault in ", state_name_text),
+  "Incidents reported to police per 100,000 residents where aggravated assault was the most serious offense",
+  offense_color("Aggravated assault"), compare = TRUE
+)
 ```
 
 ## Robbery
 
 ```{r}
-to_plot_4 <- to_plot |> 
-  filter(group == "Robbery")
-
-rng <- range(to_plot_4$incidents_reported_rate_total)
-mult <- diff(rng) * axis_expansion_mult
-
-y_min <- rng[1] - mult
-y_min <- if_else(y_min < 0, 0, y_min)
-y_max <- rng[2] + mult
-
-to_plot_4 |>
-  hchart(
-    "spline",
-    hcaes(year, incidents_reported_rate_total, group = state_name),
-    color = c(unique(to_plot_4$color), jr_pal[7]),
-    dashStyle = c("solid", "dash"),
-    opacity = c(1, 0.75),
-    accessibility = list(
-      point = list(
-        valueDescriptionFormat = "year: {point.x:.0f}, rate: {point.y:.1f}"
-        )
-      )      
-  ) |> 
-  hc_title(text = paste0("Robbery in ", state_name_text)) |>
-  hc_subtitle(text = "Incidents reported to police per 100,000 residents where robbery was the most serious offense") |>
-  hc_caption(text = "FBI UCR Program, state crime estimates") |>   hc_yAxis(
-    min = y_min,
-    max = y_max,
-    endOnTick = FALSE
-  ) |>
-  hc_setup()
+offense_trend_chart(
+  offense_rates, "Robbery", paste0("Robbery in ", state_name_text),
+  "Incidents reported to police per 100,000 residents where robbery was the most serious offense",
+  offense_color("Robbery"), compare = TRUE
+)
 ```
 
 ## Rape
 
 ```{r}
-to_plot_5 <- to_plot |> 
-  filter(group == "Rape")
-
-rng <- range(to_plot_5$incidents_reported_rate_total)
-mult <- diff(rng) * axis_expansion_mult
-
-y_min <- rng[1] - mult
-y_min <- if_else(y_min < 0, 0, y_min)
-y_max <- rng[2] + mult
-
-to_plot_5 |> 
-  hchart(
-    "spline",
-    hcaes(year, incidents_reported_rate_total, group = state_name),
-    color = c(unique(to_plot_5$color), jr_pal[7]),
-    dashStyle = c("solid", "dash"),
-    opacity = c(1, 0.75),    
-    accessibility = list(
-      point = list(
-        valueDescriptionFormat = "year: {point.x:.0f}, rate: {point.y:.1f}"
-        )
-      )      
-  ) |> 
-  hc_title(text = paste0("Rape in ", state_name_text)) |>
-  hc_subtitle(text = "Incidents reported to police per 100,000 residents where rape was the most serious offense") |>
-  hc_caption(text = "FBI UCR Program, state crime estimates") |>
-  hc_yAxis(
-    min = y_min,
-    max = y_max,
-    endOnTick = FALSE
-  ) |>
-  hc_setup()
+offense_trend_chart(
+  offense_rates, "Rape", paste0("Rape in ", state_name_text),
+  "Incidents reported to police per 100,000 residents where rape was the most serious offense",
+  offense_color("Rape"), compare = TRUE
+)
 ```
 
 ## By offense
 
 ```{r}
-to_plot |>
-  filter(state_name == state) |> 
+state_offense_rates <- filter(offense_rates, state_name == state)
+
+state_offense_rates |>
   hchart(
     "column",
     stacking = "normal",
     groupPadding = 0.05,
     hcaes(year, incidents_reported_rate_total, group = group),
-    accessibility = list(
-      point = list(
-        valueDescriptionFormat = "year: {point.x:.0f}, rate: {point.y:.1f}"
-        )
-      )      
-  ) |> 
-  hc_colors(unique(to_plot$color)) |> 
+    accessibility = list(point = list(
+      valueDescriptionFormat = "{point.series.name}, year: {point.x:.0f}, incidents per 100,000 residents: {point.y:.1f}"
+    ))
+  ) |>
+  hc_colors(unique(offense_rates$color)) |>
   hc_title(text = paste0("Violent crime in ", state_name_text, ", by offense")) |>
-  hc_subtitle(text = "Crime reported to police per 100,000 residents") |> 
+  hc_subtitle(text = "Crime reported to police per 100,000 residents") |>
   hc_caption(text = "FBI UCR Program, state crime estimates") |>
   hc_legend(reversed = "true") |>
   hc_setup()
@@ -452,61 +321,31 @@ cat("
 ```
 
 ```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz}
-to_plot <- srs_by_cat_state |> 
-  bind_rows(srs_by_cat_us) |> 
-  filter(year != solve_rate_skip_year) |> 
+### rates below zero plot at zero and say so in the tooltip
+violent_solve_rates <- srs_by_cat_state |>
+  bind_rows(srs_by_cat_us) |>
+  filter(year != solve_rate_skip_year) |>
   mutate(
-    ### shouldn't be an issue for overall viz
-    ### but just in case, recoding any solved rate below 0 to 0
-    pct_solved_clean = ifelse(pct_solved<0 & !is.na(pct_solved),
-                          0,pct_solved),
-    pct_solved_clean = pct_solved_clean * 100,
-    ### create pct_solved and incidents_solved for tooltip
-    ### where if value is below 0, explanatory text is displayed
-    ### instead of number
-    pct_solved_tooltip = ifelse(pct_solved<0 & !is.na(pct_solved),
-                                  "Less than 0%",as.character(percent(pct_solved_clean / 100, 1))),
-    incidents_solved_tooltip = ifelse(incidents_solved<0 & !is.na(incidents_solved),
-                                  "Fewer than 0",as.character(comma(incidents_solved))),
+    pct_solved_clean = ifelse(pct_solved < 0 & !is.na(pct_solved), 0, pct_solved) * 100,
+    pct_solved_tooltip = ifelse(pct_solved < 0 & !is.na(pct_solved),
+                                "Less than 0%", as.character(percent(pct_solved_clean / 100, 1))),
+    incidents_solved_tooltip = ifelse(incidents_solved < 0 & !is.na(incidents_solved),
+                                      "Fewer than 0", as.character(comma(incidents_solved))),
     tooltip = paste0(
       "<b>", state_name, " – ", year, "</b><br>",
       "Solve rate: ", pct_solved_tooltip, "<br>",
       "Violent incidents reported: ", comma(incidents_reported, 1), "<br>",
       "Violent incidents solved: ", incidents_solved_tooltip
-      ),
-    state_name = fct_relevel(state_name, "United States", after = Inf)
     )
-
-rng <- range(to_plot$pct_solved_clean)
-mult <- diff(rng) * axis_expansion_mult
-
-y_min <- rng[1] - mult
-y_min <- if_else(y_min < 0, 0, y_min)
-y_max <- rng[2] + mult
-
-to_plot |>
-  hchart(
-    "spline",
-    hcaes(year, pct_solved_clean, group = state_name),
-    color = jr_pal[c(1, 7)],
-    dashStyle = c("solid", "dash"),
-    opacity = c(1, 0.75),
-    accessibility = list(
-      point = list(
-        valueDescriptionFormat = "year: {point.x:.0f}, solve rate: {point.y:.1f}%"
-        )
-      )     
-  ) |> 
-  hc_title(text = paste("Violent crime solve rate in ", state_name_text)) |>
-  hc_caption(text = "FBI UCR Program, state crime estimates and clearances") |>
-  hc_setup() |>
-  hc_yAxis(
-    min = y_min,
-    max = y_max,
-    endOnTick = FALSE,
-    labels = list(format = "{value:,.0f}%")
   )
 
+trend_chart(
+  violent_solve_rates, "pct_solved_clean",
+  paste("Violent crime solve rate in ", state_name_text),
+  caption = "FBI UCR Program, state crime estimates and clearances",
+  value_label = "solve rate", value_format = "{point.y:.1f}%",
+  compare = TRUE, expansion = axis_expansion_mult, y_format = "{value:,.0f}%"
+)
 ```
 
 ```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
@@ -516,23 +355,16 @@ cat("
 ```
 
 ```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz}
-
-to_plot <- srs_state |> 
-  filter(year != solve_rate_skip_year) |> 
-  left_join(offense_pal, by = c("group" = "crime")) |> 
+offense_solve_rates <- srs_state |>
+  filter(year != solve_rate_skip_year) |>
+  left_join(offense_pal, by = c("group" = "crime")) |>
   mutate(
-    ### recode any solved rate below 0 to 0
-    pct_solved_clean = ifelse(pct_solved<0 & !is.na(pct_solved),
-                          0,pct_solved),
-    pct_solved_clean = pct_solved_clean * 100,
-    ### create pct_solved and incidents_solved for tooltip
-    ### where if value is below 0, explanatory text is displayed
-    ### instead of number
-    pct_solved_tooltip = ifelse(pct_solved<0 & !is.na(pct_solved),
-                                  "Less than 0%",as.character(percent(pct_solved_clean / 100, 1))),
-    incidents_solved_tooltip = ifelse(incidents_solved<0 & !is.na(incidents_solved),
-                                  "Fewer than 0",as.character(comma(round(incidents_solved,
-                                                                          digits=0))))) |> 
+    pct_solved_clean = ifelse(pct_solved < 0 & !is.na(pct_solved), 0, pct_solved) * 100,
+    pct_solved_tooltip = ifelse(pct_solved < 0 & !is.na(pct_solved),
+                                "Less than 0%", as.character(percent(pct_solved_clean / 100, 1))),
+    incidents_solved_tooltip = ifelse(incidents_solved < 0 & !is.na(incidents_solved),
+                                      "Fewer than 0", as.character(comma(round(incidents_solved, digits = 0))))
+  ) |>
   mutate(
     group = fct_reorder(group, pct_solved, last),
     tooltip = paste0(
@@ -544,23 +376,21 @@ to_plot <- srs_state |>
     ) |> 
   arrange(desc(year), pct_solved_clean)
 
-to_plot |>
+offense_solve_rates |>
   hchart(
     "spline",
     hcaes(year, pct_solved_clean, group = group),
-    accessibility = list(
-      point = list(
-        valueDescriptionFormat = "{point.state}, year: {point.x:.0f}, solve rate: {point.y:.1f}%"
-        )
-      )       
-  ) |> 
-  hc_colors(unique(to_plot$color)) |> 
+    accessibility = list(point = list(
+      valueDescriptionFormat = "{point.series.name}, year: {point.x:.0f}, solve rate: {point.y:.1f}%"
+    ))
+  ) |>
+  hc_colors(unique(offense_solve_rates$color)) |>
   hc_title(text = paste0("Violent crime solve rate in ", state_name_text, ", by offense")) |>
   hc_caption(text = "FBI UCR Program, state crime estimates and clearances") |>
   hc_setup() |>
   hc_yAxis(
     min = 0,
-    max = max(100, ceiling(max(to_plot$pct_solved_clean, na.rm = TRUE) / 10) * 10),
+    max = max(100, ceiling(max(offense_solve_rates$pct_solved_clean, na.rm = TRUE) / 10) * 10),
     endOnTick = FALSE,
     labels = list(format = "{value:,.0f}%")
   )
@@ -948,59 +778,25 @@ cat("### Expenditures")
 ```
 
 
-```{r }
-to_plot <- asslgf_clean |> 
+```{r}
+spending_trend <- asslgf_clean |>
   mutate(
     tooltip = paste0(
       "<b>", geo_name, " – ", year, "</b><br>",
-      "Inflation-adjusted expenditure (", max_year_resources, " dollars): ", scales::dollar(n_inflation_adjusted_latest_year_dollars,
-                                                        accuracy = 1,
-                                                        prefix = '$')))
+      "Inflation-adjusted expenditure (", max_year_resources, " dollars): ",
+      scales::dollar(n_inflation_adjusted_latest_year_dollars, accuracy = 1, prefix = "$")
+    )
+  )
 
-rng <- range(to_plot$n_inflation_adjusted_latest_year_dollars)
-mult <- diff(rng) * axis_expansion_mult
-
-y_min <- rng[1] - mult
-y_min <- if_else(y_min < 0, 0, y_min)
-y_max <- rng[2] + mult
-
-to_plot |> 
-  hchart(
-    "spline",
-    hcaes(year, n_inflation_adjusted_latest_year_dollars),
-    color = jr_pal[1],
-    accessibility = list(
-      point = list(
-        valueDescriptionFormat = "year: {point.x:.0f}, rate: {point.y:.1f}"
-        )
-      )    
-  ) |> 
-  hc_title(text = paste0("Law enforcement expenditures in ", state_name_text)) |>
-  hc_subtitle(text = paste0("Inflation-adjusted law enforcement expenditures, ", min_year_resources, "–", max_year_resources)) |>
-  hc_caption(text = "US Census Bureau Annual Survey of State and Local Government Finances") |> 
-  hc_yAxis(
-    title = "",
-    min = y_min,
-    max = y_max,
-    endOnTick = FALSE,
-    labels = list(
-      formatter = JS("function() { return '$' + (this.value / 1000000000) + 'B'; }")
-    )) |> 
-    hc_tooltip(formatter = JS("function(){return(this.point.tooltip)}")) |>
-    hc_plotOptions(
-      series = list(animation = FALSE),
-      accessibility = list(
-        enabled = TRUE,
-        keyboardNavigation = list(enabled = TRUE)
-      )
-    ) |>
-    hc_xAxis(
-      title = "",
-      labels = list(y = 25)
-    ) |>
-  hc_legend(enabled = FALSE) |>
-  hc_setup()
-
+metric_trend_chart(
+  spending_trend, "n_inflation_adjusted_latest_year_dollars",
+  paste0("Law enforcement expenditures in ", state_name_text),
+  paste0("Inflation-adjusted law enforcement expenditures, ", min_year_resources, "–", max_year_resources),
+  "US Census Bureau Annual Survey of State and Local Government Finances",
+  value_label = paste0("inflation-adjusted expenditure in ", max_year_resources, " dollars"),
+  value_format = "${point.y:,.0f}", expansion = axis_expansion_mult,
+  y_formatter = "function() { return '$' + (this.value / 1000000000) + 'B'; }"
+)
 ```
 
 
@@ -1010,64 +806,22 @@ cat("### Officers per capita")
 
 
 ```{r}
+officer_trend <- ucr_employee_data_by_state_clean |>
+  bind_rows(ucr_employee_data_national_clean)
 
-to_plot <- ucr_employee_data_by_state_clean |> 
-  bind_rows(ucr_employee_data_national_clean) |> 
-  mutate(
-    tooltip = paste0(
-      "<b>", state_name, " – ", year, "</b><br>",
-      "Officers per 10k residents: ", scales::comma(officer_pop_rate_per_10k, 
-                                                        accuracy = .1)),
-        state_name = fct_relevel(state_name, "United States", after = Inf)
-    )
-
-rng <- range(to_plot$officer_pop_rate_per_10k)
-mult <- diff(rng) * axis_expansion_mult *2.5
-
-y_min <- rng[1] - mult
-y_min <- if_else(y_min < 0, 0, y_min)
-y_max <- rng[2] + mult
-
-to_plot |> 
-  hchart(
-    "spline",
-    hcaes(year, officer_pop_rate_per_10k,
-          group = state_name),
-    color = jr_pal[c(1, 7)],
-    dashStyle = c("solid", "dash"),
-    opacity = c(1, 0.75),
-    accessibility = list(
-      point = list(
-        valueDescriptionFormat = "year: {point.x:.0f}, rate: {point.y:.1f}"
-        )
-      )    
-  ) |> 
-  hc_title(text = paste0("Officers per capita in ", state_name_text)) |>
-  hc_subtitle(text = paste0("Officers per 10k residents, ", min_year_resources_staff_per_offense, "–", max_year_resources_staff_per_offense)) |>
-  hc_caption(text = "FBI UCR Program, law enforcement employee counts") |>
-  hc_yAxis(
-    min = y_min,
-    max = y_max,
-    endOnTick = FALSE
-  ) |> 
-    hc_tooltip(formatter = JS("function(){return(this.point.tooltip)}")) |>
-    hc_plotOptions(
-      series = list(animation = FALSE),
-      accessibility = list(
-        enabled = TRUE,
-        keyboardNavigation = list(enabled = TRUE)
-      )
-    ) |>
-    hc_xAxis(
-      title = "",
-      labels = list(y = 25)
-    ) |>
-    hc_yAxis(
-      title = "",
-      labels = list(format = "{value:,.0f}")
-    ) |>
-  hc_setup()
-
+officer_trend |>
+  mutate(tooltip = paste0(
+    "<b>", state_name, " – ", year, "</b><br>",
+    "Officers per 10k residents: ", scales::comma(officer_pop_rate_per_10k, accuracy = .1)
+  )) |>
+  metric_trend_chart(
+    "officer_pop_rate_per_10k",
+    paste0("Officers per capita in ", state_name_text),
+    paste0("Officers per 10k residents, ", min_year_resources_staff_per_offense, "–", max_year_resources_staff_per_offense),
+    "FBI UCR Program, law enforcement employee counts",
+    value_label = "officers per 10,000 residents",
+    expansion = axis_expansion_mult * 2.5, compare = TRUE
+  )
 ```
 
 
@@ -1077,65 +831,19 @@ cat("### Officers per violent offense")
 
 
 ```{r}
-
-to_plot <- ucr_employee_data_by_state_clean |> 
-  bind_rows(ucr_employee_data_national_clean) |> 
-  mutate(
-    tooltip = paste0(
-      "<b>", state_name, " – ", year, "</b><br>",
-      "Officers per 1k violent crimes: ", scales::comma(officer_per_violent_offense_1k, 
-                                                        accuracy = .1)),
-        state_name = fct_relevel(state_name, "United States", after = Inf)
-    )
-
-rng <- range(to_plot$officer_per_violent_offense_1k)
-mult <- diff(rng) * axis_expansion_mult
-
-y_min <- rng[1] - mult
-y_min <- if_else(y_min < 0, 0, y_min)
-y_max <- rng[2] + mult
-
-
-to_plot |> 
-  hchart(
-    "spline",
-    hcaes(year, officer_per_violent_offense_1k,
-          group = state_name),
-    color = jr_pal[c(1, 7)],
-    dashStyle = c("solid", "dash"),
-    opacity = c(1, 0.75),    accessibility = list(
-      point = list(
-        valueDescriptionFormat = "year: {point.x:.0f}, rate: {point.y:.1f}"
-        )
-      )    
-  ) |> 
-  hc_title(text = paste0("Officers per violent offense in ", state_name_text)) |>
-  hc_subtitle(text = paste0("Officers per 1k violent crimes, ", min_year_resources_staff_per_offense, "–", max_year_resources_staff_per_offense)) |>
-  hc_caption(text = "FBI UCR Program, law enforcement employee counts and state crime estimates") |>
-  hc_yAxis(
-    min = y_min,
-    max = y_max,
-    endOnTick = FALSE
-  ) |> 
-    hc_tooltip(formatter = JS("function(){return(this.point.tooltip)}")) |>
-    hc_plotOptions(
-      series = list(animation = FALSE),
-      accessibility = list(
-        enabled = TRUE,
-        keyboardNavigation = list(enabled = TRUE)
-      )
-    ) |>
-    hc_xAxis(
-      title = "",
-      labels = list(y = 25)
-    ) |>
-    hc_yAxis(
-      title = "",
-      labels = list(format = "{value:,.0f}")
-    ) |>
-  hc_setup()
-
-
+officer_trend |>
+  mutate(tooltip = paste0(
+    "<b>", state_name, " – ", year, "</b><br>",
+    "Officers per 1k violent crimes: ", scales::comma(officer_per_violent_offense_1k, accuracy = .1)
+  )) |>
+  metric_trend_chart(
+    "officer_per_violent_offense_1k",
+    paste0("Officers per violent offense in ", state_name_text),
+    paste0("Officers per 1k violent crimes, ", min_year_resources_staff_per_offense, "–", max_year_resources_staff_per_offense),
+    "FBI UCR Program, law enforcement employee counts and state crime estimates",
+    value_label = "officers per 1,000 violent crimes",
+    expansion = axis_expansion_mult, compare = TRUE
+  )
 ```
 
 :::
@@ -1149,262 +857,46 @@ cat("## Exploration of homicide solve rates in", state_name_text)
 Explore homicide solve rates by available victim demographics and case characteristics for `r state_name_text` and other states in the [`r csg_region_full`](https://www.csg.org/regional-offices). Grouping states by region allows policymakers to compare their state to others that may be similar. Solve rates are included by race and ethnicity, gender, age, weapon type, and number of victims. For more information, see the data sources and methodology below.
 
 
-::: {.panel-tabset}
-
-
-### Race and ethnicity 
-
-```{r }
-
-### clean up df for plot via function
-### this function will prepare a df for plotting -- grouping by
-### varying incident or demographic characteristics
-to_plot <- function_shr_grouping_for_state_plot(
-  shr_state, "victim_race_eth", state_abbr_params, shr_region_abbr,
-  shr_first_year, shr_region_label, state
-)
-
-
-### now plot
-to_plot |> 
-  hchart(
-    "column",
-    hcaes(group,
-          clearance_rate,
-          group = group_for_plot),
-    accessibility = list(
-      point = list(
-        valueDescriptionFormat = "year: {point.x:.0f}, rate: {point.y:.1f}"
-        )
-      )    
-  ) |> 
-  hc_title(text = paste0("Homicide solve rates by race and ethnicity")) |>
-  hc_subtitle(text = shr_years) |>
-  hc_caption(text = list("This analysis excludes records where a victim's race and ethnicity is unknown<br>FBI Supplementary Homicide Report (SHR) Data")) |>
-    hc_tooltip(formatter = JS("function(){return(this.point.tooltip)}")) |>
-    hc_plotOptions(
-      series = list(animation = FALSE),
-      accessibility = list(
-        enabled = TRUE,
-        keyboardNavigation = list(enabled = TRUE)
-      )
-    ) |>
-    hc_xAxis(
-      title = "",
-      labels = list(y = 25)
-    ) |>
-  hc_setup() |>
-  hc_yAxis(
-    min = 0,
-    max = 100,
-    endOnTick = FALSE,
-          title = "",
-      labels = list(format = "{value}%")
+```{r}
+### pooled solve rates for this state and the other states in its region
+shr_state_region <- function(category) {
+  function_shr_grouping_for_state_plot(
+    shr_state, category, state_abbr_params, shr_region_abbr,
+    shr_first_year, shr_region_label, state
   )
-
+}
 ```
 
+::: {.panel-tabset}
 
+### Race and ethnicity
+
+```{r}
+shr_panel_chart(shr_panels$race, shr_state_region, shr_years, series = "group_for_plot")
+```
 
 ### Gender
 
-```{r }
-
-### clean up df for plot via function
-to_plot <- function_shr_grouping_for_state_plot(
-  shr_state, "victim_sex", state_abbr_params, shr_region_abbr,
-  shr_first_year, shr_region_label, state
-)
-
-
-to_plot |> 
-  hchart(
-    "column",
-    hcaes(group, clearance_rate,
-          group=group_for_plot),
-    accessibility = list(
-      point = list(
-        valueDescriptionFormat = "year: {point.x:.0f}, rate: {point.y:.1f}"
-        )
-      )    
-  ) |> 
-  hc_title(text = paste0("Homicide solve rates by gender")) |>
-  hc_subtitle(text = shr_years) |>
-  hc_caption(text = list("This analysis excludes records where a victim's gender is unknown<br>FBI Supplementary Homicide Report (SHR) Data")) |>     
-    hc_tooltip(formatter = JS("function(){return(this.point.tooltip)}")) |>
-    hc_plotOptions(
-      series = list(animation = FALSE),
-      accessibility = list(
-        enabled = TRUE,
-        keyboardNavigation = list(enabled = TRUE)
-      )
-    ) |>
-    hc_xAxis(
-      title = "",
-      labels = list(y = 25)
-    ) |>
-  hc_setup() |>
-  hc_yAxis(
-    min = 0,
-    max = 100,
-    endOnTick = FALSE,
-          title = "",
-      labels = list(format = "{value}%")
-  )
-
-
+```{r}
+shr_panel_chart(shr_panels$gender, shr_state_region, shr_years, series = "group_for_plot")
 ```
-
-
 
 ### Age
 
-
-```{r }
-### clean up df for plot via function
-to_plot <- function_shr_grouping_for_state_plot(
-  shr_state, "victim_age", state_abbr_params, shr_region_abbr,
-  shr_first_year, shr_region_label, state
-)
-
-
-to_plot |> 
-  hchart(
-    "column",
-    hcaes(group, clearance_rate,
-          group = group_for_plot),
-    accessibility = list(
-      point = list(
-        valueDescriptionFormat = "year: {point.x:.0f}, rate: {point.y:.1f}"
-        )
-      )    
-  ) |> 
-  hc_title(text = paste0("Homicide solve rates by age")) |>
-  hc_subtitle(text = shr_years) |>
-  hc_caption(text = list("This analysis excludes records where a victim's age is unknown<br>FBI Supplementary Homicide Report (SHR) Data")) |> 
-    hc_tooltip(formatter = JS("function(){return(this.point.tooltip)}")) |>
-    hc_plotOptions(
-      series = list(animation = FALSE),
-      accessibility = list(
-        enabled = TRUE,
-        keyboardNavigation = list(enabled = TRUE)
-      )
-    ) |>
-    hc_xAxis(
-      title = "",
-      labels = list(y = 25)
-    ) |>
-  hc_setup() |>
-  hc_yAxis(
-    min = 0,
-    max = 100,
-    endOnTick = FALSE,
-          title = "",
-      labels = list(format = "{value}%")
-  )
-
+```{r}
+shr_panel_chart(shr_panels$age, shr_state_region, shr_years, series = "group_for_plot")
 ```
 
+### Weapon
 
-### Weapon 
-
-```{r }
-### clean up df for plot via function
-to_plot <- function_shr_grouping_for_state_plot(
-  shr_state, "weapon", state_abbr_params, shr_region_abbr,
-  shr_first_year, shr_region_label, state
-) |>
-  filter(group != "Other")
-
-
-to_plot |> 
-  hchart(
-    "column",
-    hcaes(group, clearance_rate,
-          group = group_for_plot),
-    accessibility = list(
-      point = list(
-        valueDescriptionFormat = "year: {point.x:.0f}, rate: {point.y:.1f}"
-        )
-      )    
-  ) |> 
-  hc_title(text = paste0("Homicide solve rates by weapon")) |>
-  hc_subtitle(text = shr_years) |>
-  hc_caption(text = list("This analysis includes the most common weapons across states in recent years<br>FBI Supplementary Homicide Report (SHR) Data")) |> 
-    hc_tooltip(formatter = JS("function(){return(this.point.tooltip)}")) |>
-    hc_plotOptions(
-      series = list(animation = FALSE),
-      accessibility = list(
-        enabled = TRUE,
-        keyboardNavigation = list(enabled = TRUE)
-      )
-    ) |>
-    hc_xAxis(
-      title = "",
-      labels = list(y = 25)
-    ) |>
-  hc_setup() |>
-  hc_yAxis(
-    min = 0,
-    max = 100,
-    endOnTick = FALSE,
-          title = "",
-      labels = list(format = "{value}%")
-  )
-
-
+```{r}
+shr_panel_chart(shr_panels$weapon, shr_state_region, shr_years, series = "group_for_plot")
 ```
-
 
 ### Number of victims
 
-```{r }
-### clean up df for plot via function
-to_plot <- function_shr_grouping_for_state_plot(
-  shr_state, "victim_count", state_abbr_params, shr_region_abbr,
-  shr_first_year, shr_region_label, state
-) |>
-  mutate(group = factor(group, levels = c("Single victim", "Multiple victims")))
-
-
-
-to_plot |> 
-  hchart(
-    "column",
-    hcaes(group, clearance_rate,
-          group=group_for_plot),
-    accessibility = list(
-      point = list(
-        valueDescriptionFormat = "year: {point.x:.0f}, rate: {point.y:.1f}"
-        )
-      )    
-  ) |> 
-  hc_title(text = paste0("Homicide solve rates by number of victims")) |>
-  hc_subtitle(text = shr_years) |>
-  hc_caption(text = "FBI Supplementary Homicide Report (SHR) Data") |> 
-    hc_tooltip(formatter = JS("function(){return(this.point.tooltip)}")) |>
-    hc_plotOptions(
-      series = list(animation = FALSE),
-      accessibility = list(
-        enabled = TRUE,
-        keyboardNavigation = list(enabled = TRUE)
-      )
-    ) |>
-    hc_xAxis(
-      title = "",
-      labels = list(y = 25),
-      categories = levels(to_plot$group)
-    ) |>
-  hc_setup() |>
-  hc_yAxis(
-    min = 0,
-    max = 100,
-    endOnTick = FALSE,
-          title = "",
-      labels = list(format = "{value}%")
-  )
-
-
+```{r}
+shr_panel_chart(shr_panels$victims, shr_state_region, shr_years, series = "group_for_plot")
 ```
 
 :::

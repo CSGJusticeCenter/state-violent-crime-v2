@@ -45,18 +45,64 @@ test_that("SHR chart keeps a zero to 100 percent axis", {
   expect_equal(chart$x$hc_opts$title$text, "Rates")
 })
 
-test_that("SHR panel filters excluded groups and keeps requested order", {
-  data <- tibble(
-    geo_abbr = "US", group_cat = "weapon", year = 2023,
-    group = rep(c("Gun", "Knife", "Other"), each = 2),
-    indicator = rep(c("Incidents reported", "Incidents cleared"), 3),
-    n = c(10, 5, 4, 3, 2, 1)
+shr_weapons <- function() {
+  tibble(
+    geo_abbr = rep(c("US", "AA", "BB"), each = 6), group_cat = "weapon", year = 2023,
+    group = rep(rep(c("Gun", "Knife", "Other"), each = 2), 3),
+    indicator = rep(c("Incidents reported", "Incidents cleared"), 9),
+    n = rep(c(10, 5, 4, 3, 2, 1), 3)
   )
-  spec <- list(category = "weapon", title = "Rates", caption = "Source",
+}
+
+test_that("SHR panel filters excluded groups and keeps requested order", {
+  spec <- list(category = "weapon", title = "Rates", note = "Note",
                order = c("Knife", "Gun"), categories = c("Knife", "Gun"), exclude = "Other")
-  chart <- shr_panel_chart(data, spec, 2022, "2022-2024")
+  prep <- function(category) function_shr_grouping_for_national_plot(shr_weapons(), category, 2022)
+  chart <- shr_panel_chart(spec, prep, "2022-2024")
   expect_equal(chart$x$hc_opts$xAxis$categories, c("Knife", "Gun"))
   expect_equal(length(chart$x$hc_opts$series[[1]]$data), 2)
+  expect_equal(chart$x$hc_opts$caption$text,
+               "Note<br>FBI UCR Program, Supplementary Homicide Reports (2022-2024)")
+  expect_false(chart$x$hc_opts$legend$enabled)
+})
+
+test_that("state SHR panel splits state and region into series with a legend", {
+  prep <- function(category) {
+    function_shr_grouping_for_state_plot(shr_weapons(), category, "AA", "BB", 2022, "Region", "State")
+  }
+  chart <- shr_panel_chart(shr_panels$weapon, prep, "2022-2024", series = "group_for_plot")
+  series <- chart$x$hc_opts$series
+  expect_equal(vapply(series, `[[`, character(1), "name"), c("State", "Region"))
+  expect_equal(length(series[[1]]$data), 2)
+  expect_true(chart$x$hc_opts$legend$enabled)
+  expect_match(series[[1]]$accessibility$point$valueDescriptionFormat, "series.name")
+})
+
+test_that("compare trend draws the state solid and the US dashed in gray", {
+  data <- tibble(
+    year = rep(c(2023, 2024), 2),
+    state_name = rep(c("United States", "State A"), each = 2),
+    rate = c(10, 12, 20, 30), tooltip = "t"
+  )
+  chart <- trend_chart(data, "rate", "Title", "Sub", "Source", "rate",
+                       color = "#123456", compare = TRUE)
+  series <- chart$x$hc_opts$series
+  expect_equal(vapply(series, `[[`, character(1), "name"), c("State A", "United States"))
+  expect_equal(vapply(series, `[[`, character(1), "color"), c("#123456", jr_pal[7]))
+  expect_equal(vapply(series, `[[`, character(1), "dashStyle"), c("solid", "dash"))
+  expect_equal(vapply(series, `[[`, numeric(1), "opacity"), c(1, 0.75))
+  expect_equal(chart$x$hc_opts$yAxis$min, 0)
+  expect_equal(chart$x$hc_opts$yAxis$max, 40)
+  expect_null(chart$x$hc_opts$legend$enabled)
+})
+
+test_that("trend y format replaces the default axis label format", {
+  data <- tibble(year = c(2023, 2024), rate = c(40, 60), tooltip = "t")
+  chart <- trend_chart(data, "rate", "Title", caption = "Source", value_label = "solve rate",
+                       ceiling = 65, y_format = "{value}%")
+  expect_equal(chart$x$hc_opts$yAxis$labels$format, "{value}%")
+  expect_equal(chart$x$hc_opts$yAxis$max, 65)
+  expect_null(chart$x$hc_opts$subtitle)
 })
 
 test_that("state change map uses a symmetric scale and preserves null interaction", {
@@ -79,7 +125,7 @@ test_that("metric trend uses the selected column and requested padding", {
   data <- tibble(year = c(2023, 2024), spending = c(10, 20),
                  staffing = c(2, 3), tooltip = c("a", "b"))
   chart <- metric_trend_chart(data, "staffing", "Staffing", "Per capita", "Source",
-                              "year: {point.x:.0f}, rate: {point.y:.1f}", expansion = 2.5)
+                              "officers per 10,000 residents", expansion = 2.5)
   expect_equal(chart$x$hc_opts$yAxis$min, 0)
   expect_equal(chart$x$hc_opts$yAxis$max, 5.5)
   expect_equal(vapply(chart$x$hc_opts$series[[1]]$data, `[[`, numeric(1), "y"), c(2, 3))

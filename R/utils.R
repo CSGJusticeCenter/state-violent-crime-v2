@@ -161,70 +161,139 @@ state_map_chart <- function(data, map, spec) {
   chart
 }
 
-offense_trend_chart <- function(data, offense, title, subtitle, color,
-                                caption = "FBI UCR Program, state crime estimates") {
-  data <- dplyr::filter(data, group == offense)
-  bounds <- chart_bounds(data$incidents_reported_rate_total, floor = 0)
+### spline trend by year, padded with chart_bounds()
+### compare = TRUE draws one line per state_name, with the US dashed in gray
+### value_label and value_format describe each point to screen readers
+trend_chart <- function(data, value, title, subtitle = NULL, caption, value_label,
+                        value_format = "{point.y:.1f}", color = jr_pal[1],
+                        compare = FALSE, legend = TRUE, expansion = 0.5,
+                        floor = 0, ceiling = NULL, y_format = NULL, y_formatter = NULL) {
+  bounds <- chart_bounds(data[[value]], expansion = expansion, floor = floor, ceiling = ceiling)
+  accessibility <- list(point = list(valueDescriptionFormat = paste0(
+    if (compare) "{point.series.name}, ", "year: {point.x:.0f}, ", value_label, ": ", value_format
+  )))
 
-  data |>
-    hchart("spline", hcaes(year, incidents_reported_rate_total),
-           accessibility = list(point = list(
-             valueDescriptionFormat = "{point.state}, year: {point.x:.0f}, rate: {point.y:.1f}"
-           ))) |>
-    hc_colors(color) |>
-    hc_title(text = title) |>
-    hc_subtitle(text = subtitle) |>
-    hc_caption(text = caption) |>
-    hc_legend(enabled = FALSE) |>
-    hc_yAxis(min = bounds[1], max = bounds[2], endOnTick = FALSE) |>
-    hc_setup()
-}
-
-metric_trend_chart <- function(data, value, title, subtitle, caption,
-                               accessibility, expansion = 0.5, y_formatter = NULL) {
-  bounds <- chart_bounds(data[[value]], expansion = expansion, floor = 0)
-  chart <- data |>
-    hchart("spline", hcaes(year, !!rlang::sym(value)), color = jr_pal[1],
-           accessibility = list(point = list(valueDescriptionFormat = accessibility))) |>
-    hc_title(text = title) |>
-    hc_subtitle(text = subtitle) |>
-    hc_caption(text = caption) |>
-    hc_yAxis(min = bounds[1], max = bounds[2], endOnTick = FALSE) |>
-    hc_legend(enabled = FALSE) |>
-    hc_setup()
-
-  if (!is.null(y_formatter)) {
-    chart <- hc_yAxis(chart, labels = list(formatter = JS(y_formatter)))
+  chart <- if (compare) {
+    data$state_name <- forcats::fct_relevel(data$state_name, "United States", after = Inf)
+    hchart(data, "spline", hcaes(year, !!rlang::sym(value), group = state_name),
+           color = c(color, jr_pal[7]), dashStyle = c("solid", "dash"),
+           opacity = c(1, 0.75), accessibility = accessibility)
+  } else {
+    hchart(data, "spline", hcaes(year, !!rlang::sym(value)),
+           color = color, accessibility = accessibility)
   }
+
+  chart <- chart |>
+    hc_title(text = title) |>
+    hc_caption(text = caption) |>
+    hc_yAxis(min = bounds[1], max = bounds[2], endOnTick = FALSE)
+  if (!is.null(subtitle)) chart <- hc_subtitle(chart, text = subtitle)
+  if (!legend) chart <- hc_legend(chart, enabled = FALSE)
+
+  ### label options go after hc_setup() so they replace its default format
+  chart <- hc_setup(chart)
+  if (!is.null(y_format)) chart <- hc_yAxis(chart, labels = list(format = y_format))
+  if (!is.null(y_formatter)) chart <- hc_yAxis(chart, labels = list(formatter = JS(y_formatter)))
   chart
 }
 
-shr_rate_chart <- function(data, title, years, caption, categories = NULL) {
-  chart <- data |>
-    hchart("column", hcaes(group, clearance_rate),
+### reported rate trend for one offense; the legend shows only when comparing
+offense_trend_chart <- function(data, offense, title, subtitle, color,
+                                caption = "FBI UCR Program, state crime estimates",
+                                compare = FALSE) {
+  trend_chart(
+    dplyr::filter(data, group == offense), "incidents_reported_rate_total",
+    title, subtitle, caption,
+    value_label = paste(tolower(offense), "incidents per 100,000 residents"),
+    color = color, compare = compare, legend = compare
+  )
+}
+
+### resource trend; the legend shows only when comparing
+metric_trend_chart <- function(data, value, title, subtitle, caption, value_label,
+                               value_format = "{point.y:.1f}", expansion = 0.5,
+                               y_formatter = NULL, compare = FALSE) {
+  trend_chart(
+    data, value, title, subtitle, caption,
+    value_label = value_label, value_format = value_format,
+    compare = compare, legend = compare, expansion = expansion,
+    y_formatter = y_formatter
+  )
+}
+
+### homicide solve-rate panels by victim and incident characteristic
+### note is the caption line above the data source
+shr_panels <- list(
+  race = list(
+    category = "victim_race_eth", title = "Homicide solve rates by race and ethnicity",
+    note = "This analysis excludes records where a victim's race and ethnicity is unknown"
+  ),
+  gender = list(
+    category = "victim_sex", title = "Homicide solve rates by gender",
+    note = "This analysis excludes records where a victim's gender is unknown"
+  ),
+  age = list(
+    category = "victim_age", title = "Homicide solve rates by age",
+    note = "This analysis excludes records where a victim's age is unknown",
+    order = c("Under 25", "25 to 34", "35 to 45", "46+")
+  ),
+  weapon = list(
+    category = "weapon", title = "Homicide solve rates by weapon",
+    note = "This analysis includes the most common weapons across states in recent years",
+    exclude = "Other", sort_desc = TRUE
+  ),
+  victims = list(
+    category = "victim_count", title = "Homicide solve rates by number of victims",
+    order = c("Single victim", "Multiple victims"),
+    categories = c("Single victim", "Multiple victims")
+  )
+)
+
+shr_source <- function(years) {
+  paste0("FBI UCR Program, Supplementary Homicide Reports (", years, ")")
+}
+
+### column chart of solve rates by group
+### series names a column that splits the bars into series shown in a legend
+shr_rate_chart <- function(data, title, years, caption, categories = NULL, series = NULL) {
+  chart <- if (is.null(series)) {
+    hchart(data, "column", hcaes(group, clearance_rate),
            accessibility = list(point = list(
              valueDescriptionFormat = "{point.name}: {point.y:.1f}%"
-           ))) |>
+           )))
+  } else {
+    hchart(data, "column", hcaes(group, clearance_rate, group = !!rlang::sym(series)),
+           accessibility = list(point = list(
+             valueDescriptionFormat = "{point.series.name}, {point.name}: {point.y:.1f}%"
+           )))
+  }
+
+  chart <- chart |>
     hc_title(text = title) |>
     hc_subtitle(text = years) |>
     hc_caption(text = caption) |>
     hc_yAxis(min = 0, max = 100, endOnTick = FALSE) |>
-    hc_legend(enabled = FALSE) |>
-    hc_setup()
+    hc_legend(enabled = !is.null(series)) |>
+    hc_setup() |>
+    hc_yAxis(labels = list(format = "{value}%"))
 
   if (!is.null(categories)) chart <- hc_xAxis(chart, categories = categories)
   chart
 }
 
-shr_panel_chart <- function(df, spec, first_year, years) {
-  data <- function_shr_grouping_for_national_plot(df, spec$category, first_year)
+### one panel from shr_panels
+### prep takes a group_cat value and returns grouped solve rates
+shr_panel_chart <- function(spec, prep, years, series = NULL) {
+  data <- prep(spec$category)
   if (!is.null(spec$exclude)) data <- dplyr::filter(data, !group %in% spec$exclude)
   if (!is.null(spec$order)) {
     data$group <- factor(data$group, levels = spec$order)
     data <- dplyr::arrange(data, group)
   }
   if (isTRUE(spec$sort_desc)) data <- dplyr::arrange(data, dplyr::desc(clearance_rate))
-  shr_rate_chart(data, spec$title, years, spec$caption, categories = spec$categories)
+
+  caption <- paste(c(spec$note, shr_source(years)), collapse = "<br>")
+  shr_rate_chart(data, spec$title, years, caption, categories = spec$categories, series = series)
 }
 
 solve_rate_column <- function(offense, median_rate, min_width = 120, align = NULL) {
