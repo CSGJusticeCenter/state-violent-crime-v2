@@ -373,7 +373,7 @@ us_offense_rates |>
   hc_title(text = paste0("Violent crime in ", state_name_text, " by offense")) |>
   hc_subtitle(text = "Crime reported to police per 100,000 residents") |>
   hc_caption(text = "FBI UCR Program, state crime estimates") |>
-  hc_legend(reversed = "true") |>
+  hc_legend(reversed = TRUE) |>
   hc_setup()
 ```
 
@@ -403,7 +403,7 @@ us_violent_solve_rates <- srs_by_cat_us |>
 
 trend_chart(
   us_violent_solve_rates, "pct_solved",
-  paste("Solve rate of violent crime in ", state_name_text),
+  paste0("Solve rate of violent crime in ", state_name_text),
   caption = "FBI UCR Program, state crime estimates and clearances",
   value_label = "solve rate", value_format = "{point.y:.1f}%",
   expansion = axis_expansion_mult, ceiling = 100, y_format = "{value:,.0f}%"
