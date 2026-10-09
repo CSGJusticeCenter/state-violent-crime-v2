@@ -26,8 +26,10 @@ quarto::quarto_render("index.qmd", output_file = "index.html", quiet = TRUE)
 
 ## Site output and deploy
 
-- `_site/` is committed. Netlify deploys it on push, so a rendered `_site/` change is a site change.
-- Re-rendering an unchanged page still changes `_site/` because htmlwidget IDs are random. Compare with IDs stripped before calling a page changed, and restore `_site/` if you rendered only to test.
+- `_site/` is git-ignored build output. Pushing to GitHub does not deploy, because Netlify builds are stopped.
+- `R/02-render-site.R` empties `_site/` before rendering. A one-state test render on a fresh checkout leaves `_site/` with only that page.
+- `R/03-deploy-site.R` checks that every page exists, then uploads `_site/` with the Netlify CLI. On `main` it updates the live site. On other branches it posts a preview at `<branch>--csg-state-violent-crime.netlify.app`.
+- Never run the deploy script on `main`. Ask before running it for a preview, because preview URLs are reachable outside the team.
 - Pages and chart exports load the logo from `img/csgjc-logo.png` on the live site.
 
 ## County map rules

@@ -1,6 +1,6 @@
 ## State violent crime interactive pages
 
-Quarto site with one page per state plus DC (`state-viol-crime.qmd`) and a national page (`index.qmd`). Pages render to `_site/`, which Netlify deploys on push.
+Quarto site with one page per state plus DC (`state-viol-crime.qmd`) and a national page (`index.qmd`). Pages render to `_site/`, which is uploaded to Netlify from a local machine. `_site/` is not committed.
 
 Site: https://csg-state-violent-crime.netlify.app/ (password-protected; ask the team for the password)
 
@@ -9,13 +9,42 @@ Site: https://csg-state-violent-crime.netlify.app/ (password-protected; ask the 
 - R 4.6.1. Packages are managed with renv, which activates when R starts in the project root.
 - Run `renv::restore()` once after cloning to install the locked package versions.
 - Data comes from the CSG SharePoint `jr_data_library`, read through `csgjcr::csg_sp_path()`, so SharePoint must be synced locally.
+- Deploying needs access to the site in the CSG Netlify team and the Netlify CLI. Install the CLI with Node.js and log in once:
+
+```sh
+npm install -g netlify-cli
+netlify login
+```
 
 ### Build
 
 1. `R/01-prep-agency-county-data.R` builds the county map and agency tables in `data/` from the CDE agency file in `jr_data_library`. Rerun when that file refreshes.
-2. `R/02-render-site.R` renders all 51 state pages and the national page, then copies `styles.css`, `img/` and `fonts/` into `_site/`.
+2. `R/02-render-site.R` empties `_site/`, renders all 51 state pages and the national page, then copies `styles.css`, `img/` and `fonts/` into `_site/`.
 
-Run both from the project root, e.g. `Rscript R/02-render-site.R`. The pages also read state-level SRS, SHR, LEE and ASSLGF files directly from `jr_data_library`.
+Run from the project root, in the R console or with `Rscript R/02-render-site.R`. The pages also read state-level SRS, SHR, LEE and ASSLGF files directly from `jr_data_library`.
+
+### Deploy
+
+Pushing to GitHub does not update the site. Netlify builds are stopped, and `_site/` is uploaded from a local machine with `R/03-deploy-site.R`. The script picks the target from the current git branch.
+
+| Branch | Deploys to |
+|---|---|
+| `main` | Live site |
+| Any other | Preview at `<branch>--csg-state-violent-crime.netlify.app` |
+
+Workflow for an update:
+
+1. Make changes on a branch. For quick checks, render one state and open its page in `_site/` in a browser.
+2. Run `R/02-render-site.R`, then `R/03-deploy-site.R` to post a preview for review. Rerunning on the same branch updates the same preview URL.
+3. Merge the PR.
+4. Switch to `main`, pull, run `R/02-render-site.R`, then `R/03-deploy-site.R` to update the live site.
+
+Notes:
+
+- `_site/` is not tracked, so it doesn't change when you switch branches. It holds whatever was rendered last. Always re-render on `main` before a live deploy.
+- The script stops if any page is missing from `_site/`. Each deploy replaces the whole site, so a missing page would go offline.
+- Both scripts run from the R console or a terminal with `Rscript`, from the project root.
+- To roll back, open the site's Deploys list in the Netlify dashboard and publish an earlier deploy.
 
 ### Annual update
 
