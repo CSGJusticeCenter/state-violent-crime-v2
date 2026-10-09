@@ -1,27 +1,32 @@
 ## State violent crime interactive pages
 
-Sorry for the brief readme!
+Quarto site with one page per state plus DC (`state-viol-crime.qmd`) and a national page (`index.qmd`). Pages render to `_site/`, which Netlify deploys on push.
 
-`R/01-` through `R/06` pull and clean various data sources needed and save to .rds to be read into qmd
+Site: https://csg-state-violent-crime.netlify.app/ (password-protected; ask the team for the password)
 
-`R/07-` renders each state page to html and moves html files to `_site` for deploying on Netlify
+### Build
 
-`R/08-` creates static plots for Marshall's ppt
+1. `R/01-prep-agency-county-data.R` builds the county map and agency tables in `data/` from the CDE agency file in `jr_data_library`. Rerun when that file refreshes.
+2. `R/02-render-site.R` renders all 51 state pages and the national page, then copies `styles.css`, `img/` and `fonts/` into `_site/`.
 
-`R/09-` creates table of crime rates (per 10K people) by offense at national level (2019-2021), table of crime clearance rates by offense at national level (2019-2021), and crime rate plots 2010-2021 by offense at national level
+The pages also read state-level SRS, SHR, LEE and ASSLGF files directly from `jr_data_library`.
 
-`utils.R` contains various utility functions for the interactive pages
+### Layout
 
-`state-viol-crime.qmd` is the main template file to render by state to html
+| Path | Contents |
+|---|---|
+| `R/utils.R` | Highcharter theme, chart and table helpers |
+| `R/agency-county-data.R` | Agency and county aggregation used by step 1 |
+| `R/local-map-data.R` | County map loading, including the merged NYC feature |
+| `R/download-county-maps.R` | Refreshes `maps/` from the pinned Highcharts map collection |
+| `data/` | Prepped agency data, CSG regions, inflation index, US hex grid |
+| `maps/` | Highcharts county maps (see `maps/README.md`) |
+| `img/`, `fonts/`, `styles.css` | Site assets |
+| `tests/` | testthat tests for the helpers |
+| `_archive/` | Retired pipeline scripts, one-off requests and old outputs |
 
-`header.html` is used to create drop down menu to select state at top of each html
+### Tests
 
-All data is from public sources and is contained in `data`
-
-HTML is saved to `_site` so that it can be automatically deployed to netlify on git push
-
-Site is published at https://csg-state-violent-crime.netlify.app/state-viol-crime-sc.html
-
-pw: csg_crime
-
-change
+```r
+testthat::test_dir("tests")
+```

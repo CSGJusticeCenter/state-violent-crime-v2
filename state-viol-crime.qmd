@@ -107,7 +107,7 @@ srs_us <- srs_state_new |>
     pct_solved = incidents_solved / incidents_reported
   )
 
-### county map and agency tables come from R/06c-prep-agency-county-data.R
+### county map and agency tables come from R/01-prep-agency-county-data.R
 srs_solved_by_county_to_map <- read_rds("data/county_map.rds") |>
   filter(state_abbr == state_abbr_params)
 

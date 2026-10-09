@@ -16,10 +16,3 @@ agency_county_data <- build_agency_county_data(raw, agency_year, base_year)
 
 dir.create("data", showWarnings = FALSE)
 iwalk(agency_county_data, \(x, name) write_rds(x, file.path("data", paste0(name, ".rds"))))
-
-# CSG regions used by the supplemental homicide section.
-file.copy(
-  csg_sp_path("z_ARCHIVE", "Ad_Hoc_Requests", "state_violent_crime_marshall", "data", "csg-regions.csv"),
-  "data/csg-regions.csv",
-  overwrite = TRUE
-)
