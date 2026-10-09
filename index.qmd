@@ -1,22 +1,3 @@
----
-format:
-  html:
-    footnotes-hover: false
-    css: styles.css
-    toc: false
-mainfont: "GT-America"
-linkcolor: "#00355a"
-anchor-sections: false
-execute:
-  echo: false
-  warning: false
-  message: false
----
-
-<head>
-<img src='https://csg-state-violent-crime.netlify.app/img/csgjc-logo.png' style='display: none;'> 
-</head>
-
 ```{r}
 library(tidyverse)
 library(scales)
@@ -475,9 +456,7 @@ The following tables include violent crime rates and solve rates by state and of
 
 ::: {.panel-tabset}
 
-```{r, results='asis'}
-cat("### Overall rates")
-```
+### Overall rates
 
 ```{r}
 srs_state_to_map |>
@@ -514,9 +493,7 @@ srs_state_to_map |>
 
 
 
-```{r, results='asis'}
-cat("### By offense")
-```
+### By offense
 
 
 <span style="color:#B85A0D">▼ Orange</span> indicates a solve rate less than the U.S. rate.
@@ -598,16 +575,12 @@ Data regarding crime and solve rates come from the FBI's [Uniform Crime Reportin
 
 <br>
 
-```{r, results='asis'}
-cat("## Trends in law enforcement resources")
-```
+## Trends in law enforcement resources
 
-State and local expenditures include spending on police, sheriffs, and highway patrols. The charts below also include staffing per 10,000 residents and per 1,000 violent crimes. These factors may show the level of policing a community receives, potentially influencing both crime and solve rates and providing insight into how law enforcement resources impact violent crime.  
-
-::: {.panel-tabset}
+State and local expenditures include spending on police, sheriffs, and highway patrols. The charts below also include staffing per 10,000 residents and per 1,000 violent crimes. These factors may show the level of policing a community receives, potentially influencing both crime and solve rates and providing insight into how law enforcement resources impact violent crime.
 
 ```{r}
-### years and inflation-adjusted percent change for expenditure text
+### years and percent changes for the resource text
 exp_min_year <- min(asslgf_clean_national$year)
 exp_max_year <- max(asslgf_clean_national$year)
 
@@ -615,31 +588,33 @@ pct_change_spending <- asslgf_clean_national |>
   summarize(change = pct_change_first_last(n_inflation_adjusted_latest_year_dollars, year)) |>
   pull(change)
 
+lee_min_year <- min(ucr_employee_data_national_clean$year)
+lee_max_year <- max(ucr_employee_data_national_clean$year)
 
+pct_change_staffing <- ucr_employee_data_national_clean |>
+  summarize(change = pct_change_first_last(officer_pop_rate_per_10k, year)) |>
+  pull(change)
+
+pct_change_staffing_per_violent_offense <- ucr_employee_data_national_clean |>
+  summarize(change = pct_change_first_last(officer_per_violent_offense_1k, year)) |>
+  pull(change)
 ```
 
-```{r, results='asis'}
-cat("### State and local expenditures")
-```
+::: {.panel-tabset}
 
+### State and local expenditures
 
-```{r, results='asis'}
-cat(paste0(
-  "Overall, state and local spending on law enforcement across the United States ", change_by(pct_change_spending), " from ", exp_min_year, " to ", exp_max_year, ", adjusting for inflation."
-))
-```
-
+Overall, state and local spending on law enforcement across the United States `r change_by(pct_change_spending)` from `r exp_min_year` to `r exp_max_year`, adjusting for inflation.
 
 ```{r}
 spending_trend <- asslgf_clean_national |>
   mutate(
     tooltip = paste0(
       "<b>", "United States", " – ", year, "</b><br>",
-      "Inflation-adjusted expenditure (", exp_max_year, " dollars): ", scales::dollar(n_inflation_adjusted_latest_year_dollars,
-                                                                                         accuracy = 0.1,
-                                                                                         scale = 1e-9,
-                                                                                         suffix = "B"))
+      "Inflation-adjusted expenditure (", exp_max_year, " dollars): ",
+      scales::dollar(n_inflation_adjusted_latest_year_dollars, accuracy = 0.1, scale = 1e-9, suffix = "B")
     )
+  )
 
 metric_trend_chart(
   spending_trend, "n_inflation_adjusted_latest_year_dollars",
@@ -652,31 +627,11 @@ metric_trend_chart(
 )
 ```
 
+### Officers per capita
+
+The number of officers per 10,000 residents in jurisdictions across the United States has `r change_by(pct_change_staffing)` from `r lee_min_year` to `r lee_max_year`.
 
 ```{r}
-### years and percent change for officer text
-lee_min_year <- min(ucr_employee_data_national_clean$year)
-lee_max_year <- max(ucr_employee_data_national_clean$year)
-
-pct_change_staffing <- ucr_employee_data_national_clean |>
-  summarize(change = pct_change_first_last(officer_pop_rate_per_10k, year)) |>
-  pull(change)
-
-```
-
-```{r, results='asis'}
-cat("### Officers per capita")
-```
-
-
-```{r, results='asis'}
-cat(paste0(
-  "The number of officers per 10,000 residents in jurisdictions across the United States has ", change_by(pct_change_staffing), " from ", lee_min_year, " to ", lee_max_year, "."
-))
-```
-
-
-```{r }
 ucr_employee_data_national_clean |>
   mutate(tooltip = paste0(
     "<b>", "United States", " – ", year, "</b><br>",
@@ -690,27 +645,11 @@ ucr_employee_data_national_clean |>
   )
 ```
 
+### Officers per violent offense
+
+The number of officers per 1,000 violent crimes in jurisdictions across the United States has `r change_by(pct_change_staffing_per_violent_offense)` from `r lee_min_year` to `r lee_max_year`.
+
 ```{r}
-### percent change in officers per violent crime for text
-pct_change_staffing_per_violent_offense <- ucr_employee_data_national_clean |>
-  summarize(change = pct_change_first_last(officer_per_violent_offense_1k, year)) |>
-  pull(change)
-
-```
-
-```{r, results='asis'}
-cat("### Officers per violent offense")
-```
-
-
-```{r, results='asis'}
-cat(paste0(
-  "The number of officers per 1,000 violent crimes in jurisdictions across the United States has ", change_by(pct_change_staffing_per_violent_offense), " from ", lee_min_year, " to ", lee_max_year, "."
-))
-```
-
-
-```{r }
 ucr_employee_data_national_clean |>
   mutate(tooltip = paste0(
     "<b>", "United States", " – ", year, "</b><br>",
@@ -728,9 +667,7 @@ ucr_employee_data_national_clean |>
 
 <br>
 
-```{r, results='asis' }
-cat("## Homicide solve rates by victim and incident characteristics")
-```
+## Homicide solve rates by victim and incident characteristics
 
 The following charts include homicide solve rates by race and ethnicity, gender, age, weapon type, and number of victims. For more information, see the data and methodology sections below.  
 
@@ -790,14 +727,7 @@ The FBI stopped SRS data collection after data year 2020 and required law enforc
 
 Crime rates are calculated by dividing the number of estimated incidents by the total population. Population data come from the U.S. Census Bureau [Population Estimates Program](https://www.census.gov/programs-surveys/popest.html){target="_parent"}.
 
-Solve rates are the number of reported crimes cleared by arrest or by exceptional means divided by the number of reported crimes. A reported crime incident is [cleared by exceptional means](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019/topic-pages/clearances){target='_parent'} if a law enforcement agency is unable to arrest or formally charge a person with a crime, but the agency has met the following conditions:
-    
-a) Identified the person who committed the crime
-b) Gathered enough evidence to support an arrest, make a charge, and turn over the person to the court for prosecution
-c) Identified the suspect’s exact location so that the person could be taken into custody immediately
-d) Encountered a circumstance outside the control of law enforcement that prohibits the agency from arresting, charging, and prosecuting the person
-    
-Examples of exceptional clearances include the death of the person who committed the crime; the victim’s refusal to cooperate with the prosecution after the person who committed the crime has been identified; or the denial of extradition.
+{{< include _methodology-exceptional-clearance.qmd >}}
 
 Data regarding law enforcement expenditures were downloaded from the U.S. Census Bureau [Annual Survey of State and Local Government Finances](https://www.census.gov/programs-surveys/gov-finances.html){target="_parent"}. Expenditures include police protection spending by state governments and all local governments in each state, such as counties and municipalities. Expenditures are adjusted for inflation to constant dollars of the most recent year using the Chained Consumer Price Index for All Urban Consumers (C-CPI-U), following the [Census Bureau's guidance](https://www.census.gov/topics/income-poverty/income/guidance/current-vs-constant-dollars.html){target="_parent"}.
 

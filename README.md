@@ -58,7 +58,7 @@ Notes:
 | Base year for maps, tables and agency changes | `R/page-data.R` (`base_year`); rerun step 1 after changing it |
 | SHR pooling start year | `R/page-data.R` (`shr_first_year`) |
 | Inflation index file | `data/annual-index-value_annual-percent-change_YYYY.xls`, referenced in `R/page-data.R` (`inflation_index_path`) |
-| Narrative text | `index.qmd` and `state-viol-crime.qmd` |
+| Narrative text | `index.qmd`, `state-viol-crime.qmd` and `_methodology-*.qmd` |
 
 The latest SRS year comes from the data, so the state pages pick it up automatically.
 
@@ -74,6 +74,8 @@ The latest SRS year comes from the data, so the state pages pick it up automatic
 |---|---|
 | `R/utils.R` | Highcharter theme, chart and table helpers |
 | `R/page-data.R` | Shared settings and data prep for both pages |
+| `_quarto.yaml` | Project settings and page format options shared by both pages |
+| `_methodology-*.qmd` | Methodology text included in both pages |
 | `R/agency-county-data.R` | Agency and county aggregation used by step 1 |
 | `R/local-map-data.R` | County map loading, including the merged NYC feature |
 | `R/download-county-maps.R` | Refreshes `maps/` from the pinned Highcharts map collection |

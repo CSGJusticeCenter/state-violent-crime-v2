@@ -1,0 +1,8 @@
+Solve rates are the number of reported crimes cleared by arrest or by exceptional means divided by the number of reported crimes. A reported crime incident is [cleared by exceptional means](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019/topic-pages/clearances){target='_parent'} if a law enforcement agency is unable to arrest or formally charge a person with a crime, but the agency has met the following conditions:
+
+a) Identified the person who committed the crime
+b) Gathered enough evidence to support an arrest, make a charge, and turn over the person to the court for prosecution
+c) Identified the suspect’s exact location so that the person could be taken into custody immediately
+d) Encountered a circumstance outside the control of law enforcement that prohibits the agency from arresting, charging, and prosecuting the person
+
+Examples of exceptional clearances include the death of the person who committed the crime; the victim’s refusal to cooperate with the prosecution after the person who committed the crime has been identified; or the denial of extradition.

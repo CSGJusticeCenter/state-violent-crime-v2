@@ -1,23 +1,7 @@
 ---
-format:
-  html:
-    footnotes-hover: false
-    css: styles.css
-    toc: false
-mainfont: "GT-America"
-linkcolor: "#00355a"
-anchor-sections: false
 params:
   state: "NY"
-execute:
-  echo: false
-  warning: false
-  message: false
 ---
-
-<head>
-<img src='https://csg-state-violent-crime.netlify.app/img/csgjc-logo.png' style='display: none;'> 
-</head>
 
 ```{r}
 library(tidyverse)
@@ -118,6 +102,13 @@ shr_region_label <- paste0("Other ", csg_region, " States")
 ---
 title: "`r doc_title`"
 ---
+
+```{r}
+#| output: asis
+
+### hide-solved hides the solve-rate sections and shows the no-data note instead
+cat("---\nhide-solved: ", tolower(!show_solved), "\n---\n", sep = "")
+```
 
 ```{r}
 min_max_viol_crime <- srs_by_cat_state |> 
@@ -268,17 +259,15 @@ state_offense_rates |>
 
 :::
 
-```{r, results='asis'}
-cat("## Solved violent crime in", state_name_text)
-```
+## Solved violent crime in `r state_name_text`
 
-```{r, eval=state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
-cat(state_name_text," did not report enough data on solved crime to the FBI to make reliable estimates.")
-```
+::: {.content-visible when-meta="hide-solved"}
+`r state_name_text` did not report enough data on solved crime to the FBI to make reliable estimates.
+:::
 
-```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz}
+::: {.content-hidden when-meta="hide-solved"}
 
-### create state-specific labels for text output
+```{r}
 solved_rate_max <- paste0(comma(min_max_viol_crime$pct_solved[2] * 100, 1), " percent")
 
 ### state averages pool every full-reporting agency in the state,
@@ -296,31 +285,18 @@ agency_state_solve_rate <- function(offense) {
   scales::comma(agency_state_solve_share(offense) * 100, 1)
 }
 
-state_average_agg_assault_solve_rate <- agency_state_solve_rate("aggravated_assault")
-
-state_average_homicide_solve_rate <- agency_state_solve_rate("homicide")
-
-state_average_rape_solve_rate <- agency_state_solve_rate("rape")
-
+total_agencies <- comma(n_distinct(srs_solved_by_agency_to_table$ori))
 ```
 
-```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
-cat(paste0(
-  "In ", max_year, ", ", solved_rate_max, " of violent crimes reported to police in ", state_name_text, " were solved. This is ", change_text_clear, " the solve rate in ", min_year, ".", '\n','\n',
-    
-    "Solve rates are the number of reported crimes cleared by arrest or by exceptional means divided by the number of reported crimes. For more information, see the data sources and methodology section below."
-))
-```
+In `r max_year`, `r solved_rate_max` of violent crimes reported to police in `r state_name_text` were solved. This is `r change_text_clear` the solve rate in `r min_year`.
 
-```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
-cat("
+Solve rates are the number of reported crimes cleared by arrest or by exceptional means divided by the number of reported crimes. For more information, see the data sources and methodology section below.
+
 ::: {.panel-tabset}
 
 ## All violent crime
-")
-```
 
-```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz}
+```{r}
 ### rates below zero plot at zero and say so in the tooltip
 violent_solve_rates <- srs_by_cat_state |>
   bind_rows(srs_by_cat_us) |>
@@ -348,13 +324,9 @@ trend_chart(
 )
 ```
 
-```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
-cat("
 ## By offense
-")
-```
 
-```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz}
+```{r}
 offense_solve_rates <- srs_state |>
   filter(year != solve_rate_skip_year) |>
   left_join(offense_pal, by = c("group" = "crime")) |>
@@ -363,17 +335,15 @@ offense_solve_rates <- srs_state |>
     pct_solved_tooltip = ifelse(pct_solved < 0 & !is.na(pct_solved),
                                 "Less than 0%", as.character(percent(pct_solved_clean / 100, 1))),
     incidents_solved_tooltip = ifelse(incidents_solved < 0 & !is.na(incidents_solved),
-                                      "Fewer than 0", as.character(comma(round(incidents_solved, digits = 0))))
-  ) |>
-  mutate(
+                                      "Fewer than 0", as.character(comma(round(incidents_solved, digits = 0)))),
     group = fct_reorder(group, pct_solved, last),
     tooltip = paste0(
       "<b>", group, " – ", year, "</b></br>",
       "Solve rate: ", pct_solved_tooltip, "<br>",
       "Incidents reported: ", comma(incidents_reported, 1), "<br>",
       "Incidents solved: ", incidents_solved_tooltip
-      )
-    ) |> 
+    )
+  ) |>
   arrange(desc(year), pct_solved_clean)
 
 offense_solve_rates |>
@@ -396,25 +366,19 @@ offense_solve_rates |>
   )
 ```
 
-```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
-cat("
 :::
-")
-```
 
-```{r, results='asis'}
-cat("## Solved violent crime by county in", state_name_text)
-```
+:::
 
-```{r, eval=state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
-cat(state_name_text," did not report enough data on solved crime to the FBI to make reliable estimates.")
-```
+## Solved violent crime by county in `r state_name_text`
 
-```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz}
-total_agencies <- comma(n_distinct(srs_solved_by_agency_to_table$ori))
-```
+::: {.content-visible when-meta="hide-solved"}
+`r state_name_text` did not report enough data on solved crime to the FBI to make reliable estimates.
+:::
 
-```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz}
+::: {.content-hidden when-meta="hide-solved"}
+
+```{r}
 #| fig-height: 5.5
 
 ### one row per map feature, so counties with no data still get a tooltip
@@ -461,19 +425,19 @@ hcmap_local(
       point = list(
         valueDescriptionFormat = "county: {point.county_label}, solve rate: {point.value:.1f}%"
         )
-      )) |> 
+      )) |>
   hc_title(
     text = paste("Violent crime solve rate,", agency_year),
     align = "left",
     style = list(fontFamily = header_font, color = "#005FAD",
                               fontSize = "24px", fontWeight = "bold")
-    ) |>   
+    ) |>
   hc_colorAxis(endOnTick = TRUE,
                startOnTick = TRUE,
                stops = color_stops(length(rate_colors), rate_colors),
                labels = list(format = "{value:.0f}%",
                              style = list(fontSize = "12px",
-                                          fontFamily = default_fonts))) |> 
+                                          fontFamily = default_fonts))) |>
   hc_legend(align = "center",
             horizontalAlign = "bottom",
             layout = "horizontal",
@@ -481,7 +445,7 @@ hcmap_local(
             symbolWidth = 315,
             x = 0,
             y = 0
-            ) |> 
+            ) |>
      hc_tooltip(
         style = list(fontFamily = default_fonts),
         formatter = JS("function() {
@@ -491,45 +455,30 @@ hcmap_local(
         useHTML = TRUE
       ) |>
   hc_setup()
-
 ```
 
+:::
 
-```{r, results='asis'}
+## Solved violent crime by agency in `r state_name_text`
 
-cat("## Solved violent crime by agency in", state_name_text)
-```
+::: {.content-visible when-meta="hide-solved"}
+`r state_name_text` did not report enough data on solved crime to the FBI to make reliable estimates.
+:::
 
-```{r, eval=state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
-cat(state_name_text," did not report enough data on solved crime to the FBI to make reliable estimates.")
-```
+::: {.content-hidden when-meta="hide-solved"}
 
-```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
+In the following table, violent crime incident rates, as well as violent crime solve rates, are included for each of the `r total_agencies` law enforcement agencies that reported data in `r state_name_text` in `r agency_year`. Violent crime solve rates by offense differ across agencies across the state. The average solve rate for aggravated assault is `r agency_state_solve_rate("aggravated_assault")` percent. Homicide is `r agency_state_solve_rate("homicide")` percent, and rape is `r agency_state_solve_rate("rape")` percent.
 
-cat(paste0(
-  "In the following table, violent crime incident rates, as well as violent crime solve rates, are included for each of the ", total_agencies, " law enforcement agencies that reported data in ",state_name_text," in ", agency_year, ". Violent crime solve rates by offense differ across agencies across the state. The average solve rate for aggravated assault is ",state_average_agg_assault_solve_rate ," percent. Homicide is ",state_average_homicide_solve_rate," percent, and rape is ",state_average_rape_solve_rate, " percent.  
-  
+Please note that rates calculated for agencies with smaller jurisdiction populations, as well as fewer overall incidents, are less reliable than those for larger jurisdictions and should be interpreted with caution.
 
-Please note that rates calculated for agencies with smaller jurisdiction populations, as well as fewer overall incidents, are less reliable than those for larger jurisdictions and should be interpreted with caution."))
-```
-
-
-```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
-cat("
 ::: {.panel-tabset}
 
-")
-```
+### Overall rates
 
-
-```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
-cat("### Overall rates")
-```
-
-```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz}
+```{r}
 #| column: body-outset
 
-srs_solved_by_agency_to_table |> 
+srs_solved_by_agency_to_table |>
   select(agency_name,
          county,
          population,
@@ -541,46 +490,36 @@ srs_solved_by_agency_to_table |>
   reactable_template(
     sort_col = list("population" = "desc"),
     columns = list(
-      agency_name = colDef(name = "Agency", minWidth = 200,
-                             sticky = "left",
-      # Add a right border style to visually distinguish the sticky column
-      style = list(borderRight = "1px solid #eee"),
-      headerStyle = list(borderRight = "1px solid #eee")),
+      ### a right border sets off the sticky column
+      agency_name = colDef(
+        name = "Agency", minWidth = 200, sticky = "left",
+        style = list(borderRight = "1px solid #eee"),
+        headerStyle = list(borderRight = "1px solid #eee")
+      ),
       county = colDef(name = "County", minWidth = 100),
-      population = colDef(name = "Jurisdiction Population", minWidth = 100), 
-      n_reported = colDef(name = paste0("Violent Incidents Reported (", agency_year, ")")), 
+      population = colDef(name = "Jurisdiction Population", minWidth = 100),
+      n_reported = colDef(name = paste0("Violent Incidents Reported (", agency_year, ")")),
       n_reported_rate = colDef(name = paste0("Violent Incidents per 100k (", agency_year, ")"),
-                               format = colFormat(digits = 0, separators = TRUE)), 
+                               format = colFormat(digits = 0, separators = TRUE)),
       solved_rate = colDef(
         name = paste0("Solve Rate (", agency_year, ")"),
         format = colFormat(digits = 0, percent = TRUE)
-        ),
+      ),
       solved_rate_change = colDef(
         name = paste0("Percentage point change in solve rate (", agency_base_year, " to ", agency_year, ")"),
         cell = add_plus_sign_percent_point_change
-        )
       )
     )
-
+  )
 ```
 
-```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
-cat("### By offense")
-```
+### By offense
 
-
-```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
-cat('
-    
 <span style="color:#B85A0D">▼ Orange</span> indicates a solve rate less than the state rate.
 
 <span style="color:#15607A">▲ Blue</span> indicates a solve rate greater than or equal to the state rate.
 
-')
-```
-
-
-```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz}
+```{r}
 #| column: body-outset
 
 ### each agency is compared with the pooled state solve rate for the offense
@@ -636,22 +575,14 @@ srs_solved_by_agency_and_offense_to_table |>
       solve_rate_columns(state_solved_rate, paste(state_abbr_params, "State Rate"), solve_rate_layout)
     )
   )
-
-
-
 ```
 
-```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz, results='asis'}
-cat("
-::: 
+:::
 
-")
-```
+:::
 
 
-```{r, results='asis'}
-cat("## Law enforcement resources in", state_name_text)
-```
+## Law enforcement resources in `r state_name_text`
 
 ```{r}
 ### years and inflation-adjusted percent change for spending text
@@ -686,28 +617,18 @@ staffing_cause_text <- if (is_about_same(pct_change_staffing_per_violent_offense
 
 ```
 
-```{r, results='asis'}
-cat(paste0(
-  "Spending on law enforcement in ", state_name_text, " ", change_by(pct_change_spending), " from ", min_year_resources, " to ", max_year_resources, ", adjusting for inflation. Expenditures include state and local spending on local police departments, sheriffs’ offices, and state police agencies such as highway patrols and other state investigative law enforcement agencies.
+Spending on law enforcement in `r state_name_text` `r change_by(pct_change_spending)` from `r min_year_resources` to `r max_year_resources`, adjusting for inflation. Expenditures include state and local spending on local police departments, sheriffs’ offices, and state police agencies such as highway patrols and other state investigative law enforcement agencies.
 
-Law enforcement resources also refer to the state’s staffing per 10,000 residents and per 1,000 violent crimes. These factors may show the level of policing a community receives, potentially influencing both crime and solve rates."))
-```
+Law enforcement resources also refer to the state’s staffing per 10,000 residents and per 1,000 violent crimes. These factors may show the level of policing a community receives, potentially influencing both crime and solve rates.
 
+Additionally, the number of officers per 1k violent crimes in `r state_name_text` has `r change_by(pct_change_staffing_per_violent_offense)` from `r min_year_resources_staff_per_offense` to `r max_year_resources_staff_per_offense`.`r staffing_cause_text`
 
-```{r, results='asis'}
-cat(paste0(
-"Additionally, the number of officers per 1k violent crimes in ", state_name_text, " has ", change_by(pct_change_staffing_per_violent_offense), " from ", min_year_resources_staff_per_offense, " to ", max_year_resources_staff_per_offense, ".", staffing_cause_text, "
-
-Law enforcement staffing can impact how agencies allocate resources to solve violent crime. For example, severe staff shortages can reduce investigative personnel or increase the number of cases that individual officers are managing."
-))
-```
+Law enforcement staffing can impact how agencies allocate resources to solve violent crime. For example, severe staff shortages can reduce investigative personnel or increase the number of cases that individual officers are managing.
 
 ::: {.panel-tabset}
 
 
-```{r, results='asis'}
-cat("### Expenditures")
-```
+### Expenditures
 
 
 ```{r}
@@ -732,9 +653,7 @@ metric_trend_chart(
 ```
 
 
-```{r, results='asis'}
-cat("### Officers per capita")
-```
+### Officers per capita
 
 
 ```{r}
@@ -757,9 +676,7 @@ officer_trend |>
 ```
 
 
-```{r, results='asis'}
-cat("### Officers per violent offense")
-```
+### Officers per violent offense
 
 
 ```{r}
@@ -781,9 +698,7 @@ officer_trend |>
 :::
 
 
-```{r, results='asis' }
-cat("## Exploration of homicide solve rates in", state_name_text)
-```
+## Exploration of homicide solve rates in `r state_name_text`
 
 
 Explore homicide solve rates by available victim demographics and case characteristics for `r state_name_text` and other states in the [`r csg_region_full`](https://www.csg.org/regional-offices). Grouping states by region allows policymakers to compare their state to others that may be similar. Solve rates are included by race and ethnicity, gender, age, weapon type, and number of victims. For more information, see the data sources and methodology below.
@@ -847,14 +762,7 @@ The FBI stopped SRS data collection after data year 2020 and required law enforc
 
 Statewide crime rates are calculated by dividing the number of estimated incidents by the total population of the state. Population data come from the U.S. Census Bureau [Population Estimates Program](https://www.census.gov/programs-surveys/popest.html){target="_parent"}.
 
-Solve rates are the number of reported crimes cleared by arrest or by exceptional means divided by the number of reported crimes. A reported crime incident is [cleared by exceptional means](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019/topic-pages/clearances){target='_parent'} if a law enforcement agency is unable to arrest or formally charge a person with a crime, but the agency has met the following conditions:
-    
-a) Identified the person who committed the crime
-b) Gathered enough evidence to support an arrest, make a charge, and turn over the person to the court for prosecution
-c) Identified the suspect’s exact location so that the person could be taken into custody immediately
-d) Encountered a circumstance outside the control of law enforcement that prohibits the agency from arresting, charging, and prosecuting the person
-    
-Examples of exceptional clearances include the death of the person who committed the crime; the victim’s refusal to cooperate with the prosecution after the person who committed the crime has been identified; or the denial of extradition.
+{{< include _methodology-exceptional-clearance.qmd >}}
 
 Annual clearances can exceed newly reported incidents because cases reported in earlier years may be cleared. As a result, annual solve rates can exceed 100 percent. The charts display rates below zero at zero and identify those values in their tooltips.
 
