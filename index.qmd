@@ -212,7 +212,7 @@ axis_expansion_mult <- 0.5
 ### from: https://www.census.gov/topics/income-poverty/income/guidance/current-vs-constant-dollars.html
 ### first 4 characters of year drop footnote markers (e.g., "20252" is 2025)
 inflation_index_years <- readxl::read_xls(
-  csg_sp_path("JR_Clearance_Rates", "Data", "annual-index-value_annual-percent-change_2025.xls"),
+  "data/annual-index-value_annual-percent-change_2025.xls",
   skip = 2
 ) |>
   select(year = 1, inflation_index = 2) |>

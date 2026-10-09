@@ -9,3 +9,5 @@
 /.quarto/
 
 **/*.quarto_ipynb
+
+*.stackdump

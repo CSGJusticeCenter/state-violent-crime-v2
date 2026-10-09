@@ -1,0 +1,52 @@
+csg_region,state_name
+Eastern,Maine
+Eastern,New Hampshire
+Eastern,Vermont
+Eastern,Massachusetts
+Eastern,Rhode Island
+Eastern,Connecticut
+Eastern,New York
+Eastern,New Jersey
+Eastern,Pennsylvania
+Eastern,Delaware
+Eastern,Maryland
+Eastern,District of Columbia
+Southern,Alabama
+Southern,Arkansas
+Southern,Florida
+Southern,Georgia
+Southern,Kentucky
+Southern,Louisiana
+Southern,Mississippi
+Southern,Missouri
+Southern,North Carolina
+Southern,Oklahoma
+Southern,South Carolina
+Southern,Tennessee
+Southern,Texas
+Southern,Virginia
+Southern,West Virginia
+Midwestern,Illinois
+Midwestern,Indiana
+Midwestern,Iowa
+Midwestern,Kansas
+Midwestern,Michigan
+Midwestern,Minnesota
+Midwestern,Nebraska
+Midwestern,North Dakota
+Midwestern,Ohio
+Midwestern,South Dakota
+Midwestern,Wisconsin
+Western,Alaska
+Western,Arizona
+Western,California
+Western,Colorado
+Western,Hawaii
+Western,Idaho
+Western,Montana
+Western,Nevada
+Western,New Mexico
+Western,Oregon
+Western,Utah
+Western,Washington
+Western,Wyoming
