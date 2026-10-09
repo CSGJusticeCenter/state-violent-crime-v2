@@ -266,31 +266,63 @@ reactable_template <- function(df, sort_col = "rate", ...) {
   )
 }
 
-### function for percent change
-add_plus_sign_percent_change <- function(value) {
-
-  if (!is.numeric(value))
-    paste0(value)
-
-  if (!is.na(value) & value >= 0)
-    paste0("+", round(value,digits = 0),"%")
-
-  else
-    paste0(round(value,digits=0),"%")
-
+### signed whole number for table cells, e.g., "+3", "-5" or "0"
+### missing values render as blank cells
+format_signed <- function(value, suffix = "") {
+  if (is.na(value)) return("")
+  rounded <- round(value)
+  sign <- if (rounded > 0) "+" else ""
+  paste0(sign, rounded, suffix)
 }
 
-## function for percent point change
-add_plus_sign_percent_point_change <- function(value) {
+### reactable cell renderers take only the value
+add_plus_sign_percent_change <- function(value) format_signed(value, "%")
+add_plus_sign_percent_point_change <- function(value) format_signed(value)
 
-  if (!is.numeric(value))
-    paste0(value)
+### percent change from the first to the last year of a series
+pct_change_first_last <- function(x, year) {
+  (x[year == max(year)] - x[year == min(year)]) / x[year == min(year)]
+}
 
-  if (!is.na(value) & value >= 0)
-    paste0("+", round(value,digits = 0))
+### text helpers stop on missing input, so the failed page shows in the render log
+check_change <- function(x) {
+  if (length(x) != 1 || !is.finite(x)) {
+    stop("Expected one finite change value, got ", deparse(x), call. = FALSE)
+  }
+}
 
-  else
-    paste0(round(value,digits=0))
+### changes within half a percent or point read as about the same
+is_about_same <- function(x) abs(x) <= 0.005
+
+### compare a change for text, e.g., "4 percent lower than"
+### x is a proportion; unit "point" reads x as a percentage point change
+change_phrase <- function(x, unit = c("percent", "point")) {
+  check_change(x)
+  unit <- match.arg(unit)
+  if (is_about_same(x)) return("nearly the same as")
+
+  amount <- scales::comma(abs(x) * 100, 1)
+  word <- if (unit == "percent") {
+    "percent"
+  } else if (amount == "1") {
+    "percentage point"
+  } else {
+    "percentage points"
+  }
+  paste(amount, word, if (x > 0) "higher than" else "lower than")
+}
+
+### "increased" or "decreased" for a numeric change; zero reads as "increased"
+change_direction <- function(x, increase = "increased", decrease = "decreased") {
+  check_change(x)
+  if (x >= 0) increase else decrease
+}
+
+### describe a percent change, e.g., "increased by 18 percent" or "stayed about the same"
+change_by <- function(x) {
+  check_change(x)
+  if (is_about_same(x)) return("stayed about the same")
+  paste(change_direction(x), "by", scales::comma(abs(x) * 100, 1), "percent")
 }
 
 ### create function to clean up and visualize SHR data
