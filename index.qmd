@@ -196,7 +196,7 @@ max_viol_crime_off <- srs_us |>
   mutate(pct = incidents_reported / sum(incidents_reported))
 
 ### import and prep hex map geo
-hex <- sf::read_sf("us_states_hexgrid.geojson") |>
+hex <- sf::read_sf("data/us_states_hexgrid.geojson") |>
   select(state_abb = iso3166_2)
 
 hex_gj <- hex |>

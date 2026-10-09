@@ -1,27 +1,50 @@
 ## State violent crime interactive pages
 
-Sorry for the brief readme!
+Quarto site with one page per state plus DC (`state-viol-crime.qmd`) and a national page (`index.qmd`). Pages render to `_site/`, which Netlify deploys on push.
 
-`R/01-` through `R/06` pull and clean various data sources needed and save to .rds to be read into qmd
+Site: https://csg-state-violent-crime.netlify.app/ (password-protected; ask the team for the password)
 
-`R/07-` renders each state page to html and moves html files to `_site` for deploying on Netlify
+### Setup
 
-`R/08-` creates static plots for Marshall's ppt
+- R 4.6.1. Packages are managed with renv, which activates when R starts in the project root.
+- Run `renv::restore()` once after cloning to install the locked package versions.
+- Data comes from the CSG SharePoint `jr_data_library`, read through `csgjcr::csg_sp_path()`, so SharePoint must be synced locally.
 
-`R/09-` creates table of crime rates (per 10K people) by offense at national level (2019-2021), table of crime clearance rates by offense at national level (2019-2021), and crime rate plots 2010-2021 by offense at national level
+### Build
 
-`utils.R` contains various utility functions for the interactive pages
+1. `R/01-prep-agency-county-data.R` builds the county map and agency tables in `data/` from the CDE agency file in `jr_data_library`. Rerun when that file refreshes.
+2. `R/02-render-site.R` renders all 51 state pages and the national page, then copies `styles.css`, `img/` and `fonts/` into `_site/`.
 
-`state-viol-crime.qmd` is the main template file to render by state to html
+Run both from the project root, e.g. `Rscript R/02-render-site.R`. The pages also read state-level SRS, SHR, LEE and ASSLGF files directly from `jr_data_library`.
 
-`header.html` is used to create drop down menu to select state at top of each html
+### Annual update
 
-All data is from public sources and is contained in `data`
+| Setting | Location |
+|---|---|
+| Agency year and base year | `R/01-prep-agency-county-data.R` |
+| National page base year | `index.qmd` (`base_year`) |
+| SHR pooling start year | `index.qmd` and `state-viol-crime.qmd` (`shr_first_year`) |
+| Inflation index file | `data/annual-index-value_annual-percent-change_YYYY.xls`, referenced in both `.qmd` files |
+| Narrative text | `index.qmd` and `state-viol-crime.qmd` |
 
-HTML is saved to `_site` so that it can be automatically deployed to netlify on git push
+The latest SRS year comes from the data, so the state pages pick it up automatically.
 
-Site is published at https://csg-state-violent-crime.netlify.app/state-viol-crime-sc.html
+### Layout
 
-pw: csg_crime
+| Path | Contents |
+|---|---|
+| `R/utils.R` | Highcharter theme, chart and table helpers |
+| `R/agency-county-data.R` | Agency and county aggregation used by step 1 |
+| `R/local-map-data.R` | County map loading, including the merged NYC feature |
+| `R/download-county-maps.R` | Refreshes `maps/` from the pinned Highcharts map collection |
+| `data/` | Prepped agency data, CSG regions, inflation index, US hex grid |
+| `maps/` | Highcharts county maps (see `maps/README.md`) |
+| `img/`, `fonts/`, `styles.css` | Site assets |
+| `tests/` | testthat tests for the helpers |
+| `_archive/` | Retired pipeline scripts, one-off requests and old outputs |
 
-change
+### Tests
+
+```r
+testthat::test_dir("tests")
+```
