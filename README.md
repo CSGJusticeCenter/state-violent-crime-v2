@@ -29,7 +29,7 @@ Pushing to GitHub does not update the site. Netlify builds are stopped, and `_si
 
 | Branch | Deploys to |
 |---|---|
-| `main` | Live site |
+| `main` | Live site, then deletes previews of branches no longer on GitHub |
 | Any other | Preview at `<branch>--csg-state-violent-crime.netlify.app` |
 
 Workflow for an update:
@@ -42,6 +42,7 @@ Workflow for an update:
 Notes:
 
 - `_site/` is not tracked, so it doesn't change when you switch branches. It holds whatever was rendered last. Always re-render on `main` before a live deploy.
+- A preview stays up until its branch is deleted on GitHub and the next live deploy runs. Deleted previews can't be restored, but rerunning the script on the branch makes a new one.
 - The script stops if any page is missing from `_site/`. Each deploy replaces the whole site, so a missing page would go offline.
 - Both scripts run from the R console or a terminal with `Rscript`, from the project root.
 - To roll back, open the site's Deploys list in the Netlify dashboard and publish an earlier deploy.
