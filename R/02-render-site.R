@@ -1,5 +1,8 @@
 ## render 51 state violent crime pages and the US page to _site for netlify deploy
 
+# start from an empty _site so old libs and pages don't get deployed
+unlink("_site", recursive = TRUE)
+
 # define function to render qmd to html and name with state
 render_state <- function(state) {
   message("Rendering ", state, " violent crime page")
