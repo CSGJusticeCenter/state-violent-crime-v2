@@ -28,7 +28,7 @@ quarto::quarto_render("index.qmd", output_file = "index.html", quiet = TRUE)
 
 - `_site/` is git-ignored build output. Pushing to GitHub does not deploy, because Netlify builds are stopped.
 - `R/02-render-site.R` empties `_site/` before rendering. A one-state test render on a fresh checkout leaves `_site/` with only that page.
-- `R/03-deploy-site.R` checks that every page exists, then uploads `_site/` with the Netlify CLI. On `main` it updates the live site. On other branches it posts a preview at `<branch>--csg-state-violent-crime.netlify.app`.
+- `R/03-deploy-site.R` checks that every page exists, then uploads `_site/` with the Netlify CLI. On `main` it updates the live site, then deletes branch and PR previews whose branch is gone from GitHub. On other branches it posts a preview at `<branch>--csg-state-violent-crime.netlify.app`.
 - Never run the deploy script on `main`. Ask before running it for a preview, because preview URLs are reachable outside the team.
 - Pages and chart exports load the logo from `img/csgjc-logo.png` on the live site.
 
