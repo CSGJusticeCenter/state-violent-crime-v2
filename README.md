@@ -4,12 +4,30 @@ Quarto site with one page per state plus DC (`state-viol-crime.qmd`) and a natio
 
 Site: https://csg-state-violent-crime.netlify.app/ (password-protected; ask the team for the password)
 
+### Setup
+
+- R 4.6.1. Packages are managed with renv, which activates when R starts in the project root.
+- Run `renv::restore()` once after cloning to install the locked package versions.
+- Data comes from the CSG SharePoint `jr_data_library`, read through `csgjcr::csg_sp_path()`, so SharePoint must be synced locally.
+
 ### Build
 
 1. `R/01-prep-agency-county-data.R` builds the county map and agency tables in `data/` from the CDE agency file in `jr_data_library`. Rerun when that file refreshes.
 2. `R/02-render-site.R` renders all 51 state pages and the national page, then copies `styles.css`, `img/` and `fonts/` into `_site/`.
 
-The pages also read state-level SRS, SHR, LEE and ASSLGF files directly from `jr_data_library`.
+Run both from the project root, e.g. `Rscript R/02-render-site.R`. The pages also read state-level SRS, SHR, LEE and ASSLGF files directly from `jr_data_library`.
+
+### Annual update
+
+| Setting | Location |
+|---|---|
+| Agency year and base year | `R/01-prep-agency-county-data.R` |
+| National page base year | `index.qmd` (`base_year`) |
+| SHR pooling start year | `index.qmd` and `state-viol-crime.qmd` (`shr_first_year`) |
+| Inflation index file | `data/annual-index-value_annual-percent-change_YYYY.xls`, referenced in both `.qmd` files |
+| Narrative text | `index.qmd` and `state-viol-crime.qmd` |
+
+The latest SRS year comes from the data, so the state pages pick it up automatically.
 
 ### Layout
 
