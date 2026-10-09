@@ -1,6 +1,6 @@
 ## State violent crime interactive pages
 
-Quarto site with one page per state plus DC (`state-viol-crime.qmd`) and a national page (`index.qmd`). Pages render to `_site/`, which Netlify deploys on push.
+Quarto site with one page per state plus DC (`state-viol-crime.qmd`) and a national page (`index.qmd`). Pages render to `_site/`, which is uploaded to Netlify from a local machine. `_site/` is not committed.
 
 Site: https://csg-state-violent-crime.netlify.app/ (password-protected; ask the team for the password)
 
@@ -15,7 +15,9 @@ Site: https://csg-state-violent-crime.netlify.app/ (password-protected; ask the 
 1. `R/01-prep-agency-county-data.R` builds the county map and agency tables in `data/` from the CDE agency file in `jr_data_library`. Rerun when that file refreshes.
 2. `R/02-render-site.R` renders all 51 state pages and the national page, then copies `styles.css`, `img/` and `fonts/` into `_site/`.
 
-Run both from the project root, e.g. `Rscript R/02-render-site.R`. The pages also read state-level SRS, SHR, LEE and ASSLGF files directly from `jr_data_library`.
+3. `R/03-deploy-site.R` checks that every page exists in `_site/`, then uploads it with `quarto publish netlify --no-render`. Netlify keeps past deploys, and any of them can be restored from the dashboard's Deploys list.
+
+Run each from the project root, e.g. `Rscript R/02-render-site.R`. The first deploy prompts for a Netlify login and the target site, then saves the site ID in `_publish.yml`. The pages also read state-level SRS, SHR, LEE and ASSLGF files directly from `jr_data_library`.
 
 ### Annual update
 

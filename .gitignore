@@ -11,3 +11,5 @@
 **/*.quarto_ipynb
 
 *.stackdump
+
+/_site/
