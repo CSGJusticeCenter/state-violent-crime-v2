@@ -18,6 +18,17 @@ test_that("bad values in visible text are reported with context", {
   expect_equal(unique(found$file), basename(page))
 })
 
+test_that("alt, title and aria-label attributes are checked", {
+  page <- write_page(paste0(
+    "<img alt=\"Solve rate NA\">",
+    "<a title=\"Change of Inf\">link</a>",
+    "<div aria-label=\"Rate NaN\"></div>",
+    "<span class=\"NA\">ok</span>"
+  ))
+  found <- find_bad_values(page)
+  expect_setequal(found$value, c("NA", "Inf", "NaN"))
+})
+
 test_that("widget data and ordinary words are not flagged", {
   page <- write_page(paste0(
     "<p>More Information on NAICS codes in Nashville.</p>",

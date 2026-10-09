@@ -5,38 +5,46 @@ source("R/site-checks.R")
 
 n_parallel <- 4
 
-pages <- commandArgs(trailingOnly = TRUE)
+all_pages <- c("US", state.abb, "DC")
+
+pages <- unique(toupper(commandArgs(trailingOnly = TRUE)))
 if (length(pages) == 0) {
-  pages <- c("US", state.abb, "DC")
+  pages <- all_pages
 }
 
-# renders run in temporary copies of the project; renv loads this project's library
-Sys.setenv(RENV_PROJECT = normalizePath("."))
+unknown_pages <- setdiff(pages, all_pages)
+if (length(unknown_pages) > 0) {
+  stop("Unknown pages: ", toString(unknown_pages), call. = FALSE)
+}
 
-# renv's lockfile check adds ~2.5 s to every R process a render starts,
-# and its sandbox lock stalls parallel renders for up to 5 minutes
-Sys.setenv(
+# settings for the R processes each render starts
+# RENV_PROJECT points renv in each slot at this project's library
+# renv's lockfile check adds ~2.5 s per page, and its sandbox lock stalls
+# parallel renders for up to 5 minutes
+render_env <- c(
+  "current",
+  RENV_PROJECT = normalizePath("."),
   RENV_CONFIG_SYNCHRONIZED_CHECK = "FALSE",
   RENV_CONFIG_SANDBOX_ENABLED = "FALSE"
 )
 
-# start from an empty _site so old libs and pages don't get deployed
-unlink("_site", recursive = TRUE)
-
 # Quarto stages widget libraries in the project's libs/ folder mid-render,
 # so parallel renders each need their own copy of the project
-make_slot <- function(i) {
-  dir <- file.path(tempdir(), paste0("render-slot-", i))
+# slots copy everything except git, renv, build output and archived files
+make_slot <- function() {
+  dir <- tempfile("render-slot-")
   dir.create(dir)
-  file.copy(
-    c("_quarto.yaml", "state-viol-crime.qmd", "index.qmd", "styles.css", "R", "data", "maps"),
-    dir, recursive = TRUE
+
+  entries <- list.files(all.files = TRUE, no.. = TRUE)
+  skip <- grepl("^\\.|^_site$|^_archive$|^renv$|^libs$|_files$", entries)
+  file.copy(entries[!skip], dir, recursive = TRUE)
+
+  writeLines(
+    'source(file.path(Sys.getenv("RENV_PROJECT"), "renv/activate.R"))',
+    file.path(dir, ".Rprofile")
   )
-  writeLines('source(file.path(Sys.getenv("RENV_PROJECT"), "renv/activate.R"))', file.path(dir, ".Rprofile"))
   dir
 }
-
-slots <- purrr::map_chr(seq_len(n_parallel), make_slot)
 
 # start a quarto render process for one page in a free slot
 start_render <- function(page, slot) {
@@ -59,57 +67,77 @@ start_render <- function(page, slot) {
     start = Sys.time(),
     process = processx::process$new(
       quarto::quarto_path(), args,
-      wd = slot, stdout = log, stderr = "2>&1"
+      wd = slot, env = render_env,
+      stdout = log, stderr = "2>&1",
+      cleanup_tree = TRUE
     )
   )
 }
 
-queue <- pages
-running <- list()
-timings <- tibble::tibble(page = character(), secs = numeric())
-run_start <- Sys.time()
+# render pages in parallel slots, merge their output into _site and return
+# each page's render time
+# on any exit, including errors and interrupts, running renders are killed
+# and slots are removed
+render_pages <- function(pages) {
+  slots <- purrr::map_chr(seq_len(min(n_parallel, length(pages))), \(i) make_slot())
+  running <- list()
 
-while (length(queue) > 0 || length(running) > 0) {
-  free_slots <- setdiff(slots, purrr::map_chr(running, "slot"))
+  on.exit({
+    purrr::walk(running, \(job) job$process$kill_tree())
+    unlink(slots, recursive = TRUE)
+  })
 
-  while (length(free_slots) > 0 && length(queue) > 0) {
-    running[[queue[1]]] <- start_render(queue[1], free_slots[1])
-    queue <- queue[-1]
-    free_slots <- free_slots[-1]
-  }
+  queue <- pages
+  timings <- tibble::tibble(page = character(), secs = numeric())
 
-  Sys.sleep(0.2)
+  while (length(queue) > 0 || length(running) > 0) {
+    free_slots <- setdiff(slots, purrr::map_chr(running, "slot"))
 
-  for (job in running) {
-    if (job$process$is_alive()) next
-
-    running[[job$page]] <- NULL
-
-    if (job$process$get_exit_status() != 0) {
-      purrr::walk(running, \(other) other$process$kill_tree())
-      message(paste(tail(readLines(job$log), 20), collapse = "\n"))
-      stop(job$page, " page failed to render", call. = FALSE)
+    while (length(free_slots) > 0 && length(queue) > 0) {
+      running[[queue[1]]] <- start_render(queue[1], free_slots[1])
+      queue <- queue[-1]
+      free_slots <- free_slots[-1]
     }
 
-    secs <- as.numeric(difftime(Sys.time(), job$start, units = "secs"))
-    timings <- tibble::add_row(timings, page = job$page, secs = secs)
-    message(sprintf("%s rendered in %.1f s (%d/%d)", job$page, secs, nrow(timings), length(pages)))
+    Sys.sleep(0.2)
+
+    for (job in running) {
+      if (job$process$is_alive()) next
+
+      running[[job$page]] <- NULL
+
+      if (job$process$get_exit_status() != 0) {
+        log_lines <- grep("^\\s*\\d+/\\d+|^\\s*$", readLines(job$log), value = TRUE, invert = TRUE)
+        message(paste(tail(log_lines, 30), collapse = "\n"))
+        stop(job$page, " page failed to render", call. = FALSE)
+      }
+
+      secs <- as.numeric(difftime(Sys.time(), job$start, units = "secs"))
+      timings <- tibble::add_row(timings, page = job$page, secs = secs)
+      message(sprintf("%s rendered in %.1f s (%d/%d)", job$page, secs, nrow(timings), length(pages)))
+    }
   }
+
+  dir.create("_site")
+  purrr::walk(slots, \(slot) {
+    file.copy(list.files(file.path(slot, "_site"), full.names = TRUE), "_site", recursive = TRUE, overwrite = TRUE)
+  })
+
+  timings
 }
 
+# start from an empty _site so old libs and pages don't get deployed
+unlink("_site", recursive = TRUE)
+
+run_start <- Sys.time()
+timings <- render_pages(pages)
 run_secs <- as.numeric(difftime(Sys.time(), run_start, units = "secs"))
+
 message(sprintf(
   "Rendered %d pages in %.1f minutes, slowest %s at %.1f s",
   length(pages), run_secs / 60,
   timings$page[which.max(timings$secs)], max(timings$secs)
 ))
-
-# merge each slot's pages and libs into _site
-dir.create("_site")
-purrr::walk(slots, \(slot) {
-  file.copy(list.files(file.path(slot, "_site"), full.names = TRUE), "_site", recursive = TRUE, overwrite = TRUE)
-})
-unlink(slots, recursive = TRUE)
 
 # copy css stylesheet site folder
 file.copy(
@@ -134,7 +162,7 @@ file.copy(
   overwrite = TRUE
 )
 
-# flag NA, NaN and Inf in page text
+# flag NA, NaN and Inf in page text; chart and table contents are not checked
 bad_values <- list.files("_site", pattern = "\\.html$", full.names = TRUE) |>
   purrr::map(find_bad_values) |>
   purrr::list_rbind()

@@ -19,7 +19,10 @@ netlify login
 ### Build
 
 1. `R/01-prep-agency-county-data.R` builds the county map and agency tables in `data/` from the CDE agency file in `jr_data_library`. Rerun when that file refreshes.
-2. `R/02-render-site.R` empties `_site/`, renders all 51 state pages and the national page four at a time, then copies `styles.css`, `img/` and `fonts/` into `_site/`. It prints each page's render time and warns about NA, NaN or Inf in page text. `Rscript R/02-render-site.R NY US` renders only the listed pages.
+2. `R/02-render-site.R` empties `_site/`, renders all 51 state pages and the national page four at a time, then copies `styles.css`, `img/` and `fonts/` into `_site/`. It prints each page's render time and stops at the first page that fails, showing Quarto's error.
+   - `Rscript R/02-render-site.R NY US` renders only the listed pages. Unknown page names stop the script before `_site/` is touched.
+   - Set `n_parallel <- 1` at the top of the script to render one page at a time.
+   - After rendering, it warns about NA, NaN or Inf in page text and in `alt`, `title` and `aria-label` attributes. Chart and table contents are not checked, because widget data holds many legitimate NA values.
 
 Run from the project root, in the R console or with `Rscript R/02-render-site.R`. The pages also read state-level SRS, SHR, LEE and ASSLGF files directly from `jr_data_library`.
 
