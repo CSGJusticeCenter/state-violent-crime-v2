@@ -5,6 +5,9 @@ source("R/site-checks.R")
 
 n_parallel <- 4
 
+# a page that fails is retried once; a real error fails both times
+max_attempts <- 2
+
 all_pages <- c("US", state.abb, "DC")
 
 pages <- unique(toupper(commandArgs(trailingOnly = TRUE)))
@@ -74,6 +77,25 @@ start_render <- function(page, slot) {
   )
 }
 
+# a failed render's exit status, last knitr chunk and Quarto output
+# knitr progress lines are dropped except the last, which shows where it stopped
+render_failure <- function(job, status) {
+  log_lines <- readLines(job$log)
+  progress <- grepl("^\\s*\\d+/\\d+", log_lines)
+  last_chunk <- trimws(tail(log_lines[progress], 1))
+  output <- log_lines[!progress & nzchar(trimws(log_lines))]
+
+  paste(
+    c(
+      sprintf("%s page failed with exit status %s in %s", job$page, status, basename(job$slot)),
+      if (length(last_chunk) > 0) paste("Last knitr progress:", last_chunk),
+      "Quarto output:",
+      output
+    ),
+    collapse = "\n"
+  )
+}
+
 # render pages in parallel slots, merge their output into _site and return
 # each page's render time
 # on any exit, including errors and interrupts, running renders are killed
@@ -88,6 +110,7 @@ render_pages <- function(pages) {
   })
 
   queue <- pages
+  attempts <- purrr::set_names(rep(0, length(pages)), pages)
   timings <- tibble::tibble(page = character(), secs = numeric())
 
   while (length(queue) > 0 || length(running) > 0) {
@@ -95,6 +118,7 @@ render_pages <- function(pages) {
 
     while (length(free_slots) > 0 && length(queue) > 0) {
       running[[queue[1]]] <- start_render(queue[1], free_slots[1])
+      attempts[queue[1]] <- attempts[queue[1]] + 1
       queue <- queue[-1]
       free_slots <- free_slots[-1]
     }
@@ -106,10 +130,18 @@ render_pages <- function(pages) {
 
       running[[job$page]] <- NULL
 
-      if (job$process$get_exit_status() != 0) {
-        log_lines <- grep("^\\s*\\d+/\\d+|^\\s*$", readLines(job$log), value = TRUE, invert = TRUE)
-        message(paste(tail(log_lines, 30), collapse = "\n"))
-        stop(job$page, " page failed to render", call. = FALSE)
+      status <- job$process$get_exit_status()
+
+      if (status != 0) {
+        message(render_failure(job, status))
+
+        if (attempts[job$page] < max_attempts) {
+          message("Retrying ", job$page)
+          queue <- c(job$page, queue)
+          next
+        }
+
+        stop(job$page, " page failed to render ", max_attempts, " times", call. = FALSE)
       }
 
       secs <- as.numeric(difftime(Sys.time(), job$start, units = "secs"))
