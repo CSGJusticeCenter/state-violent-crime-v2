@@ -9,8 +9,12 @@ Site: https://csg-state-violent-crime.netlify.app/ (password-protected; ask the 
 - R 4.6.1. Packages are managed with renv, which activates when R starts in the project root.
 - Run `renv::restore()` once after cloning to install the locked package versions.
 - Data comes from the CSG SharePoint `jr_data_library`, read through `csgjcr::csg_sp_path()`, so SharePoint must be synced locally.
+- Deploying needs access to the site in the CSG Netlify team and the Netlify CLI. Install the CLI with Node.js and log in once:
 
-- Deploying needs the Quarto CLI and access to the site in the CSG Netlify team.
+```sh
+npm install -g netlify-cli
+netlify login
+```
 
 ### Build
 
@@ -21,17 +25,25 @@ Run from the project root, in the R console or with `Rscript R/02-render-site.R`
 
 ### Deploy
 
-Pushing to GitHub does not update the site. Netlify builds are stopped, and `_site/` is uploaded from a local machine.
+Pushing to GitHub does not update the site. Netlify builds are stopped, and `_site/` is uploaded from a local machine with `R/03-deploy-site.R`. The script picks the target from the current git branch.
 
-1. Run `R/02-render-site.R` to completion.
-2. Check a few pages in `_site/` locally.
-3. In a terminal at the project root, run `Rscript R/03-deploy-site.R`.
+| Branch | Deploys to |
+|---|---|
+| `main` | Live site |
+| Any other | Preview at `<branch>--csg-state-violent-crime.netlify.app` |
+
+Workflow for an update:
+
+1. Make changes on a branch. For quick checks, render one state and open its page in `_site/` in a browser.
+2. Run `R/02-render-site.R`, then `R/03-deploy-site.R` to post a preview for review. Rerunning on the same branch updates the same preview URL.
+3. Merge the PR.
+4. Switch to `main`, pull, run `R/02-render-site.R`, then `R/03-deploy-site.R` to update the live site.
 
 Notes:
 
-- Use a terminal (Positron's Terminal tab works), not the R console. Quarto prompts for confirmation before each upload, and those prompts don't work through the R console.
+- `_site/` is not tracked, so it doesn't change when you switch branches. It holds whatever was rendered last. Always re-render on `main` before a live deploy.
 - The script stops if any page is missing from `_site/`. Each deploy replaces the whole site, so a missing page would go offline.
-- The first deploy opens a browser for the Netlify login and asks for the target site. Pick the existing `csg-state-violent-crime` site. The site ID is saved in `_publish.yml`, which is committed.
+- Both scripts run from the R console or a terminal with `Rscript`, from the project root.
 - To roll back, open the site's Deploys list in the Netlify dashboard and publish an earlier deploy.
 
 ### Annual update
