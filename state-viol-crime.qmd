@@ -32,6 +32,9 @@ library(reactablefmtr)
 source("R/utils.R")
 source("R/local-map-data.R")
 
+# htmlwidgets seeds its element IDs from this, so rerenders give identical HTML
+set.seed(2019)
+
 # Check if params exists (rendering context) or create it (interactive context)
 if (!exists("params")) {
   params <- list(state = "DC")  # Default for interactive use
