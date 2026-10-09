@@ -6,9 +6,10 @@ library(csgjcr)
 
 source("R/local-map-data.R")
 source("R/agency-county-data.R")
+source("R/page-data.R")
 
+### base_year comes from R/page-data.R
 agency_year <- 2025
-base_year <- 2019
 
 raw <- read_rds(csg_sp_path("jr_data_library", "data", "analysis", "fbi", "srs", "fbi_srs_agency.rds"))
 

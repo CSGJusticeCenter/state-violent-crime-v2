@@ -28,87 +28,31 @@ library(htmlwidgets)
 library(reactable)
 library(reactablefmtr)
 
- 
 source("R/utils.R")
+source("R/page-data.R")
 source("R/local-map-data.R")
 
 # htmlwidgets seeds its element IDs from this, so rerenders give identical HTML
 set.seed(2019)
 
-# Check if params exists (rendering context) or create it (interactive context)
+# params exists when Quarto renders; interactive runs use the YAML default
 if (!exists("params")) {
-  params <- list(state = "DC")  # Default for interactive use
+  params <- list(state = "NY")
 }
 
 state <- csg_state_convert(params$state, from = "abbr", "name")
 state_abbr_params <- params$state
 state_name_text <- if_else(params$state == "DC", "the District of Columbia", state)
+show_solved <- !state %in% states_to_exclude_from_solved_rate_viz
 
-srs_state_new <- read_rds(csg_sp_path("jr_data_library", "data", "analysis", "fbi", "srs", "fbi_srs_estimated_crimes_state.rds")) |>
-  mutate(crime_cat = if_else(group %in% c("Aggravated assault", "Homicide", "Rape", "Robbery"), "Violent", "Property")) |> 
-  select(-state_fips, -group_cat, -starts_with("rate")) |> 
-  filter(indicator != "Unsolved rate") |>
-  pivot_wider(names_from = indicator, values_from = n) |> 
-  janitor::clean_names() |> 
-  select(
-    year, state_name, state_abbr, group, crime_cat, pop_total, pop_adult,
-    incidents_reported, incidents_unsolved, incidents_cleared) |> 
-  mutate(
-    pct_unsolved = incidents_unsolved / incidents_reported,
-    incidents_reported_rate_total = incidents_reported / pop_total,
-    incidents_reported_rate_adult = incidents_reported / pop_adult
-  )
-
+srs_state_new <- read_srs_state()
 latest_year <- max(srs_state_new$year)
 first_year <- latest_year - 10
 
-srs_state <- srs_state_new |> 
-  filter(state_name == state, crime_cat == "Violent", year >= first_year) |>
-  mutate(
-    incidents_solved = incidents_reported - incidents_unsolved,
-    pct_solved = incidents_solved / incidents_reported
-  )
-
-srs_by_cat_state <- srs_state_new |>
-  filter(state_name == state, crime_cat == "Violent", year >= first_year) |>
-  group_by(year, state_name, state_abbr) |>
-  summarize(
-    pop_total = sum(pop_total[group == "Homicide"], na.rm = TRUE),
-    across(c(incidents_reported, incidents_unsolved), \(x) sum(x, na.rm = TRUE))
-  ) |>
-  ungroup() |> 
-  mutate(
-    incidents_reported_rate_total = incidents_reported / pop_total,
-    incidents_solved = incidents_reported - incidents_unsolved,
-    pct_solved = incidents_solved / incidents_reported
-  )
-
-
-srs_by_cat_us <- srs_state_new |>
-  filter(crime_cat == "Violent", year >= first_year) |>
-  group_by(year, state_name = "United States", state_abbr = "U.S.") |>
-  summarize(
-    pop_total = sum(pop_total[group == "Homicide"], na.rm = TRUE),
-    across(c(incidents_reported, incidents_unsolved), \(x) sum(x, na.rm = TRUE))
-  ) |>
-  mutate(
-    incidents_reported_rate_total = incidents_reported / pop_total,
-    incidents_solved = incidents_reported - incidents_unsolved,
-    pct_solved = incidents_solved / incidents_reported
-  )
-
-srs_us <- srs_state_new |>
-  filter(crime_cat == "Violent", year >= first_year) |>
-  group_by(year, state_name = "United States", state_abbr = "U.S.", group) |>
-  summarize(
-    across(c(pop_total, incidents_reported, incidents_unsolved), \(x) sum(x, na.rm = TRUE))
-  ) |>
-  ungroup() |> 
-  mutate(
-    incidents_reported_rate_total = incidents_reported / pop_total,
-    incidents_solved = incidents_reported - incidents_unsolved,
-    pct_solved = incidents_solved / incidents_reported
-  )
+srs_state <- violent_by_offense(srs_state_new, first_year, state)
+srs_by_cat_state <- violent_totals(srs_state_new, first_year, state)
+srs_by_cat_us <- violent_totals(srs_state_new, first_year)
+srs_us <- violent_by_offense(srs_state_new, first_year)
 
 ### county map and agency tables come from R/01-prep-agency-county-data.R
 srs_solved_by_county_to_map <- read_rds("data/county_map.rds") |>
@@ -117,8 +61,9 @@ srs_solved_by_county_to_map <- read_rds("data/county_map.rds") |>
 agency_table_all <- read_rds("data/agency_table.rds")
 
 ### years are read before filtering so states with no agency rows still get them
+### the agency base year comes from the data built by R/01-prep-agency-county-data.R
 agency_year <- agency_table_all$agency_year[1]
-base_year <- agency_table_all$base_year[1]
+agency_base_year <- agency_table_all$base_year[1]
 
 srs_solved_by_agency_to_table <- agency_table_all |>
   filter(state_abbr == state_abbr_params)
@@ -126,99 +71,48 @@ srs_solved_by_agency_to_table <- agency_table_all |>
 srs_solved_by_agency_and_offense_to_table <- read_rds("data/agency_offense_table.rds") |>
   filter(state_abbr == state_abbr_params)
 
-### create object with states to exclude from solve rate analysis
-states_to_exclude_from_solved_rate_viz <- c("Illinois")
-
-# create title of page
-# we don't have IL clearance rate data so take that out of title
-doc_title <- case_when(
-  state %in% states_to_exclude_from_solved_rate_viz ~ paste(state, "data on violent crime"),
-  state == "District of Columbia" ~ paste(state, "data on violent crime and arrests"),
-  TRUE ~ paste(state, "data on violent crime and arrests"),
-  )
-
-axis_expansion_mult <- 0.5
+### pages without solve-rate data drop "and arrests" from the title
+doc_title <- if_else(
+  show_solved,
+  paste(state, "data on violent crime and arrests"),
+  paste(state, "data on violent crime")
+)
 ```
 
 ```{r }
 ### inflation-adjusted state and local police protection expenditures
-inflation_index_years <- readxl::read_xls(
-  "data/annual-index-value_annual-percent-change_2025.xls",
-  skip = 2
-) |>
-  select(year = 1, inflation_index = 2) |>
-  mutate(year = as.numeric(str_sub(year, 1, 4))) |>
-  filter(!is.na(year), !is.na(inflation_index))
+asslgf_clean <- read_police_spending(state_abbr_params, read_inflation_index())
 
-asslgf_clean <- read_rds(csg_sp_path("jr_data_library", "data", "analysis", "census", "asslgf", "census_asslgf_state.rds")) |>
-  filter(indicator == "Expenditures", group == "Police Protection",
-         geo_abbr == state_abbr_params, year >= max(year) - 10) |>
-  left_join(inflation_index_years, by = "year") |>
-  mutate(n_inflation_adjusted_latest_year_dollars = n * inflation_index[year == max(year)] / inflation_index)
-
-### employee rates use the population covered by reporting agencies
-lee_state <- read_rds(csg_sp_path("jr_data_library", "data", "analysis", "fbi", "lee", "fbi_lee_state.rds")) |>
-  filter(geo_abbr %in% c(state_abbr_params, "US"), group == "Officers",
-         year >= max(year) - 10) |>
+### officers per violent crime use each geography's SRS violent crime rate
+lee_state <- read_lee_officers(c(state_abbr_params, "US")) |>
   mutate(state_name = if_else(geo_abbr == "US", "United States", state),
          state_abbr = geo_abbr)
 
 ucr_employee_data_by_state_clean <- lee_state |>
   filter(geo_abbr == state_abbr_params) |>
-  left_join(srs_by_cat_state |> select(year, incidents_reported_rate_total), by = "year") |>
-  mutate(officer_pop_rate_per_10k = rate_covered * 10000,
-         officer_per_violent_offense_1k = rate_covered / incidents_reported_rate_total * 1000)
+  left_join(srs_by_cat_state |> select(year, violent_rate = incidents_reported_rate_total), by = "year") |>
+  add_officer_rates()
 
 ucr_employee_data_national_clean <- lee_state |>
   filter(geo_abbr == "US") |>
-  left_join(srs_by_cat_us |> select(year, incidents_reported_rate_total), by = "year") |>
-  mutate(officer_pop_rate_per_10k = rate_covered * 10000,
-         officer_per_violent_offense_1k = rate_covered / incidents_reported_rate_total * 1000)
-
+  left_join(srs_by_cat_us |> select(year, violent_rate = incidents_reported_rate_total), by = "year") |>
+  add_officer_rates()
 ```
 
 ```{r }
-### import csg region information 
-### to include bar for region's data alongside state's data in supplemental homicide section
-csg_regions_filtered <- read_csv("data/csg-regions.csv") |>
-  mutate(state_abbr = csgjcr::csg_state_convert(state_name,
-                                                "name",
-                                                "abbr"),
-         region_to_keep = paste0(csg_region[state_abbr==state_abbr_params])) |> 
-  ### keep only states in same region as state we're analyzing
-  ### drop state for current page -- we want all states in region aside from this state
-  filter(region_to_keep==csg_region,
-         state_abbr!=state_abbr_params) |> 
-  dplyr::select(-region_to_keep) |> 
-  mutate(csg_region = paste0("Other ",csg_region," States"))
+### other states in this state's CSG region, for the homicide comparisons
+csg_regions <- read_csv("data/csg-regions.csv", show_col_types = FALSE) |>
+  mutate(state_abbr = csg_state_convert(state_name, "name", "abbr"))
 
-### create label for later dynamic text
-csg_regions_raw <- read_csv("data/csg-regions.csv") |>
-  mutate(state_abbr = csgjcr::csg_state_convert(state_name,
-                                                "name",
-                                                "abbr"),
-         region_to_keep = paste0(csg_region[state_abbr==state_abbr_params])) |> 
-  ### keep only states in same region as state we're analyzing
-  ### drop state for current page -- we want all states in region aside from this state
-  filter(region_to_keep==csg_region,
-         state_abbr!=state_abbr_params) |> 
-  dplyr::select(-region_to_keep)
+csg_region <- csg_regions$csg_region[csg_regions$state_abbr == state_abbr_params]
+csg_region_full <- paste0("CSG ", csg_region, " Region")
 
-csg_region <- paste0(csg_regions_raw$csg_region[1])
-
-csg_region_full <- paste0("CSG ",csg_region," Region")
-
-```
-
-
-```{r }
 ### homicide case characteristics from state-level SHR data
 shr_state <- read_rds(csg_sp_path("jr_data_library", "data", "analysis", "fbi", "shr", "fbi_shr_state.rds"))
-shr_first_year <- 2022
 shr_years <- paste0(shr_first_year, "–", max(shr_state$year))
-shr_region_abbr <- csg_regions_raw$state_abbr
+shr_region_abbr <- csg_regions$state_abbr[csg_regions$csg_region == csg_region &
+                                            csg_regions$state_abbr != state_abbr_params]
 shr_region_label <- paste0("Other ", csg_region, " States")
-
 ```
 
 ---
@@ -560,7 +454,7 @@ cat("
 ```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz}
 to_plot <- srs_by_cat_state |> 
   bind_rows(srs_by_cat_us) |> 
-  filter(year != 2021) |> 
+  filter(year != solve_rate_skip_year) |> 
   mutate(
     ### shouldn't be an issue for overall viz
     ### but just in case, recoding any solved rate below 0 to 0
@@ -624,7 +518,7 @@ cat("
 ```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz}
 
 to_plot <- srs_state |> 
-  filter(year != 2021) |> 
+  filter(year != solve_rate_skip_year) |> 
   left_join(offense_pal, by = c("group" = "crime")) |> 
   mutate(
     ### recode any solved rate below 0 to 0
@@ -650,15 +544,7 @@ to_plot <- srs_state |>
     ) |> 
   arrange(desc(year), pct_solved_clean)
 
-# rng <- range(to_plot$pct_solved_clean)
-# mult <- diff(rng) * axis_expansion_mult
-# 
-# y_min <- rng[1] - mult
-# y_min <- if_else(y_min < 0, 0, y_min)
-# y_max <- rng[2] + mult
-# y_max <- if_else(y_max > 100, 100, y_max)
-
-to_plot |>   
+to_plot |>
   hchart(
     "spline",
     hcaes(year, pct_solved_clean, group = group),
@@ -700,12 +586,6 @@ total_agencies <- comma(n_distinct(srs_solved_by_agency_to_table$ori))
 
 ```{r, eval=!state %in% states_to_exclude_from_solved_rate_viz}
 #| fig-height: 5.5
-
-### choose blues from csgjcr for now
-blue1 <- "#d4e9f8"
-blue2 <- "#9ed4ef"
-blue4 <- "#007392"
-blue5 <- "#00475d"
 
 ### one row per map feature, so counties with no data still get a tooltip
 map_name <- paste0("countries/us/us-", tolower(state_abbr_params), "-all")
@@ -760,17 +640,13 @@ hcmap_local(
     ) |>   
   hc_colorAxis(endOnTick = TRUE,
                startOnTick = TRUE,
-               stops = color_stops(4, c(blue1,
-                                        blue2,
-                                        blue4,
-                                        blue5)),
+               stops = color_stops(length(rate_colors), rate_colors),
                labels = list(format = "{value:.0f}%",
                              style = list(fontSize = "12px",
                                           fontFamily = default_fonts))) |> 
   hc_legend(align = "center",
             horizontalAlign = "bottom",
             layout = "horizontal",
-            # title = list(text = "Percent Change"),
             symbolHeight = 25,
             symbolWidth = 315,
             x = 0,
@@ -850,7 +726,7 @@ srs_solved_by_agency_to_table |>
         format = colFormat(digits = 0, percent = TRUE)
         ),
       solved_rate_change = colDef(
-        name = paste0("Percentage point change in solve rate (", base_year, " to ", agency_year, ")"),
+        name = paste0("Percentage point change in solve rate (", agency_base_year, " to ", agency_year, ")"),
         cell = add_plus_sign_percent_point_change
         )
       )
@@ -1304,7 +1180,7 @@ to_plot |>
   ) |> 
   hc_title(text = paste0("Homicide solve rates by race and ethnicity")) |>
   hc_subtitle(text = shr_years) |>
-  hc_caption(text = list("This analysis excludes records where a victim's race and ethnicity is unknown<br>FBI Supplementary Homicide Report (SHR) Data")) |>     # hc_add_theme(hc_theme_jc) |>
+  hc_caption(text = list("This analysis excludes records where a victim's race and ethnicity is unknown<br>FBI Supplementary Homicide Report (SHR) Data")) |>
     hc_tooltip(formatter = JS("function(){return(this.point.tooltip)}")) |>
     hc_plotOptions(
       series = list(animation = FALSE),
@@ -1346,9 +1222,6 @@ to_plot |>
     "column",
     hcaes(group, clearance_rate,
           group=group_for_plot),
-    # color = jr_pal[1],
-    # dashStyle = c("solid"),
-    # opacity = c(1, 0.75),
     accessibility = list(
       point = list(
         valueDescriptionFormat = "year: {point.x:.0f}, rate: {point.y:.1f}"
@@ -1358,7 +1231,6 @@ to_plot |>
   hc_title(text = paste0("Homicide solve rates by gender")) |>
   hc_subtitle(text = shr_years) |>
   hc_caption(text = list("This analysis excludes records where a victim's gender is unknown<br>FBI Supplementary Homicide Report (SHR) Data")) |>     
-# hc_add_theme(hc_theme_jc) |>
     hc_tooltip(formatter = JS("function(){return(this.point.tooltip)}")) |>
     hc_plotOptions(
       series = list(animation = FALSE),
@@ -1401,9 +1273,6 @@ to_plot |>
     "column",
     hcaes(group, clearance_rate,
           group = group_for_plot),
-    # color = jr_pal[1],
-    # dashStyle = c("solid"),
-    # opacity = c(1, 0.75),
     accessibility = list(
       point = list(
         valueDescriptionFormat = "year: {point.x:.0f}, rate: {point.y:.1f}"
@@ -1453,9 +1322,6 @@ to_plot |>
     "column",
     hcaes(group, clearance_rate,
           group = group_for_plot),
-    # color = jr_pal[1],
-    # dashStyle = c("solid"),
-    # opacity = c(1, 0.75),
     accessibility = list(
       point = list(
         valueDescriptionFormat = "year: {point.x:.0f}, rate: {point.y:.1f}"
@@ -1507,9 +1373,6 @@ to_plot |>
     "column",
     hcaes(group, clearance_rate,
           group=group_for_plot),
-    # color = jr_pal[1],
-    # dashStyle = c("solid"),
-    # opacity = c(1, 0.75),
     accessibility = list(
       point = list(
         valueDescriptionFormat = "year: {point.x:.0f}, rate: {point.y:.1f}"
@@ -1531,7 +1394,6 @@ to_plot |>
       title = "",
       labels = list(y = 25),
       categories = levels(to_plot$group)
-      # reversed = 'true',
     ) |>
   hc_setup() |>
   hc_yAxis(
@@ -1574,7 +1436,7 @@ Annual clearances can exceed newly reported incidents because cases reported in 
 
 Agency- and county-level violent crime and solve rate data presented above are restricted to agencies reporting data for all 12 months in `r agency_year`. The calculation of population covered by reporting agencies, as well as the number of reporting agencies by county, is also based on agencies with violent crime data for all 12 months. 
 
-Each law enforcement agency appears on the map in exactly one county. Agencies based in a single county use that county. Agencies whose jurisdiction spans several counties use the county holding the largest share of the agency's place or county subdivision population in the Census Bureau's 2025 Population Estimates, or the largest listed county when no place matches. The agency tables list every county an agency covers. Statewide and tribal agencies, along with a few agencies with no county, appear in the tables and in state totals but not on the map. In New York, the New York City Police Department and other agencies based in the five boroughs are combined into a single New York City area on the map. The population covered by reporting agencies is the sum of the jurisdiction populations of agencies reporting data for all 12 months in `r agency_year`. The change in solve rate since `r base_year` compares each agency with itself and appears only for agencies that reported all 12 months in both years.
+Each law enforcement agency appears on the map in exactly one county. Agencies based in a single county use that county. Agencies whose jurisdiction spans several counties use the county holding the largest share of the agency's place or county subdivision population in the Census Bureau's 2025 Population Estimates, or the largest listed county when no place matches. The agency tables list every county an agency covers. Statewide and tribal agencies, along with a few agencies with no county, appear in the tables and in state totals but not on the map. In New York, the New York City Police Department and other agencies based in the five boroughs are combined into a single New York City area on the map. The population covered by reporting agencies is the sum of the jurisdiction populations of agencies reporting data for all 12 months in `r agency_year`. The change in solve rate since `r agency_base_year` compares each agency with itself and appears only for agencies that reported all 12 months in both years.
 
 Counties with fewer than 25 reported violent incidents in `r agency_year` are excluded from the map, as calculations of solve rates are not reliable. 
 

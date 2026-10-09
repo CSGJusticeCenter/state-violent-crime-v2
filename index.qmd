@@ -27,63 +27,22 @@ library(reactable)
 library(reactablefmtr)
 
 source("R/utils.R")
+source("R/page-data.R")
 
 # htmlwidgets seeds its element IDs from this, so rerenders give identical HTML
 set.seed(2019)
 ```
 
 ```{r}
-state_name <- "United States"
 state_name_text <- "the United States"
 
-srs_state_new <- read_rds(csg_sp_path("jr_data_library", "data", "analysis", "fbi", "srs", "fbi_srs_estimated_crimes_state.rds")) |> 
-  mutate(crime_cat = if_else(group %in% c("Aggravated assault", "Homicide", "Rape", "Robbery"), "Violent", "Property")) |> 
-  select(-state_fips, -group_cat, -starts_with("rate")) |> 
-  filter(indicator != "Unsolved rate") |> 
-  pivot_wider(names_from = indicator, values_from = n) |> 
-  janitor::clean_names() |> 
-  select(
-    year, state_name, state_abbr, group, crime_cat, pop_total, pop_adult,
-    incidents_reported, incidents_unsolved, incidents_cleared) |> 
-  mutate(
-    pct_unsolved = incidents_unsolved / incidents_reported,
-    incidents_reported_rate_total = incidents_reported / pop_total,
-    incidents_reported_rate_adult = incidents_reported / pop_adult
-  )
-
-### time series use an 11-year window ending in the latest data year
-srs_by_cat_us <- srs_state_new |>
-  filter(crime_cat == "Violent", year >= max(year) - 10) |>
-  group_by(year) |>
-  summarize(
-    pop_total = sum(pop_total[group == "Homicide"], na.rm = TRUE),
-    across(c(incidents_reported, incidents_unsolved), \(x) sum(x, na.rm = TRUE))
-  ) |>
-  mutate(
-    incidents_reported_rate_total = incidents_reported / pop_total,
-    incidents_solved = incidents_reported - incidents_unsolved,
-    pct_solved = incidents_solved / incidents_reported
-  )
-
-srs_us <- srs_state_new |>
-  filter(crime_cat == "Violent", year >= max(year) - 10) |>
-  group_by(year, group) |>
-  summarize(
-    across(c(pop_total, incidents_reported, incidents_unsolved), \(x) sum(x, na.rm = TRUE))
-  ) |>
-  ungroup() |>
-  mutate(
-    incidents_reported_rate_total = incidents_reported / pop_total,
-    incidents_solved = incidents_reported - incidents_unsolved,
-    pct_solved = incidents_solved / incidents_reported
-  )
-
-### state maps and table compare the pre-pandemic base year to the latest year
-base_year <- 2019
+srs_state_new <- read_srs_state()
 latest_year <- max(srs_state_new$year)
 
-### states without reliable clearance data in the base or latest year
-states_to_exclude_from_solved_rate_viz <- c("Illinois")
+### time series use an 11-year window ending in the latest data year
+first_year <- latest_year - 10
+srs_by_cat_us <- violent_totals(srs_state_new, first_year)
+srs_us <- violent_by_offense(srs_state_new, first_year)
 
 ### aggregate counts and create rates by state for the base and latest years
 ### keeping values from each year for tooltips
@@ -152,62 +111,30 @@ hex_gj <- hex |>
   sf::st_transform(3857) |>
   geojsonsf::sf_geojson() |>
   jsonlite::fromJSON(simplifyVector = FALSE)
-
-axis_expansion_mult <- 0.5
 ```
 
 ```{r }
-### import C-CPI-U index for inflation-adjusting expenditures
-### from: https://www.census.gov/topics/income-poverty/income/guidance/current-vs-constant-dollars.html
-### first 4 characters of year drop footnote markers (e.g., "20252" is 2025)
-inflation_index_years <- readxl::read_xls(
-  "data/annual-index-value_annual-percent-change_2025.xls",
-  skip = 2
-) |>
-  select(year = 1, inflation_index = 2) |>
-  mutate(year = as.numeric(str_sub(year, 1, 4))) |>
-  filter(!is.na(year), !is.na(inflation_index))
-
-### import asslgf_clean_national for lea expenditure analysis
 ### national police protection expenditures in dollars of the latest survey year
-asslgf_clean_national <- read_rds(csg_sp_path("jr_data_library", "data", "analysis", "census", "asslgf", "census_asslgf_state.rds")) |>
-  filter(
-    indicator == "Expenditures",
-    group == "Police Protection",
-    geo_abbr == "US",
-    year >= max(year) - 10
-  ) |>
-  left_join(inflation_index_years, by = "year") |>
-  mutate(
-    n_inflation_adjusted_latest_year_dollars = n * inflation_index[year == max(year)] / inflation_index,
-    inflation_adjusted_rate_total = n_inflation_adjusted_latest_year_dollars / pop_total
-  )
+asslgf_clean_national <- read_police_spending("US", read_inflation_index())
 
 ### national violent crime counts for officer workload
 violent_us_by_year <- srs_state_new |>
   filter(crime_cat == "Violent") |>
   summarize(n_violent_reported = sum(incidents_reported, na.rm = TRUE), .by = year)
 
-### import ucr_employee_data_national_clean for officer workload analysis
-### officer rates use the population covered by reporting agencies
-### officers per violent crime divides the covered officer rate by the national violent crime rate
-ucr_employee_data_national_clean <- read_rds(csg_sp_path("jr_data_library", "data", "analysis", "fbi", "lee", "fbi_lee_state.rds")) |>
-  filter(geo_abbr == "US", group == "Officers", year >= max(year) - 10) |>
+### officers per violent crime use the LEE population for the national crime rate
+ucr_employee_data_national_clean <- read_lee_officers("US") |>
   left_join(violent_us_by_year, by = "year") |>
-  mutate(
-    officer_pop_rate_per_10k = rate_covered * 10000,
-    officer_per_violent_offense_1k = rate_covered / (n_violent_reported / pop_total) * 1000
-  ) |>
+  mutate(violent_rate = n_violent_reported / pop_total) |>
+  add_officer_rates() |>
   arrange(year)
 ```
 
 
 ```{r }
 ### import shr homicide incidents and clearances by state, year, and group
-### homicide charts pool 2022 on because SHR coverage is low in 2021
 shr_state <- read_rds(csg_sp_path("jr_data_library", "data", "analysis", "fbi", "shr", "fbi_shr_state.rds"))
 
-shr_first_year <- 2022
 shr_years <- paste0(shr_first_year, "–", max(shr_state$year))
 
 shr_source <- paste0("FBI UCR Program, Supplementary Homicide Reports (", shr_years, ")")
@@ -251,21 +178,6 @@ shr_panels <- list(
 ```{r}
 #| fig-height: 5.5
 
-# Assign colors
-darkorange  <- "#7B3014"
-orange      <- "#D25E2D"
-lightorange <- "#EDB799"
-white       <- "#FFFFFF"
-lightblue   <- "#9ed4ef"
-regblue     <- "#007392"
-darkblue    <- "#00475d"
-blue1       <- "#d4e9f8"
-blue2       <- "#9ed4ef"
-blue4       <- "#007392"
-blue5       <- "#00475d"
-
-change_colors <- c(darkblue, regblue, lightblue, white, lightorange, orange, darkorange)
-rate_colors <- c(blue1, blue2, blue4, blue5)
 state_map_specs <- list(
   crime_change = list(
     value = "viol_crime_rate_percent_change",
@@ -593,7 +505,7 @@ In `r max(srs_by_cat_us$year)`, `r srs_by_cat_us |> filter(year == max(year)) |>
 
 ```{r}
 to_plot <- srs_by_cat_us |> 
-  filter(year != 2021) |> 
+  filter(year != solve_rate_skip_year) |> 
   mutate(
     pct_solved = pct_solved * 100,
     tooltip = paste0(
@@ -639,7 +551,7 @@ to_plot |>
 
 ```{r}
 to_plot <- srs_us |> 
-  filter(year != 2021) |> 
+  filter(year != solve_rate_skip_year) |> 
   left_join(offense_pal, by = c("group" = "crime")) |> 
   mutate(
     pct_solved = pct_solved * 100,

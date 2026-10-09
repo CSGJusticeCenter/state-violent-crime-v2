@@ -54,10 +54,10 @@ Notes:
 
 | Setting | Location |
 |---|---|
-| Agency year and base year | `R/01-prep-agency-county-data.R` |
-| National page base year | `index.qmd` (`base_year`) |
-| SHR pooling start year | `index.qmd` and `state-viol-crime.qmd` (`shr_first_year`) |
-| Inflation index file | `data/annual-index-value_annual-percent-change_YYYY.xls`, referenced in both `.qmd` files |
+| Agency year | `R/01-prep-agency-county-data.R` (`agency_year`) |
+| Base year for maps, tables and agency changes | `R/page-data.R` (`base_year`); rerun step 1 after changing it |
+| SHR pooling start year | `R/page-data.R` (`shr_first_year`) |
+| Inflation index file | `data/annual-index-value_annual-percent-change_YYYY.xls`, referenced in `R/page-data.R` (`inflation_index_path`) |
 | Narrative text | `index.qmd` and `state-viol-crime.qmd` |
 
 The latest SRS year comes from the data, so the state pages pick it up automatically.
@@ -73,6 +73,7 @@ The latest SRS year comes from the data, so the state pages pick it up automatic
 | Path | Contents |
 |---|---|
 | `R/utils.R` | Highcharter theme, chart and table helpers |
+| `R/page-data.R` | Shared settings and data prep for both pages |
 | `R/agency-county-data.R` | Agency and county aggregation used by step 1 |
 | `R/local-map-data.R` | County map loading, including the merged NYC feature |
 | `R/download-county-maps.R` | Refreshes `maps/` from the pinned Highcharts map collection |
