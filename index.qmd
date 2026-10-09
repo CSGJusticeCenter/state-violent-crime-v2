@@ -131,50 +131,6 @@ states_solved <- srs_state_to_map |> filter(!state_name %in% states_to_exclude_f
 states_solved_down <- states_solved |> filter(solved_rate_percent_point_change < 0) |> pull(state_abbr)
 states_solved_up <- states_solved |> filter(solved_rate_percent_point_change > 0) |> pull(state_abbr)
 
-
-min_max_viol_crime <- srs_by_cat_us |>
-  filter(year %in% c(min(year), max(year))) |>
-  arrange(year)
-
-max_year <- min_max_viol_crime$year[2]
-min_year <- min_max_viol_crime$year[1]
-
-pct_change <-
-  (min_max_viol_crime$incidents_reported[2] - min_max_viol_crime$incidents_reported[1]) / min_max_viol_crime$incidents_reported[1]
-
-change_text <- case_when(
-  pct_change > 0.005  ~ paste0(percent(abs(pct_change), 1),
-                               " more"),
-  pct_change < -0.005 ~ paste0(percent(abs(pct_change), 1),
-                               " fewer"),
-  TRUE                ~ "nearly the same number of"
-)
-
-pct_change_solved <-
-  min_max_viol_crime$pct_solved[2] - min_max_viol_crime$pct_solved[1]
-
-change_text_solved <- case_when(
-  pct_change_solved > 0.005 &
-    pct_change_solved < 0.015 ~ paste0(comma(abs(
-      pct_change_solved * 100
-    ), 1),
-    " percentage point higher than"),
-  pct_change_solved >= 0.015  ~ paste0(comma(abs(
-    pct_change_solved * 100
-  ), 1),
-  " percentage points higher than"),
-  pct_change_solved < -0.005 &
-    pct_change_solved > -0.015 ~ paste0(comma(abs(
-      pct_change_solved * 100
-    ), 1),
-    " percentage point lower than"),
-  pct_change_solved <= -0.015 ~ paste0(comma(abs(
-    pct_change_solved * 100
-  ), 1),
-  " percentage points lower than"),
-  TRUE                      ~ "nearly the same as"
-)
-
 ### national violent crime rate change and offenses lower or higher than the base year
 us_rate_change <- srs_by_cat_us |>
   filter(year %in% c(base_year, latest_year)) |>
@@ -187,11 +143,6 @@ offense_rate_change <- srs_us |>
 
 offenses_lower <- offense_rate_change |> filter(change < 0) |> pull(group) |> tolower()
 offenses_higher <- offense_rate_change |> filter(change > 0) |> pull(group) |> tolower()
-
-max_viol_crime_off <- srs_us |>
-  filter(year == max(year)) |>
-  arrange(desc(incidents_reported)) |>
-  mutate(pct = incidents_reported / sum(incidents_reported))
 
 ### import and prep hex map geo
 hex <- sf::read_sf("data/us_states_hexgrid.geojson") |>
@@ -636,10 +587,6 @@ to_plot |>
 
 In `r max(srs_by_cat_us$year)`, `r srs_by_cat_us |> filter(year == max(year)) |> pull(pct_solved) |> percent(suffix = " percent")` of violent crime incidents reported to police in the United States were solved. The percentage of violent crimes that law enforcement solved fell from 2019 to 2022 and increased in `r max(srs_by_cat_us$year)` to its highest level since at least `r min(srs_by_cat_us$year)`.
 
-```{r}
-solved_rate_max <- paste0(comma(min_max_viol_crime$pct_solved[2] * 100, 1), " percent")
-```
-
 ::: {.panel-tabset}
 
 ## All violent crime
@@ -895,8 +842,6 @@ exp_max_year <- max(asslgf_clean_national$year)
 pct_change_spending <- asslgf_clean_national |>
   summarize(change = pct_change_first_last(n_inflation_adjusted_latest_year_dollars, year)) |>
   pull(change)
-pct_change_spending_abs_value <- comma(abs(pct_change_spending) * 100, accuracy = 1)
-change_spending_text_clear <- if_else(pct_change_spending >= 0, " increased", " decreased")
 
 
 ```
@@ -908,7 +853,7 @@ cat("### State and local expenditures")
 
 ```{r, results='asis'}
 cat(paste0(
-  "Overall, state and local spending on law enforcement",change_spending_text_clear, " across the United States", " by ", pct_change_spending_abs_value," percent from ", exp_min_year, " to ",exp_max_year, ", adjusting for inflation." 
+  "Overall, state and local spending on law enforcement across the United States ", change_by(pct_change_spending), " from ", exp_min_year, " to ", exp_max_year, ", adjusting for inflation."
 ))
 ```
 
@@ -943,8 +888,6 @@ lee_max_year <- max(ucr_employee_data_national_clean$year)
 pct_change_staffing <- ucr_employee_data_national_clean |>
   summarize(change = pct_change_first_last(officer_pop_rate_per_10k, year)) |>
   pull(change)
-pct_change_staffing_abs_value <- comma(abs(pct_change_staffing) * 100, accuracy = 1)
-change_staffing_text_clear <- if_else(pct_change_staffing >= 0, " increased", " decreased")
 
 ```
 
@@ -955,7 +898,7 @@ cat("### Officers per capita")
 
 ```{r, results='asis'}
 cat(paste0(
-  "The number of officers per 10,000 residents in jurisdictions across the United States has", change_staffing_text_clear, " by ", pct_change_staffing_abs_value," percent from ", lee_min_year, " to ",lee_max_year,"." 
+  "The number of officers per 10,000 residents in jurisdictions across the United States has ", change_by(pct_change_staffing), " from ", lee_min_year, " to ", lee_max_year, "."
 ))
 ```
 
@@ -982,8 +925,6 @@ metric_trend_chart(
 pct_change_staffing_per_violent_offense <- ucr_employee_data_national_clean |>
   summarize(change = pct_change_first_last(officer_per_violent_offense_1k, year)) |>
   pull(change)
-pct_change_staffing_per_violent_offense_abs_value <- comma(abs(pct_change_staffing_per_violent_offense) * 100, accuracy = 1)
-change_staffing_per_violent_offense_text_clear <- if_else(pct_change_staffing_per_violent_offense >= 0, " increased", " decreased")
 
 ```
 
@@ -994,7 +935,7 @@ cat("### Officers per violent offense")
 
 ```{r, results='asis'}
 cat(paste0(
-  "The number of officers per 1,000 violent crimes in jurisdictions across the United States has", change_staffing_per_violent_offense_text_clear, " by ", pct_change_staffing_per_violent_offense_abs_value," percent from ", lee_min_year, " to ",lee_max_year,"." 
+  "The number of officers per 1,000 violent crimes in jurisdictions across the United States has ", change_by(pct_change_staffing_per_violent_offense), " from ", lee_min_year, " to ", lee_max_year, "."
 ))
 ```
 

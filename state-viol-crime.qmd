@@ -830,9 +830,7 @@ srs_solved_by_agency_to_table |>
          n_reported_rate,
          n_reported,
          solved_rate,
-         solved_rate_change) |> 
-  ### round for successful use of add_plus_sign_percent_point_change function
-  mutate(solved_rate_change = as.numeric(round(solved_rate_change, digits = 0))) |>
+         solved_rate_change) |>
   arrange(desc(population)) |>
   reactable_template(
     sort_col = list("population" = "desc"),
@@ -1023,8 +1021,6 @@ max_year_resources <- max(asslgf_clean$year)
 min_year_resources <- min(asslgf_clean$year)
 
 pct_change_spending <- pct_change_first_last(asslgf_clean$n_inflation_adjusted_latest_year_dollars, asslgf_clean$year)
-pct_change_spending_abs_value <- comma(abs(pct_change_spending) * 100, accuracy = 1)
-change_spending_text_clear <- change_direction(pct_change_spending)
 
 ### years and percent change for officers per violent crime text
 max_year_resources_staff_per_offense <- max(ucr_employee_data_by_state_clean$year)
@@ -1034,19 +1030,27 @@ pct_change_staffing_per_violent_offense <- pct_change_first_last(
   ucr_employee_data_by_state_clean$officer_per_violent_offense_1k,
   ucr_employee_data_by_state_clean$year
 )
-pct_change_staffing_per_violent_offense_abs_value <- comma(abs(pct_change_staffing_per_violent_offense) * 100, accuracy = 1)
 
-### the last phrase is reversed because fewer crimes raise officers per crime
-change_staffing_per_violent_offense_text_clear <- change_direction(pct_change_staffing_per_violent_offense)
-change_staffing_per_violent_offense_text_clear_1 <- change_direction(pct_change_staffing_per_violent_offense, "increase", "decrease")
-change_staffing_per_violent_offense_text_clear_2 <- change_direction(pct_change_staffing_per_violent_offense, "an increase", "a decrease")
-change_staffing_per_violent_offense_text_clear_3 <- change_direction(pct_change_staffing_per_violent_offense, "a decrease", "an increase")
+### the cause sentence is skipped when the rate stayed about the same
+### its last phrase is reversed because fewer crimes raise officers per crime
+staffing_cause_text <- if (is_about_same(pct_change_staffing_per_violent_offense)) {
+  ""
+} else {
+  paste0(
+    " This ", change_direction(pct_change_staffing_per_violent_offense, "increase", "decrease"),
+    " may be due to a combination of ",
+    change_direction(pct_change_staffing_per_violent_offense, "an increase", "a decrease"),
+    " in law enforcement officers and/or ",
+    change_direction(pct_change_staffing_per_violent_offense, "a decrease", "an increase"),
+    " in reported violent crimes."
+  )
+}
 
 ```
 
 ```{r, results='asis'}
 cat(paste0(
-  state_name_text," ", change_spending_text_clear, " spending on law enforcement by ", pct_change_spending_abs_value ," percent from ", min_year_resources, " to ", max_year_resources, ", adjusting for inflation. Expenditures include state and local spending on local police departments, sheriffs’ offices, and state police agencies such as highway patrols and other state investigative law enforcement agencies.
+  "Spending on law enforcement in ", state_name_text, " ", change_by(pct_change_spending), " from ", min_year_resources, " to ", max_year_resources, ", adjusting for inflation. Expenditures include state and local spending on local police departments, sheriffs’ offices, and state police agencies such as highway patrols and other state investigative law enforcement agencies.
 
 Law enforcement resources also refer to the state’s staffing per 10,000 residents and per 1,000 violent crimes. These factors may show the level of policing a community receives, potentially influencing both crime and solve rates."))
 ```
@@ -1054,7 +1058,7 @@ Law enforcement resources also refer to the state’s staffing per 10,000 reside
 
 ```{r, results='asis'}
 cat(paste0(
-"Additionally, the number of officers per 1k violent crimes in ",state_name_text," has ",change_staffing_per_violent_offense_text_clear," by ",pct_change_staffing_per_violent_offense_abs_value, " percent from ", min_year_resources_staff_per_offense, " to ", max_year_resources_staff_per_offense, ". This ",change_staffing_per_violent_offense_text_clear_1," may be due to a combination of ",change_staffing_per_violent_offense_text_clear_2," in law enforcement officers and/or ",change_staffing_per_violent_offense_text_clear_3," in reported violent crimes.
+"Additionally, the number of officers per 1k violent crimes in ", state_name_text, " has ", change_by(pct_change_staffing_per_violent_offense), " from ", min_year_resources_staff_per_offense, " to ", max_year_resources_staff_per_offense, ".", staffing_cause_text, "
 
 Law enforcement staffing can impact how agencies allocate resources to solve violent crime. For example, severe staff shortages can reduce investigative personnel or increase the number of cases that individual officers are managing."
 ))

@@ -284,12 +284,22 @@ pct_change_first_last <- function(x, year) {
   (x[year == max(year)] - x[year == min(year)]) / x[year == min(year)]
 }
 
+### text helpers stop on missing input, so the failed page shows in the render log
+check_change <- function(x) {
+  if (length(x) != 1 || !is.finite(x)) {
+    stop("Expected one finite change value, got ", deparse(x), call. = FALSE)
+  }
+}
+
+### changes within half a percent or point read as about the same
+is_about_same <- function(x) abs(x) <= 0.005
+
 ### compare a change for text, e.g., "4 percent lower than"
 ### x is a proportion; unit "point" reads x as a percentage point change
-### changes within half a percent or point read as "nearly the same as"
 change_phrase <- function(x, unit = c("percent", "point")) {
+  check_change(x)
   unit <- match.arg(unit)
-  if (abs(x) <= 0.005) return("nearly the same as")
+  if (is_about_same(x)) return("nearly the same as")
 
   amount <- scales::comma(abs(x) * 100, 1)
   word <- if (unit == "percent") {
@@ -304,7 +314,15 @@ change_phrase <- function(x, unit = c("percent", "point")) {
 
 ### "increased" or "decreased" for a numeric change; zero reads as "increased"
 change_direction <- function(x, increase = "increased", decrease = "decreased") {
+  check_change(x)
   if (x >= 0) increase else decrease
+}
+
+### describe a percent change, e.g., "increased by 18 percent" or "stayed about the same"
+change_by <- function(x) {
+  check_change(x)
+  if (is_about_same(x)) return("stayed about the same")
+  paste(change_direction(x), "by", scales::comma(abs(x) * 100, 1), "percent")
 }
 
 ### create function to clean up and visualize SHR data
