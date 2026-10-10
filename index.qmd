@@ -506,12 +506,12 @@ srs_state_to_map |>
 
 ```{r}
 ### reported rates per 100k and solve rates by state and violent offense type
-### solve rates are capped at 1; excluded states and states with no
-### reported incidents show blank solve rates
+### solve rates can exceed 1 when a year clears older cases; excluded states
+### and states with no reported incidents show blank solve rates
 srs_state_by_offense_latest <- srs_state_new |>
   filter(crime_cat == "Violent", year == latest_year) |>
   mutate(
-    solved_rate = pmin((incidents_reported - incidents_unsolved) / incidents_reported, 1),
+    solved_rate = (incidents_reported - incidents_unsolved) / incidents_reported,
     n_reported_rate = incidents_reported / pop_total * 100000
   ) |>
   pivot_wider(
