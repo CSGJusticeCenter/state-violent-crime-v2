@@ -163,3 +163,24 @@ build_agency_county_data <- function(raw, agency_year, base_year) {
     agency_offense_table = agency_offense_table
   )
 }
+
+# Share of each state's population served by agencies that reported at least
+# one month in coverage_year. pep has state_abbr, state_name and pop_total for
+# that year. Agency populations can overlap, so a share can pass 1.
+state_reporting_coverage <- function(raw, pep, coverage_year) {
+  agencies <- raw |>
+    filter(year == coverage_year, reporting_status != "none") |>
+    distinct(state_abbr = as.character(state_abbr), ori, pop_covered)
+  stopifnot("one population per agency" = !anyDuplicated(agencies$ori))
+
+  agencies |>
+    summarize(pop_reporting = sum(pop_covered, na.rm = TRUE), .by = state_abbr) |>
+    right_join(mutate(pep, state_abbr = as.character(state_abbr)), by = "state_abbr") |>
+    mutate(
+      pop_reporting = coalesce(pop_reporting, 0),
+      coverage = pop_reporting / pop_total,
+      year = coverage_year
+    ) |>
+    select(year, state_abbr, state_name, pop_reporting, pop_total, coverage) |>
+    arrange(state_abbr)
+}

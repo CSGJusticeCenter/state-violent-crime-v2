@@ -46,6 +46,21 @@ test_that("solve rates compare at the whole percents the table shows", {
   expect_equal(definition$className(0.357), "solve-rate-above")
 })
 
+test_that("solve rate cells and headers round halves up the same way", {
+  expect_equal(format_solve_rate(0.625), "63%")
+  expect_equal(format_solve_rate(0.125), "13%")
+  expect_equal(format_solve_rate(0.355), "36%")
+  expect_equal(format_solve_rate(0.3549), "35%")
+  expect_equal(format_solve_rate(1.25), "125%")
+  expect_equal(format_solve_rate(NA_real_), "")
+
+  # Evansville PD homicide, 5 of 8, against Indiana's 63 percent
+  expect_equal(solve_rate_side(5 / 8, 0.633), "above")
+  definition <- solve_rate_column("Homicide", 0.633, "IN State Rate")
+  expect_equal(definition$cell(5 / 8), "63%")
+  expect_equal(definition$name, "Homicide Solve Rate<br><br>(IN State Rate: 63%)")
+})
+
 test_that("solve rate column stays neutral when its rate is missing", {
   definition <- solve_rate_column("Rape", NA_real_, "NY State Rate")
   expect_equal(definition$style(0.4)$color, "black")

@@ -385,7 +385,7 @@ us_offense_rates |>
 
 ## Trends in solved violent crime
 
-In `r max(srs_by_cat_us_solve$year)`, `r srs_by_cat_us_solve |> filter(year == max(year)) |> pull(pct_solved) |> percent(suffix = " percent")` of violent crime incidents reported to police in the United States were solved. The percentage of violent crimes that law enforcement solved fell from 2019 to 2022 and increased in `r max(srs_by_cat_us_solve$year)` to its highest level since at least `r min(srs_by_cat_us_solve$year)`.
+In `r max(srs_by_cat_us_solve$year)`, `r srs_by_cat_us_solve |> filter(year == max(year)) |> pull(pct_solved) |> percent(suffix = " percent")` of violent crime incidents reported to police in the United States were solved. The percentage of violent crimes that law enforcement solved fell from 2019 to 2022 and rose each year from 2023 to `r max(srs_by_cat_us_solve$year)`, reaching its highest level since at least `r min(srs_by_cat_us_solve$year)`.
 
 ::: {.panel-tabset}
 
@@ -612,7 +612,7 @@ spending_trend <- asslgf_clean_national |>
     tooltip = paste0(
       "<b>", "United States", " – ", year, "</b><br>",
       "Inflation-adjusted expenditure (", exp_max_year, " dollars): ",
-      scales::dollar(n_inflation_adjusted_latest_year_dollars, accuracy = 0.1, scale = 1e-9, suffix = "B")
+      dollar(n_inflation_adjusted_latest_year_dollars, accuracy = 0.1, scale = 1e-9, suffix = "B")
     )
   )
 
@@ -635,7 +635,7 @@ The number of officers per 10,000 residents in jurisdictions across the United S
 ucr_employee_data_national_clean |>
   mutate(tooltip = paste0(
     "<b>", "United States", " – ", year, "</b><br>",
-    "Officers per 10k residents: ", scales::comma(officer_pop_rate_per_10k, accuracy = .1)
+    "Officers per 10k residents: ", comma(officer_pop_rate_per_10k, accuracy = .1)
   )) |>
   trend_chart(
     "officer_pop_rate_per_10k", "Officers per capita",
@@ -653,7 +653,7 @@ The number of officers per 1,000 violent crimes in jurisdictions across the Unit
 ucr_employee_data_national_clean |>
   mutate(tooltip = paste0(
     "<b>", "United States", " – ", year, "</b><br>",
-    "Officers per 1k violent crimes: ", scales::comma(officer_per_violent_offense_1k, accuracy = .1)
+    "Officers per 1k violent crimes: ", comma(officer_per_violent_offense_1k, accuracy = .1)
   )) |>
   trend_chart(
     "officer_per_violent_offense_1k", "Officers per violent offense",
@@ -717,19 +717,42 @@ shr_panel_chart(shr_panels$victims, shr_us, shr_years)
 
 <br>
 
+```{r}
+### states where agencies reporting at least one month cover less than
+### low_coverage_threshold of the population, from R/01-prep-agency-county-data.R
+state_coverage <- read_rds("data/state_coverage.rds")
+coverage_year <- state_coverage$year[1]
+low_coverage_states <- state_coverage |>
+  filter(coverage < low_coverage_threshold) |>
+  arrange(state_name) |>
+  pull(state_name) |>
+  as.character()
+
+low_coverage_text <- if (length(low_coverage_states) > 0) {
+  paste0(
+    " Based on agency-level data from the Crime Data Explorer, agencies that reported at least one month in ",
+    coverage_year, " covered less than ", percent(low_coverage_threshold, suffix = " percent"), " of the population in ",
+    knitr::combine_words(low_coverage_states),
+    ", so conclusions about crime changes in those states should be interpreted with additional caution."
+  )
+} else {
+  ""
+}
+```
+
 ::: {.callout-note icon=false collapse=true}
 
 ## Data sources and methodology
 
 Data regarding crime and solve rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr){target="_parent"}. Counts of reported violent crime between `r min(srs_by_cat_us$year)` and `r latest_year` are derived from the Summary Reporting System (SRS) and the National Incident-Based Reporting System (NIBRS). The FBI estimates reported crime for each state from agency-level reports, accounting for agencies that did not report, and publishes these estimates through `r latest_year` on its [Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/downloads){target="_parent"}. Solve rates apply each state's clearance rate among agencies that reported to the FBI, from the Crime Data Explorer, to the FBI's state estimates of reported crime.
 
-The FBI stopped SRS data collection after data year 2020 and required law enforcement agencies to use NIBRS to report crime statistics to the FBI. This change decreased the number of agencies that submitted their crime data and thus reduced the reliability of state estimates in 2021, so the solve rate charts omit 2021. The FBI later allowed agencies unable to submit NIBRS data to submit SRS data again. In 2025, agencies reporting through NIBRS or SRS covered 96.2 percent of the U.S. population, and agencies reporting through NIBRS covered 89.5 percent, according to the FBI's *Reported Crimes in the Nation, 2025*. Based on agency-level data from the Crime Data Explorer, reporting agencies covered less than 90 percent of the population in Florida, Louisiana, and Mississippi, so conclusions about crime changes in those states should be interpreted with additional caution.
+The FBI stopped SRS data collection after data year 2020 and required law enforcement agencies to use NIBRS to report crime statistics to the FBI. This change decreased the number of agencies that submitted their crime data and thus reduced the reliability of state estimates in 2021, so the solve rate charts omit 2021. The FBI later allowed agencies unable to submit NIBRS data to submit SRS data again. In 2025, agencies reporting through NIBRS or SRS covered 96.2 percent of the U.S. population, and agencies reporting through NIBRS covered 89.5 percent, according to the FBI's [*Reported Crimes in the Nation, 2025*](https://cde.ucr.cjis.gov/LATEST/resources/reports/UCR_Summary_of_Reported_Crimes_in_the_Nation_2025.pdf){target="_parent"}.`r low_coverage_text`
 
 Crime rates are calculated by dividing the number of estimated incidents by the total population. Population data come from the U.S. Census Bureau [Population Estimates Program](https://www.census.gov/programs-surveys/popest.html){target="_parent"}.
 
 {{< include _methodology-exceptional-clearance.qmd >}}
 
-U.S. solve rates leave out `r knitr::combine_words(states_to_exclude_from_solved_rate_viz)`, which did not report reliable clearance data, while U.S. crime rates include every state.
+U.S. solve rates from the FBI's state estimates leave out `r knitr::combine_words(states_to_exclude_from_solved_rate_viz)`, which did not report reliable clearance data, while U.S. crime rates include every state. U.S. homicide solve rates from the Supplementary Homicide Reports include every state.
 
 Data regarding law enforcement expenditures were downloaded from the U.S. Census Bureau [Annual Survey of State and Local Government Finances](https://www.census.gov/programs-surveys/gov-finances.html){target="_parent"}. Expenditures include police protection spending by state governments and all local governments in each state, such as counties and municipalities. Expenditures are adjusted for inflation to constant dollars of the most recent year using the Chained Consumer Price Index for All Urban Consumers (C-CPI-U), following the [Census Bureau's guidance](https://www.census.gov/topics/income-poverty/income/guidance/current-vs-constant-dollars.html){target="_parent"}.
 

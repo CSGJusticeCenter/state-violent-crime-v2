@@ -12,6 +12,10 @@ solve_rate_skip_year <- 2021
 ### homicide charts pool SHR from this year on because coverage is low in 2021
 shr_first_year <- 2022
 
+### the methodology names states where reporting agencies cover less than this
+### share of the population
+low_coverage_threshold <- 0.9
+
 ### share of a trend's range added above and below it on the y-axis
 axis_expansion_mult <- 0.5
 

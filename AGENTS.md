@@ -20,7 +20,7 @@ quarto::quarto_render("index.qmd", output_file = "index.html", quiet = TRUE)
 ## Data
 
 - Source data lives in SharePoint `jr_data_library`, read with `csgjcr::csg_sp_path("jr_data_library", ...)`. If a path fails, ask before guessing a new one.
-- `fbi_srs_agency.rds` (CDE agency file) feeds `R/01-prep-agency-county-data.R`, which writes `data/county_map.rds`, `data/agency_table.rds` and `data/agency_offense_table.rds`.
+- `fbi_srs_agency.rds` (CDE agency file) feeds `R/01-prep-agency-county-data.R`, which writes `data/county_map.rds`, `data/agency_table.rds`, `data/agency_offense_table.rds` and `data/state_coverage.rds`.
 - The pages read `fbi_srs_estimated_crimes_state.rds`, `fbi_shr_state.rds`, `fbi_lee_state.rds` and `census_asslgf_state.rds` directly.
 - `data/csg-regions.csv` and the inflation `.xls` are vendored. Their old SharePoint sources moved to `z_ARCHIVE`.
 

@@ -5,12 +5,25 @@ library(tidyverse)
 
 source("../R/utils.R")
 
+test_that("display formatters round halves up", {
+  expect_equal(comma(c(2.5, 3.5, 1234.5)), c("3", "4", "1,235"))
+  expect_equal(comma(0.25, 0.1), "0.3")
+  expect_equal(comma(-2.5), "-3")
+  expect_equal(comma(0.0036, scale = 1e5), "360")
+  expect_equal(percent(c(0.625, 0.125, 0.355)), c("63%", "13%", "36%"))
+  expect_equal(percent(0.475, suffix = " percent"), "48 percent")
+  expect_equal(dollar(2.5), "$3")
+  expect_equal(dollar(1.25e9, accuracy = 0.1, scale = 1e-9, suffix = "B"), "$1.3B")
+  expect_identical(comma(NA_real_), scales::comma(NA_real_))
+})
+
 test_that("signed cells show a sign, round, and leave missing values blank", {
   expect_equal(add_plus_sign_percent_point_change(3.4), "+3")
   expect_equal(add_plus_sign_percent_point_change(-5.6), "-6")
   expect_equal(add_plus_sign_percent_point_change(0.3), "0")
   expect_equal(add_plus_sign_percent_point_change(-0.3), "0")
   expect_equal(add_plus_sign_percent_point_change(NA_real_), "")
+  expect_equal(add_plus_sign_percent_point_change(2.5), "+3")
   expect_equal(add_plus_sign_percent_change(12), "+12%")
   expect_equal(add_plus_sign_percent_change(NA_real_), "")
 })

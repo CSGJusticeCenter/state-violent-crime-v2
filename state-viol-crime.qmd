@@ -297,7 +297,7 @@ agency_state_solve_share <- function(offense) {
 }
 
 agency_state_solve_rate <- function(offense) {
-  scales::comma(agency_state_solve_share(offense) * 100, 1)
+  comma(agency_state_solve_share(offense) * 100, 1)
 }
 
 total_agencies <- comma(n_distinct(srs_solved_by_agency_to_table$ori))
@@ -347,7 +347,7 @@ offense_solve_rates <- srs_state |>
       "<b>", group, " – ", year, "</b></br>",
       "Solve rate: ", percent(pct_solved, 1), "<br>",
       "Incidents reported: ", comma(incidents_reported, 1), "<br>",
-      "Incidents solved: ", comma(round(incidents_solved))
+      "Incidents solved: ", comma(incidents_solved)
     )
   ) |>
   arrange(desc(year), solve_rate_pct)
@@ -644,7 +644,7 @@ spending_trend <- asslgf_clean |>
     tooltip = paste0(
       "<b>", geo_name, " – ", year, "</b><br>",
       "Inflation-adjusted expenditure (", max_year_resources, " dollars): ",
-      scales::dollar(n_inflation_adjusted_latest_year_dollars, accuracy = 1, prefix = "$")
+      dollar(n_inflation_adjusted_latest_year_dollars, accuracy = 1, prefix = "$")
     )
   )
 
@@ -670,7 +670,7 @@ officer_trend <- ucr_employee_data_by_state_clean |>
 officer_trend |>
   mutate(tooltip = paste0(
     "<b>", state_name, " – ", year, "</b><br>",
-    "Officers per 10k residents: ", scales::comma(officer_pop_rate_per_10k, accuracy = .1)
+    "Officers per 10k residents: ", comma(officer_pop_rate_per_10k, accuracy = .1)
   )) |>
   trend_chart(
     "officer_pop_rate_per_10k",
@@ -690,7 +690,7 @@ officer_trend |>
 officer_trend |>
   mutate(tooltip = paste0(
     "<b>", state_name, " – ", year, "</b><br>",
-    "Officers per 1k violent crimes: ", scales::comma(officer_per_violent_offense_1k, accuracy = .1)
+    "Officers per 1k violent crimes: ", comma(officer_per_violent_offense_1k, accuracy = .1)
   )) |>
   trend_chart(
     "officer_per_violent_offense_1k",
@@ -765,7 +765,7 @@ shr_panel_chart(shr_panels$victims, shr_state_region, shr_years, series = "group
 
 Data regarding crime and solve rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr){target="_parent"}. Statewide counts of reported violent crime between `r first_year` and `r latest_year` are derived from the Summary Reporting System (SRS) and the National Incident-Based Reporting System (NIBRS). The FBI estimates reported crime for each state from agency-level reports, accounting for agencies that did not report, and publishes these estimates on its [Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/downloads){target="_parent"}. Statewide solve rates apply each state's clearance rate among agencies that reported to the FBI to the FBI's state estimates of reported crime. The county and agency sections use agency-level data from the Crime Data Explorer for `r agency_year`, which combines NIBRS and SRS reports converted to the SRS format.
 
-The FBI stopped SRS data collection after data year 2020 and required law enforcement agencies to use NIBRS to report crime statistics to the FBI. This change decreased the number of agencies that submitted their crime data and thus reduced the reliability of state estimates in 2021. The FBI later allowed agencies unable to submit NIBRS data to submit SRS data again. Comparisons involving 2021 should be interpreted with caution, and the solve rate charts omit 2021.
+The FBI stopped SRS data collection after data year 2020 and required law enforcement agencies to use NIBRS to report crime statistics to the FBI. This change decreased the number of agencies that submitted their crime data and thus reduced the reliability of state estimates in 2021. The FBI later allowed agencies unable to submit NIBRS data to submit SRS data again. Comparisons involving 2021 should be interpreted with caution[, and the solve rate charts omit 2021]{.content-visible when-meta="show-solved"}.
 
 Statewide crime rates are calculated by dividing the number of estimated incidents by the total population of the state. Population data come from the U.S. Census Bureau [Population Estimates Program](https://www.census.gov/programs-surveys/popest.html){target="_parent"}.
 
