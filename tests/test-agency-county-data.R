@@ -2,6 +2,7 @@ library(testthat)
 library(dplyr)
 
 source("../R/local-map-data.R")
+source("../R/page-data.R")
 source("../R/agency-county-data.R")
 
 row <- function(ori, year, group, indicator, n, county_fips, status = "full", pop = 1000,

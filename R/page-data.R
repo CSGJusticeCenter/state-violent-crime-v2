@@ -23,7 +23,8 @@ inflation_index_path <- "data/annual-index-value_annual-percent-change_2025.xls"
 change_colors <- c("#00475d", "#007392", "#9ed4ef", "#FFFFFF", "#EDB799", "#D25E2D", "#7B3014")
 rate_colors <- c("#d4e9f8", "#9ed4ef", "#007392", "#00475d")
 
-violent_offenses <- c("Aggravated assault", "Homicide", "Rape", "Robbery")
+### this order sets the offense column order in the agency tables
+violent_offenses <- c("Homicide", "Rape", "Robbery", "Aggravated assault")
 
 ### one row per state, year and offense with reported, unsolved and cleared counts
 ### raw is fbi_srs_estimated_crimes_state.rds from jr_data_library
@@ -92,6 +93,17 @@ violent_by_offense <- function(srs, first_year, state = NULL) {
     ) |>
     mutate(incidents_reported_rate_total = incidents_reported / pop_total) |>
     add_solve_rates()
+}
+
+### pooled US solve rate by offense in one year, named by snake_case offense
+### excluded states are left out of the pool
+us_solve_benchmark <- function(srs, year, exclude = states_to_exclude_from_solved_rate_viz) {
+  srs |>
+    filter(!state_name %in% exclude) |>
+    violent_by_offense(year) |>
+    filter(year == !!year) |>
+    pull(pct_solved, name = group) |>
+    set_names(janitor::make_clean_names)
 }
 
 ### first 4 characters of year drop footnote markers (e.g., "20252" is 2025)

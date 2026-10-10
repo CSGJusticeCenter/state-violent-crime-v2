@@ -69,6 +69,35 @@ test_that("violent offenses keep state rows and pool US rows", {
   expect_equal(us$pct_solved, c(12 / 20, 72 / 80))
 })
 
+test_that("violent rows keep violent offenses from first_year on", {
+  srs <- prep_srs_state(bind_rows(raw_srs(), mutate(raw_srs(), year = 2014)))
+
+  rows <- violent_rows(srs, 2015, "State A")
+  expect_equal(unique(rows$year), 2025)
+  expect_equal(sort(unique(rows$group)), c("Homicide", "Robbery"))
+  expect_equal(unique(as.character(rows$state_name)), "State A")
+
+  us <- violent_rows(srs, 2014)
+  expect_equal(sort(unique(us$year)), c(2014, 2025))
+  expect_equal(unique(us$state_name), "United States")
+})
+
+test_that("US solve benchmark pools every state except the excluded ones", {
+  srs <- prep_srs_state(raw_srs()) |>
+    mutate(incidents_unsolved = if_else(state_abbr == "BB", 0, incidents_unsolved))
+
+  ### State A alone: homicide 6/10 solved, robbery 36/40
+  benchmark <- us_solve_benchmark(srs, 2025, exclude = "State B")
+  expect_named(benchmark, c("homicide", "robbery"))
+  expect_equal(unname(benchmark), c(6 / 10, 36 / 40))
+
+  ### both states pooled: State B solves everything
+  pooled <- us_solve_benchmark(srs, 2025, exclude = character())
+  expect_equal(unname(pooled), c(16 / 20, 76 / 80))
+
+  expect_equal(states_to_exclude_from_solved_rate_viz, "Illinois")
+})
+
 test_that("inflation adjustment uses the latest year's dollars", {
   spending <- tibble(year = c(2023, 2024), n = c(100, 100))
   index <- tibble(year = c(2023, 2024), inflation_index = c(100, 110))

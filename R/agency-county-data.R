@@ -2,7 +2,7 @@ library(dplyr)
 library(tidyr)
 library(stringr)
 
-violent_groups <- c("Homicide", "Rape", "Robbery", "Aggravated assault")
+### violent_offenses comes from R/page-data.R
 
 # Collapse "full" agency rows to one row per agency, year and offense.
 # Population is repeated across offenses, so it is taken once per agency-year.
@@ -10,7 +10,7 @@ agency_offense_counts <- function(raw, years) {
   raw |>
     filter(
       year %in% years,
-      group %in% violent_groups,
+      group %in% violent_offenses,
       reporting_status == "full",
       indicator %in% c("Incidents reported", "Incidents cleared")
     ) |>
@@ -137,7 +137,7 @@ build_agency_county_data <- function(raw, agency_year, base_year) {
     filter(year == agency_year) |>
     mutate(
       offense = factor(str_replace_all(str_to_lower(group), " ", "_"),
-                       levels = str_replace_all(str_to_lower(violent_groups), " ", "_")),
+                       levels = str_replace_all(str_to_lower(violent_offenses), " ", "_")),
       solved_rate = if_else(reported > 0, cleared / reported, NA_real_),
       reported_rate = if_else(pop_covered > 0, reported / pop_covered * 1e5, NA_real_)
     ) |>

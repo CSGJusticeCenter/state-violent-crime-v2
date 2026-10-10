@@ -4,11 +4,11 @@
 library(tidyverse)
 library(csgjcr)
 
+### base_year and violent_offenses come from R/page-data.R
+source("R/page-data.R")
 source("R/local-map-data.R")
 source("R/agency-county-data.R")
-source("R/page-data.R")
 
-### base_year comes from R/page-data.R
 agency_year <- 2025
 
 raw <- read_rds(csg_sp_path("jr_data_library", "data", "analysis", "fbi", "srs", "fbi_srs_agency.rds"))
