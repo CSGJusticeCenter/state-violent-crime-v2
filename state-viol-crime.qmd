@@ -49,6 +49,11 @@ agency_table_all <- read_rds("data/agency_table.rds")
 agency_year <- agency_table_all$agency_year[1]
 agency_base_year <- agency_table_all$base_year[1]
 
+if (agency_base_year != base_year) {
+  stop("The agency tables use base year ", agency_base_year, " but R/page-data.R sets ",
+       base_year, ". Rerun R/01-prep-agency-county-data.R.", call. = FALSE)
+}
+
 srs_solved_by_agency_to_table <- agency_table_all |>
   filter(state_abbr == state_abbr_params)
 
@@ -61,6 +66,9 @@ doc_title <- if_else(
   paste(state, "data on violent crime and arrests"),
   paste(state, "data on violent crime")
 )
+
+### shown in place of each solve-rate section on pages without solve-rate data
+no_solve_data_text <- paste(state_name_text, "did not report enough data on solved crime to the FBI to make reliable estimates.")
 ```
 
 ```{r }
@@ -106,8 +114,13 @@ title: "`r doc_title`"
 ```{r}
 #| output: asis
 
-### hide-solved hides the solve-rate sections and shows the no-data note instead
-cat("---\nhide-solved: ", tolower(!show_solved), "\n---\n", sep = "")
+### show-solved shows the solve-rate sections; when it's false or missing,
+### the pages show no_solve_data_text instead
+### the flag is written here because when-meta needs a YAML boolean, and an
+### inline-R value in the title block arrives as a string
+### the title stays in that block because a title written from a chunk
+### doesn't reach the page's <title>
+cat("---\nshow-solved: ", tolower(show_solved), "\n---\n", sep = "")
 ```
 
 ```{r}
@@ -259,13 +272,14 @@ state_offense_rates |>
 
 ## Solved violent crime in `r state_name_text`
 
-::: {.content-visible when-meta="hide-solved"}
-`r state_name_text` did not report enough data on solved crime to the FBI to make reliable estimates.
+::: {.content-hidden when-meta="show-solved"}
+`r no_solve_data_text`
 :::
 
-::: {.content-hidden when-meta="hide-solved"}
+::: {.content-visible when-meta="show-solved"}
 
 ```{r}
+### code in the show-solved blocks still runs on pages that hide them, such as Illinois
 solved_rate_max <- paste0(comma(min_max_viol_crime$pct_solved[2] * 100, 1), " percent")
 
 ### state averages pool every full-reporting agency in the state,
@@ -370,11 +384,11 @@ offense_solve_rates |>
 
 ## Solved violent crime by county in `r state_name_text`
 
-::: {.content-visible when-meta="hide-solved"}
-`r state_name_text` did not report enough data on solved crime to the FBI to make reliable estimates.
+::: {.content-hidden when-meta="show-solved"}
+`r no_solve_data_text`
 :::
 
-::: {.content-hidden when-meta="hide-solved"}
+::: {.content-visible when-meta="show-solved"}
 
 ```{r}
 #| fig-height: 5.5
@@ -459,11 +473,11 @@ hcmap_local(
 
 ## Solved violent crime by agency in `r state_name_text`
 
-::: {.content-visible when-meta="hide-solved"}
-`r state_name_text` did not report enough data on solved crime to the FBI to make reliable estimates.
+::: {.content-hidden when-meta="show-solved"}
+`r no_solve_data_text`
 :::
 
-::: {.content-hidden when-meta="hide-solved"}
+::: {.content-visible when-meta="show-solved"}
 
 In the following table, violent crime incident rates, as well as violent crime solve rates, are included for each of the `r total_agencies` law enforcement agencies that reported data in `r state_name_text` in `r agency_year`. Violent crime solve rates by offense differ across agencies across the state. The average solve rate for aggravated assault is `r agency_state_solve_rate("aggravated_assault")` percent. Homicide is `r agency_state_solve_rate("homicide")` percent, and rape is `r agency_state_solve_rate("rape")` percent.
 
