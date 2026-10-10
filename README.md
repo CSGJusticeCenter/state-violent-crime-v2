@@ -64,9 +64,9 @@ The latest SRS year comes from the data, so the state pages pick it up automatic
 
 ### Open questions
 
-- **2025 coverage.** The national methodology still describes 2024 reporting coverage ("From 2022 through 2024", "Ninety-six percent", the FL, MS and WY drop). Find the FBI's 2025 coverage figures and update that paragraph in `index.qmd`.
+- **2025 state coverage.** The national methodology gives 2025 national coverage (96.2 percent, from Crime in the United States). The 2024 version also named states whose estimate population fell by more than 10 percent (FL, MS and WY). Check whether any states had a drop like that in 2025 and add them to that paragraph in `index.qmd`.
 - **Illinois 2025 solve rates.** Illinois stays excluded from solve rates because its 2019 clearances are unusable (about 2% of aggravated assaults cleared). Its 2025 clearances look plausible (about 44% for aggravated assault and homicide). Decide whether to show its 2025 solve rate and blank only the change since 2019.
-- **Hardcoded claims.** Some narrative claims are typed by hand, so they won't update with new data. These are the US solve rate trend in `index.qmd` and the homicide solve rate comparisons by race, gender and age. Recheck them each year, or generate them from the same data the charts use.
+- **Hardcoded claims.** Some narrative claims are typed by hand, so they won't update with new data. These are the US solve rate trend, the homicide solve rate comparisons by race, gender and age, and the national coverage figure in the methodology, all in `index.qmd`. Recheck them each year, or generate them from the same data the charts use.
 
 ### Layout
 

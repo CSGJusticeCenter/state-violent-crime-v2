@@ -312,26 +312,21 @@ Solve rates are the number of reported crimes cleared by arrest or by exceptiona
 ## All violent crime
 
 ```{r}
-### rates below zero plot at zero and say so in the tooltip
 violent_solve_rates <- srs_by_cat_state |>
   bind_rows(srs_by_cat_us_solve) |>
   filter(year != solve_rate_skip_year) |>
   mutate(
-    pct_solved_clean = ifelse(pct_solved < 0 & !is.na(pct_solved), 0, pct_solved) * 100,
-    pct_solved_tooltip = ifelse(pct_solved < 0 & !is.na(pct_solved),
-                                "Less than 0%", as.character(percent(pct_solved_clean / 100, 1))),
-    incidents_solved_tooltip = ifelse(incidents_solved < 0 & !is.na(incidents_solved),
-                                      "Fewer than 0", as.character(comma(incidents_solved))),
+    solve_rate_pct = pct_solved * 100,
     tooltip = paste0(
       "<b>", state_name, " – ", year, "</b><br>",
-      "Solve rate: ", pct_solved_tooltip, "<br>",
+      "Solve rate: ", percent(pct_solved, 1), "<br>",
       "Violent incidents reported: ", comma(incidents_reported, 1), "<br>",
-      "Violent incidents solved: ", incidents_solved_tooltip
+      "Violent incidents solved: ", comma(incidents_solved)
     )
   )
 
 trend_chart(
-  violent_solve_rates, "pct_solved_clean",
+  violent_solve_rates, "solve_rate_pct",
   paste0("Violent crime solve rate in ", state_name_text),
   caption = "FBI UCR Program, state crime estimates and clearances",
   value_label = "solve rate", value_format = "{point.y:.1f}%",
@@ -346,25 +341,21 @@ offense_solve_rates <- srs_state |>
   filter(year != solve_rate_skip_year) |>
   left_join(offense_pal, by = c("group" = "crime")) |>
   mutate(
-    pct_solved_clean = ifelse(pct_solved < 0 & !is.na(pct_solved), 0, pct_solved) * 100,
-    pct_solved_tooltip = ifelse(pct_solved < 0 & !is.na(pct_solved),
-                                "Less than 0%", as.character(percent(pct_solved_clean / 100, 1))),
-    incidents_solved_tooltip = ifelse(incidents_solved < 0 & !is.na(incidents_solved),
-                                      "Fewer than 0", as.character(comma(round(incidents_solved, digits = 0)))),
+    solve_rate_pct = pct_solved * 100,
     group = fct_reorder(group, pct_solved, last),
     tooltip = paste0(
       "<b>", group, " – ", year, "</b></br>",
-      "Solve rate: ", pct_solved_tooltip, "<br>",
+      "Solve rate: ", percent(pct_solved, 1), "<br>",
       "Incidents reported: ", comma(incidents_reported, 1), "<br>",
-      "Incidents solved: ", incidents_solved_tooltip
+      "Incidents solved: ", comma(round(incidents_solved))
     )
   ) |>
-  arrange(desc(year), pct_solved_clean)
+  arrange(desc(year), solve_rate_pct)
 
 offense_solve_rates |>
   hchart(
     "spline",
-    hcaes(year, pct_solved_clean, group = group),
+    hcaes(year, solve_rate_pct, group = group),
     accessibility = list(point = list(
       valueDescriptionFormat = "{point.series.name}, year: {point.x:.0f}, solve rate: {point.y:.1f}%"
     ))
@@ -375,7 +366,7 @@ offense_solve_rates |>
   hc_setup() |>
   hc_yAxis(
     min = 0,
-    max = max(100, ceiling(max(offense_solve_rates$pct_solved_clean, na.rm = TRUE) / 10) * 10),
+    max = max(100, ceiling(max(offense_solve_rates$solve_rate_pct, na.rm = TRUE) / 10) * 10),
     endOnTick = FALSE,
     labels = list(format = "{value:,.0f}%")
   )
@@ -772,9 +763,9 @@ shr_panel_chart(shr_panels$victims, shr_state_region, shr_years, series = "group
 
 ## Data sources and methodology
 
-Data regarding crime and solve rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr){target="_parent"}. Statewide counts of reported violent crime between `r first_year` and `r latest_year` are derived from the Summary Reporting System (SRS) and the National Incident-Based Reporting System (NIBRS). The FBI estimates reported crime for each state from agency-level reports, accounting for agencies that did not report, and publishes these estimates on its [Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/downloads){target="_parent"}. Statewide solve rates apply each state's clearance rate among agencies that reported to the FBI to the FBI's state estimates of reported crime. The county and agency sections use agency-level Summary Reporting System data from the Crime Data Explorer for `r agency_year`.
+Data regarding crime and solve rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr){target="_parent"}. Statewide counts of reported violent crime between `r first_year` and `r latest_year` are derived from the Summary Reporting System (SRS) and the National Incident-Based Reporting System (NIBRS). The FBI estimates reported crime for each state from agency-level reports, accounting for agencies that did not report, and publishes these estimates on its [Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/downloads){target="_parent"}. Statewide solve rates apply each state's clearance rate among agencies that reported to the FBI to the FBI's state estimates of reported crime. The county and agency sections use agency-level data from the Crime Data Explorer for `r agency_year`, which combines NIBRS and SRS reports converted to the SRS format.
 
-The FBI stopped SRS data collection after data year 2020 and required law enforcement agencies to use NIBRS to report crime statistics to the FBI. This change decreased the number of agencies that submitted their crime data and thus reduced the reliability of state estimates in 2021. The FBI later allowed agencies unable to submit NIBRS data to submit SRS data again. Comparisons involving 2021 should be interpreted with caution.
+The FBI stopped SRS data collection after data year 2020 and required law enforcement agencies to use NIBRS to report crime statistics to the FBI. This change decreased the number of agencies that submitted their crime data and thus reduced the reliability of state estimates in 2021. The FBI later allowed agencies unable to submit NIBRS data to submit SRS data again. Comparisons involving 2021 should be interpreted with caution, and the solve rate charts omit 2021.
 
 Statewide crime rates are calculated by dividing the number of estimated incidents by the total population of the state. Population data come from the U.S. Census Bureau [Population Estimates Program](https://www.census.gov/programs-surveys/popest.html){target="_parent"}.
 
@@ -784,11 +775,11 @@ Statewide crime rates are calculated by dividing the number of estimated inciden
 The U.S. line on the solve rate chart leaves out `r knitr::combine_words(states_to_exclude_from_solved_rate_viz)`, which did not report reliable clearance data, while U.S. crime rates include every state.
 :::
 
-Annual clearances can exceed newly reported incidents because cases reported in earlier years may be cleared. As a result, annual solve rates can exceed 100 percent. The charts display rates below zero at zero and identify those values in their tooltips.
+Annual clearances can exceed newly reported incidents because cases reported in earlier years may be cleared. As a result, annual solve rates can exceed 100 percent.
 
 Agency- and county-level violent crime and solve rate data presented above are restricted to agencies reporting data for all 12 months in `r agency_year`. The calculation of population covered by reporting agencies, as well as the number of reporting agencies by county, is also based on agencies with violent crime data for all 12 months. 
 
-Each law enforcement agency appears on the map in exactly one county. Agencies based in a single county use that county. Agencies whose jurisdiction spans several counties use the county holding the largest share of the agency's place or county subdivision population in the Census Bureau's 2025 Population Estimates, or the largest listed county when no place matches. The agency tables list every county an agency covers. Statewide and tribal agencies, along with a few agencies with no county, appear in the tables and in state totals but not on the map. In New York, the New York City Police Department and other agencies based in the five boroughs are combined into a single New York City area on the map. The population covered by reporting agencies is the sum of the jurisdiction populations of agencies reporting data for all 12 months in `r agency_year`. The change in solve rate since `r agency_base_year` compares each agency with itself and appears only for agencies that reported all 12 months in both years.
+Each law enforcement agency appears on the map in exactly one county. Agencies based in a single county use that county. Agencies whose jurisdiction spans several counties use the county holding the largest share of the agency's place or county subdivision population in the Census Bureau's 2025 Population Estimates, or the largest listed county when no place matches. The agency tables list every county an agency covers. Agencies with no listed county are placed in the county that holds their address location when one is available. Statewide and tribal agencies, along with a few agencies with no county or location, appear in the tables and in state totals but not on the map. In New York, the New York City Police Department and other agencies based in the five boroughs are combined into a single New York City area on the map. The population covered by reporting agencies is the sum of the jurisdiction populations of agencies reporting data for all 12 months in `r agency_year`. The change in solve rate since `r agency_base_year` compares each agency with itself and appears only for agencies that reported all 12 months in both years.
 
 Counties with fewer than 25 reported violent incidents in `r agency_year` are excluded from the map, as calculations of solve rates are not reliable. 
 
@@ -796,7 +787,7 @@ Data regarding state and local police protection expenditures were downloaded fr
 
 Officer employment analysis is restricted to sworn officers in state and local law enforcement agencies and uses the FBI's [Crime Data Explorer law enforcement employee data](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/downloads){target="_parent"}. Officers per capita use the population served by agencies that reported employee counts. Officers per violent crime divide that rate by the state violent crime rate from the FBI state estimates.
 
-Data on homicide solve rates and case characteristics come from the FBI's [Supplementary Homicide Reports](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/downloads){target="_parent"}. Solve rates combine data from `r shr_first_year` through `r max(shr_state$year)`. Data from 2021 are excluded because many large states did not report SHR data during the transition to NIBRS.
+{{< include _methodology-shr.qmd >}}
 
 :::
 
