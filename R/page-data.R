@@ -95,11 +95,15 @@ violent_by_offense <- function(srs, first_year, state = NULL) {
     add_solve_rates()
 }
 
+### states pooled into US solve rates, leaving out the excluded states
+### US crime counts and rates pool every state
+solve_rate_pool <- function(srs, exclude = states_to_exclude_from_solved_rate_viz) {
+  filter(srs, !state_name %in% exclude)
+}
+
 ### pooled US solve rate by offense in one year, named by snake_case offense
-### excluded states are left out of the pool
 us_solve_benchmark <- function(srs, year, exclude = states_to_exclude_from_solved_rate_viz) {
-  srs |>
-    filter(!state_name %in% exclude) |>
+  solve_rate_pool(srs, exclude) |>
     violent_by_offense(year) |>
     filter(year == !!year) |>
     pull(pct_solved, name = group) |>

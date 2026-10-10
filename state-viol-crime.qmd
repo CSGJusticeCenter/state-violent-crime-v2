@@ -38,6 +38,9 @@ srs_by_cat_state <- violent_totals(srs_state_new, first_year, state)
 srs_by_cat_us <- violent_totals(srs_state_new, first_year)
 srs_us <- violent_by_offense(srs_state_new, first_year)
 
+### the US solve-rate line leaves out the states excluded from solve rates
+srs_by_cat_us_solve <- violent_totals(solve_rate_pool(srs_state_new), first_year)
+
 ### county map and agency tables come from R/01-prep-agency-county-data.R
 srs_solved_by_county_to_map <- read_rds("data/county_map.rds") |>
   filter(state_abbr == state_abbr_params)
@@ -311,7 +314,7 @@ Solve rates are the number of reported crimes cleared by arrest or by exceptiona
 ```{r}
 ### rates below zero plot at zero and say so in the tooltip
 violent_solve_rates <- srs_by_cat_state |>
-  bind_rows(srs_by_cat_us) |>
+  bind_rows(srs_by_cat_us_solve) |>
   filter(year != solve_rate_skip_year) |>
   mutate(
     pct_solved_clean = ifelse(pct_solved < 0 & !is.na(pct_solved), 0, pct_solved) * 100,
@@ -776,6 +779,10 @@ The FBI stopped SRS data collection after data year 2020 and required law enforc
 Statewide crime rates are calculated by dividing the number of estimated incidents by the total population of the state. Population data come from the U.S. Census Bureau [Population Estimates Program](https://www.census.gov/programs-surveys/popest.html){target="_parent"}.
 
 {{< include _methodology-exceptional-clearance.qmd >}}
+
+::: {.content-visible when-meta="show-solved"}
+The U.S. line on the solve rate chart leaves out `r knitr::combine_words(states_to_exclude_from_solved_rate_viz)`, which did not report reliable clearance data, while U.S. crime rates include every state.
+:::
 
 Annual clearances can exceed newly reported incidents because cases reported in earlier years may be cleared. As a result, annual solve rates can exceed 100 percent. The charts display rates below zero at zero and identify those values in their tooltips.
 

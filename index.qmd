@@ -25,6 +25,11 @@ first_year <- latest_year - 10
 srs_by_cat_us <- violent_totals(srs_state_new, first_year)
 srs_us <- violent_by_offense(srs_state_new, first_year)
 
+### US solve rates leave out the states excluded from solve rates
+srs_solve_pool <- solve_rate_pool(srs_state_new)
+srs_by_cat_us_solve <- violent_totals(srs_solve_pool, first_year)
+srs_us_solve <- violent_by_offense(srs_solve_pool, first_year)
+
 ### violent crime counts and rates by state, one column per year
 ### solve rates are multiplied by 100 for highcharts formatting
 ### excluded states get missing solve rates, so the maps gray them out
@@ -380,14 +385,14 @@ us_offense_rates |>
 
 ## Trends in solved violent crime
 
-In `r max(srs_by_cat_us$year)`, `r srs_by_cat_us |> filter(year == max(year)) |> pull(pct_solved) |> percent(suffix = " percent")` of violent crime incidents reported to police in the United States were solved. The percentage of violent crimes that law enforcement solved fell from 2019 to 2022 and increased in `r max(srs_by_cat_us$year)` to its highest level since at least `r min(srs_by_cat_us$year)`.
+In `r max(srs_by_cat_us_solve$year)`, `r srs_by_cat_us_solve |> filter(year == max(year)) |> pull(pct_solved) |> percent(suffix = " percent")` of violent crime incidents reported to police in the United States were solved. The percentage of violent crimes that law enforcement solved fell from 2019 to 2022 and increased in `r max(srs_by_cat_us_solve$year)` to its highest level since at least `r min(srs_by_cat_us_solve$year)`.
 
 ::: {.panel-tabset}
 
 ## All violent crime
 
 ```{r}
-us_violent_solve_rates <- srs_by_cat_us |>
+us_violent_solve_rates <- srs_by_cat_us_solve |>
   filter(year != solve_rate_skip_year) |>
   mutate(
     pct_solved = pct_solved * 100,
@@ -411,7 +416,7 @@ trend_chart(
 ## By offense
 
 ```{r}
-us_offense_solve_rates <- srs_us |>
+us_offense_solve_rates <- srs_us_solve |>
   filter(year != solve_rate_skip_year) |>
   left_join(offense_pal, by = c("group" = "crime")) |>
   mutate(
@@ -724,7 +729,7 @@ Crime rates are calculated by dividing the number of estimated incidents by the 
 
 {{< include _methodology-exceptional-clearance.qmd >}}
 
-The U.S. rate in the table of solve rates by offense leaves out `r knitr::combine_words(states_to_exclude_from_solved_rate_viz)`, which did not report reliable clearance data.
+U.S. solve rates leave out `r knitr::combine_words(states_to_exclude_from_solved_rate_viz)`, which did not report reliable clearance data, while U.S. crime rates include every state.
 
 Data regarding law enforcement expenditures were downloaded from the U.S. Census Bureau [Annual Survey of State and Local Government Finances](https://www.census.gov/programs-surveys/gov-finances.html){target="_parent"}. Expenditures include police protection spending by state governments and all local governments in each state, such as counties and municipalities. Expenditures are adjusted for inflation to constant dollars of the most recent year using the Chained Consumer Price Index for All Urban Consumers (C-CPI-U), following the [Census Bureau's guidance](https://www.census.gov/topics/income-poverty/income/guidance/current-vs-constant-dollars.html){target="_parent"}.
 

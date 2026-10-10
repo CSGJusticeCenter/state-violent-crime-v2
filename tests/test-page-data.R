@@ -98,6 +98,26 @@ test_that("US solve benchmark pools every state except the excluded ones", {
   expect_equal(states_to_exclude_from_solved_rate_viz, "Illinois")
 })
 
+test_that("solve rate pool drops excluded states from US solve totals", {
+  srs <- prep_srs_state(raw_srs()) |>
+    mutate(incidents_unsolved = if_else(state_abbr == "BB", 0, incidents_unsolved))
+
+  expect_equal(unique(solve_rate_pool(srs, exclude = "State B")$state_name), "State A")
+  expect_equal(sort(unique(solve_rate_pool(srs, exclude = character())$state_name)), c("State A", "State B"))
+  expect_equal(nrow(solve_rate_pool(srs)), nrow(srs))
+
+  ### State A alone: 42 of 50 violent incidents solved
+  us <- violent_totals(solve_rate_pool(srs, exclude = "State B"), 2015)
+  expect_equal(us$state_name, "United States")
+  expect_equal(us$incidents_reported, 50)
+  expect_equal(us$incidents_solved, 42)
+  expect_equal(us$pct_solved, 42 / 50)
+
+  by_offense <- violent_by_offense(solve_rate_pool(srs, exclude = "State B"), 2015)
+  benchmark <- us_solve_benchmark(srs, 2025, exclude = "State B")
+  expect_equal(by_offense$pct_solved, unname(benchmark))
+})
+
 test_that("inflation adjustment uses the latest year's dollars", {
   spending <- tibble(year = c(2023, 2024), n = c(100, 100))
   index <- tibble(year = c(2023, 2024), inflation_index = c(100, 110))
