@@ -2,3 +2,21 @@ project:
   output-dir: _site
   lib-dir: libs
 
+format:
+  html:
+    footnotes-hover: false
+    css: styles.css
+    toc: false
+    # chart exports draw the logo from this URL, so the page loads it early
+    include-in-header:
+      text: |
+        <link rel="preload" as="image" href="https://csg-state-violent-crime.netlify.app/img/csgjc-logo.png">
+
+mainfont: "GT-America"
+linkcolor: "#00355a"
+anchor-sections: false
+
+execute:
+  echo: false
+  warning: false
+  message: false

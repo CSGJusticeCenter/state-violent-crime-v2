@@ -2,6 +2,7 @@ library(testthat)
 library(dplyr)
 
 source("../R/local-map-data.R")
+source("../R/page-data.R")
 source("../R/agency-county-data.R")
 
 row <- function(ori, year, group, indicator, n, county_fips, status = "full", pop = 1000,
@@ -84,6 +85,23 @@ test_that("county suffixes are dropped from table names", {
     county_names_from_fips("09110, 02110, 02020", lookup),
     "Capitol, Juneau, Anchorage"
   )
+})
+
+test_that("reporting coverage counts agencies with at least one month", {
+  coverage_raw <- bind_rows(
+    agency("A", 2025, 10, 5, "36001", pop = 500),
+    agency("D", 2025, 8, 4, "36003", status = "partial", pop = 300),
+    agency("G", 2025, NA, NA, "36005", status = "none", pop = 900),
+    agency("A", 2024, 10, 5, "36001", pop = 9999)
+  )
+  pep <- tibble(state_abbr = c("NY", "VT"), state_name = c("New York", "Vermont"),
+                pop_total = c(1000, 600))
+  coverage <- state_reporting_coverage(coverage_raw, pep, 2025)
+
+  expect_equal(coverage$pop_reporting, c(800, 0))
+  expect_equal(coverage$coverage, c(0.8, 0))
+  expect_equal(coverage$state_name, c("New York", "Vermont"))
+  expect_equal(unique(coverage$year), 2025)
 })
 
 test_that("mismatched rows for one agency-offense fail loudly", {

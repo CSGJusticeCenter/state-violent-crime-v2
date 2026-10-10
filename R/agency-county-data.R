@@ -2,7 +2,7 @@ library(dplyr)
 library(tidyr)
 library(stringr)
 
-violent_groups <- c("Homicide", "Rape", "Robbery", "Aggravated assault")
+### violent_offenses comes from R/page-data.R
 
 # Collapse "full" agency rows to one row per agency, year and offense.
 # Population is repeated across offenses, so it is taken once per agency-year.
@@ -10,7 +10,7 @@ agency_offense_counts <- function(raw, years) {
   raw |>
     filter(
       year %in% years,
-      group %in% violent_groups,
+      group %in% violent_offenses,
       reporting_status == "full",
       indicator %in% c("Incidents reported", "Incidents cleared")
     ) |>
@@ -137,7 +137,7 @@ build_agency_county_data <- function(raw, agency_year, base_year) {
     filter(year == agency_year) |>
     mutate(
       offense = factor(str_replace_all(str_to_lower(group), " ", "_"),
-                       levels = str_replace_all(str_to_lower(violent_groups), " ", "_")),
+                       levels = str_replace_all(str_to_lower(violent_offenses), " ", "_")),
       solved_rate = if_else(reported > 0, cleared / reported, NA_real_),
       reported_rate = if_else(pop_covered > 0, reported / pop_covered * 1e5, NA_real_)
     ) |>
@@ -162,4 +162,25 @@ build_agency_county_data <- function(raw, agency_year, base_year) {
     agency_table = agency_table,
     agency_offense_table = agency_offense_table
   )
+}
+
+# Share of each state's population served by agencies that reported at least
+# one month in coverage_year. pep has state_abbr, state_name and pop_total for
+# that year. Agency populations can overlap, so a share can pass 1.
+state_reporting_coverage <- function(raw, pep, coverage_year) {
+  agencies <- raw |>
+    filter(year == coverage_year, reporting_status != "none") |>
+    distinct(state_abbr = as.character(state_abbr), ori, pop_covered)
+  stopifnot("one population per agency" = !anyDuplicated(agencies$ori))
+
+  agencies |>
+    summarize(pop_reporting = sum(pop_covered, na.rm = TRUE), .by = state_abbr) |>
+    right_join(mutate(pep, state_abbr = as.character(state_abbr)), by = "state_abbr") |>
+    mutate(
+      pop_reporting = coalesce(pop_reporting, 0),
+      coverage = pop_reporting / pop_total,
+      year = coverage_year
+    ) |>
+    select(year, state_abbr, state_name, pop_reporting, pop_total, coverage) |>
+    arrange(state_abbr)
 }
