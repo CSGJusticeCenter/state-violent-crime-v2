@@ -46,6 +46,7 @@ quarto::quarto_render("index.qmd", output_file = "index.html", quiet = TRUE)
 
 - Never delete project files. Move retired code and outputs to `_archive/` with `git mv`. Quarto ignores `_`-prefixed folders.
 - Shared chart and table helpers go in `R/utils.R`, with tests in `tests/`.
+- Shared data reads, prep and page settings (base year, excluded states, palettes) go in `R/page-data.R`.
 - Match the existing tidyverse style: native pipe `|>`, snake_case.
 - Keep comments short and about present behavior. Don't leave commented-out code; git history has it.
 - After adding or upgrading packages, run `renv::snapshot()` and commit `renv.lock`.
