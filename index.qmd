@@ -494,9 +494,9 @@ srs_state_to_map |>
 ### By offense
 
 
-<span style="color:#B85A0D">▼ Orange</span> indicates a solve rate less than the U.S. rate.
+`r solve_rate_legend("below", "indicates a solve rate less than the U.S. rate.")`
 
-<span style="color:#15607A">▲ Blue</span> indicates a solve rate greater than or equal to the U.S. rate.
+`r solve_rate_legend("above", "indicates a solve rate greater than or equal to the U.S. rate.")`
 
 
 ```{r}
@@ -521,11 +521,8 @@ srs_state_by_offense_latest <- srs_state_new |>
   ))
 
 ### each state is compared with the pooled US solve rate for the offense,
-### the same rate the by-offense solve rate chart shows for the latest year
-us_solved_rate_latest <- srs_us |>
-  filter(year == latest_year) |>
-  pull(pct_solved, name = group) |>
-  set_names(janitor::make_clean_names)
+### leaving out the states excluded from solve rates
+us_solved_rate_latest <- us_solve_benchmark(srs_state_new, latest_year)
 
 solve_rate_layout <- list(
   aggravated_assault = list(offense = "Aggravated Assault"),
@@ -614,7 +611,7 @@ spending_trend <- asslgf_clean_national |>
     )
   )
 
-metric_trend_chart(
+trend_chart(
   spending_trend, "n_inflation_adjusted_latest_year_dollars",
   "State and local law enforcement expenditures",
   paste0("Law enforcement expenditures in ", exp_max_year, " dollars, ", exp_min_year, "–", exp_max_year),
@@ -635,7 +632,7 @@ ucr_employee_data_national_clean |>
     "<b>", "United States", " – ", year, "</b><br>",
     "Officers per 10k residents: ", scales::comma(officer_pop_rate_per_10k, accuracy = .1)
   )) |>
-  metric_trend_chart(
+  trend_chart(
     "officer_pop_rate_per_10k", "Officers per capita",
     paste0("Officers per 10k residents, ", lee_min_year, "–", lee_max_year),
     "FBI UCR Program, law enforcement employee counts and state crime estimates",
@@ -653,7 +650,7 @@ ucr_employee_data_national_clean |>
     "<b>", "United States", " – ", year, "</b><br>",
     "Officers per 1k violent crimes: ", scales::comma(officer_per_violent_offense_1k, accuracy = .1)
   )) |>
-  metric_trend_chart(
+  trend_chart(
     "officer_per_violent_offense_1k", "Officers per violent offense",
     paste0("Officers per 1k violent crimes, ", lee_min_year, "–", lee_max_year),
     "FBI UCR Program, law enforcement employee counts and state crime estimates",
@@ -726,6 +723,8 @@ The FBI stopped SRS data collection after data year 2020 and required law enforc
 Crime rates are calculated by dividing the number of estimated incidents by the total population. Population data come from the U.S. Census Bureau [Population Estimates Program](https://www.census.gov/programs-surveys/popest.html){target="_parent"}.
 
 {{< include _methodology-exceptional-clearance.qmd >}}
+
+The U.S. rate in the table of solve rates by offense leaves out `r knitr::combine_words(states_to_exclude_from_solved_rate_viz)`, which did not report reliable clearance data.
 
 Data regarding law enforcement expenditures were downloaded from the U.S. Census Bureau [Annual Survey of State and Local Government Finances](https://www.census.gov/programs-surveys/gov-finances.html){target="_parent"}. Expenditures include police protection spending by state governments and all local governments in each state, such as counties and municipalities. Expenditures are adjusted for inflation to constant dollars of the most recent year using the Chained Consumer Price Index for All Urban Consumers (C-CPI-U), following the [Census Bureau's guidance](https://www.census.gov/topics/income-poverty/income/guidance/current-vs-constant-dollars.html){target="_parent"}.
 

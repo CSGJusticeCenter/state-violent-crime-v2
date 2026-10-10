@@ -33,6 +33,32 @@ test_that("solve rate column colors compare against its rate and label it", {
   expect_equal(definition$className(NA_real_), "")
 })
 
+test_that("solve rates compare at the whole percents the table shows", {
+  expect_equal(solve_rate_side(0.357, 0.362), "above")
+  expect_equal(solve_rate_side(0.354, 0.356), "below")
+  expect_equal(solve_rate_side(0.40, 0.36), "above")
+  expect_equal(solve_rate_side(0.30, 0.36), "below")
+  expect_true(is.na(solve_rate_side(NA_real_, 0.36)))
+  expect_true(is.na(solve_rate_side(0.36, NA_real_)))
+
+  definition <- solve_rate_column("Robbery", 0.362, "U.S. Rate")
+  expect_equal(definition$name, "Robbery Solve Rate<br><br>(U.S. Rate: 36%)")
+  expect_equal(definition$className(0.357), "solve-rate-above")
+})
+
+test_that("solve rate column stays neutral when its rate is missing", {
+  definition <- solve_rate_column("Rape", NA_real_, "NY State Rate")
+  expect_equal(definition$style(0.4)$color, "black")
+  expect_equal(definition$className(0.4), "")
+})
+
+test_that("solve rate legend uses the table colors and hides its arrow", {
+  line <- solve_rate_legend("below", "indicates a lower rate.")
+  expect_match(line, solve_rate_colors[["below"]], fixed = TRUE)
+  expect_match(line, '<span aria-hidden="true">▼</span> Orange</span> indicates a lower rate.', fixed = TRUE)
+  expect_match(solve_rate_legend("above", "x"), solve_rate_colors[["above"]], fixed = TRUE)
+})
+
 test_that("solve rate colors reach 4.5:1 contrast on white", {
   luminance <- function(hex) {
     v <- grDevices::col2rgb(hex)[, 1] / 255
@@ -89,7 +115,7 @@ shr_weapons <- function() {
 
 test_that("SHR panel filters excluded groups and keeps requested order", {
   spec <- list(category = "weapon", title = "Rates", note = "Note",
-               order = c("Knife", "Gun"), categories = c("Knife", "Gun"), exclude = "Other")
+               order = c("Knife", "Gun"), exclude = "Other")
   prep <- function(category) function_shr_grouping_for_national_plot(shr_weapons(), category, 2022)
   chart <- shr_panel_chart(spec, prep, "2022-2024")
   expect_equal(chart$x$hc_opts$xAxis$categories, c("Knife", "Gun"))
@@ -111,6 +137,28 @@ test_that("state SHR panel splits state and region into series with a legend", {
   expect_match(series[[1]]$accessibility$point$valueDescriptionFormat, "series.name")
 })
 
+test_that("sorted SHR panels share one pooled order across series", {
+  ### the state has no knife cases; pooled, knife (90%) ranks above gun (50%)
+  data <- tibble(
+    group_for_plot = c("State", "Region", "Region"),
+    group = c("Gun", "Gun", "Knife"),
+    `Incidents reported` = c(10, 10, 10),
+    `Incidents cleared` = c(5, 5, 9),
+    clearance_rate = c(50, 50, 90),
+    tooltip = "t"
+  )
+  prep <- function(category) data
+  chart <- shr_panel_chart(shr_panels$weapon, prep, "2022-2024", series = "group_for_plot")
+  expect_equal(chart$x$hc_opts$xAxis$categories, c("Knife", "Gun"))
+  expect_equal(shr_category_order(data, list(sort_desc = TRUE)), c("Knife", "Gun"))
+  expect_null(shr_category_order(data, list()))
+})
+
+test_that("SHR order lists only groups in the data", {
+  data <- tibble(group = "Single victim")
+  expect_equal(shr_category_order(data, shr_panels$victims), "Single victim")
+})
+
 test_that("compare trend draws the state solid and the US dashed in gray", {
   data <- tibble(
     year = rep(c(2023, 2024), 2),
@@ -127,6 +175,25 @@ test_that("compare trend draws the state solid and the US dashed in gray", {
   expect_equal(chart$x$hc_opts$yAxis$min, 0)
   expect_equal(chart$x$hc_opts$yAxis$max, 40)
   expect_null(chart$x$hc_opts$legend$enabled)
+})
+
+test_that("single trend hides its legend unless asked", {
+  data <- tibble(year = c(2023, 2024), rate = c(1, 2), tooltip = "t")
+  expect_false(trend_chart(data, "rate", "T", caption = "S", value_label = "rate")$x$hc_opts$legend$enabled)
+  expect_null(trend_chart(data, "rate", "T", caption = "S", value_label = "rate",
+                          legend = TRUE)$x$hc_opts$legend$enabled)
+})
+
+test_that("trend y formatter sits beside the default label format", {
+  data <- tibble(year = c(2023, 2024), dollars = c(1e9, 2e9), tooltip = "t")
+  formatter <- "function() { return '$' + (this.value / 1000000000) + 'B'; }"
+  chart <- trend_chart(data, "dollars", "T", caption = "S", value_label = "expenditure",
+                       value_format = "${point.y:,.0f}", y_formatter = formatter)
+  labels <- chart$x$hc_opts$yAxis$labels
+  expect_equal(as.character(labels$formatter), formatter)
+  expect_equal(labels$format, "{value:,.0f}")
+  expect_equal(chart$x$hc_opts$series[[1]]$accessibility$point$valueDescriptionFormat,
+               "year: {point.x:.0f}, expenditure: ${point.y:,.0f}")
 })
 
 test_that("trend y format replaces the default axis label format", {
@@ -166,11 +233,11 @@ test_that("state map shows the tooltip column its spec names", {
   expect_false(any(startsWith(names(point), "tooltip_")))
 })
 
-test_that("metric trend uses the selected column and requested padding", {
+test_that("trend uses the selected column and requested padding", {
   data <- tibble(year = c(2023, 2024), spending = c(10, 20),
                  staffing = c(2, 3), tooltip = c("a", "b"))
-  chart <- metric_trend_chart(data, "staffing", "Staffing", "Per capita", "Source",
-                              "officers per 10,000 residents", expansion = 2.5)
+  chart <- trend_chart(data, "staffing", "Staffing", "Per capita", "Source",
+                       "officers per 10,000 residents", expansion = 2.5)
   expect_equal(chart$x$hc_opts$yAxis$min, 0)
   expect_equal(chart$x$hc_opts$yAxis$max, 5.5)
   expect_equal(vapply(chart$x$hc_opts$series[[1]]$data, `[[`, numeric(1), "y"), c(2, 3))

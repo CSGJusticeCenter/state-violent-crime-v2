@@ -167,11 +167,12 @@ state_map_chart <- function(data, map, spec) {
 }
 
 ### spline trend by year, padded with chart_bounds()
-### compare = TRUE draws one line per state_name, with the US dashed in gray
+### compare = TRUE draws one line per state_name, with the US dashed in gray,
+### and shows a legend
 ### value_label and value_format describe each point to screen readers
 trend_chart <- function(data, value, title, subtitle = NULL, caption, value_label,
                         value_format = "{point.y:.1f}", color = jr_pal[1],
-                        compare = FALSE, legend = TRUE, expansion = 0.5,
+                        compare = FALSE, legend = compare, expansion = 0.5,
                         floor = 0, ceiling = NULL, y_format = NULL, y_formatter = NULL) {
   bounds <- chart_bounds(data[[value]], expansion = expansion, floor = floor, ceiling = ceiling)
   accessibility <- list(point = list(valueDescriptionFormat = paste0(
@@ -195,14 +196,16 @@ trend_chart <- function(data, value, title, subtitle = NULL, caption, value_labe
   if (!is.null(subtitle)) chart <- hc_subtitle(chart, text = subtitle)
   if (!legend) chart <- hc_legend(chart, enabled = FALSE)
 
-  ### label options go after hc_setup() so they replace its default format
+  ### label options merge into hc_setup()'s labels, so they go after it
+  ### y_format replaces its format; y_formatter works alongside it because
+  ### Highcharts uses formatter over format
   chart <- hc_setup(chart)
   if (!is.null(y_format)) chart <- hc_yAxis(chart, labels = list(format = y_format))
   if (!is.null(y_formatter)) chart <- hc_yAxis(chart, labels = list(formatter = JS(y_formatter)))
   chart
 }
 
-### reported rate trend for one offense; the legend shows only when comparing
+### reported rate trend for one offense
 offense_trend_chart <- function(data, offense, title, subtitle, color,
                                 caption = "FBI UCR Program, state crime estimates",
                                 compare = FALSE) {
@@ -210,19 +213,7 @@ offense_trend_chart <- function(data, offense, title, subtitle, color,
     dplyr::filter(data, group == offense), "incidents_reported_rate_total",
     title, subtitle, caption,
     value_label = paste(tolower(offense), "incidents per 100,000 residents"),
-    color = color, compare = compare, legend = compare
-  )
-}
-
-### resource trend; the legend shows only when comparing
-metric_trend_chart <- function(data, value, title, subtitle, caption, value_label,
-                               value_format = "{point.y:.1f}", expansion = 0.5,
-                               y_formatter = NULL, compare = FALSE) {
-  trend_chart(
-    data, value, title, subtitle, caption,
-    value_label = value_label, value_format = value_format,
-    compare = compare, legend = compare, expansion = expansion,
-    y_formatter = y_formatter
+    color = color, compare = compare
   )
 }
 
@@ -249,8 +240,7 @@ shr_panels <- list(
   ),
   victims = list(
     category = "victim_count", title = "Homicide solve rates by number of victims",
-    order = c("Single victim", "Multiple victims"),
-    categories = c("Single victim", "Multiple victims")
+    order = c("Single victim", "Multiple victims")
   )
 )
 
@@ -286,31 +276,53 @@ shr_rate_chart <- function(data, title, years, caption, categories = NULL, serie
   chart
 }
 
+### x-axis order for an SHR panel, or NULL to keep the data's order
+### sort_desc ranks groups by their solve rate pooled across all series,
+### so every series shares one order
+shr_category_order <- function(data, spec) {
+  if (!is.null(spec$order)) return(intersect(spec$order, data$group))
+  if (!isTRUE(spec$sort_desc)) return(NULL)
+  data |>
+    dplyr::summarize(
+      rate = sum(`Incidents cleared`) / sum(`Incidents reported`),
+      .by = group
+    ) |>
+    dplyr::arrange(dplyr::desc(rate)) |>
+    dplyr::pull(group)
+}
+
 ### one panel from shr_panels
 ### prep takes a group_cat value and returns grouped solve rates
 shr_panel_chart <- function(spec, prep, years, series = NULL) {
   data <- prep(spec$category)
   if (!is.null(spec$exclude)) data <- dplyr::filter(data, !group %in% spec$exclude)
-  if (!is.null(spec$order)) {
-    data$group <- factor(data$group, levels = spec$order)
+
+  categories <- shr_category_order(data, spec)
+  if (!is.null(categories)) {
+    data$group <- factor(data$group, levels = categories)
     data <- dplyr::arrange(data, group)
   }
-  if (isTRUE(spec$sort_desc)) data <- dplyr::arrange(data, dplyr::desc(clearance_rate))
 
   caption <- paste(c(spec$note, shr_source(years)), collapse = "<br>")
-  shr_rate_chart(data, spec$title, years, caption, categories = spec$categories, series = series)
+  shr_rate_chart(data, spec$title, years, caption, categories = categories, series = series)
 }
 
 ### text colors for solve rates at or above and below a comparison rate
 ### both reach at least 4.5:1 contrast on white
 solve_rate_colors <- c(above = "#15607A", below = "#B85A0D")
 
+### "above" or "below" for a solve rate against a comparison rate, or NA
+### both are compared as whole percents, the precision the table shows
+solve_rate_side <- function(value, rate) {
+  if (is.na(value) || is.na(rate)) return(NA_character_)
+  if (round(value, 2) >= round(rate, 2)) "above" else "below"
+}
+
 ### solve rate column colored against a comparison rate
 ### label names that rate in the header, e.g., "(U.S. Rate: 47%)"
 ### the solve-rate-above and solve-rate-below classes add arrows in styles.css,
 ### so the comparison doesn't rely on color alone
 solve_rate_column <- function(offense, rate, label, min_width = 120, align = NULL) {
-  side <- function(value) if (value >= rate) "above" else "below"
   colDef(
     name = paste0(offense, " Solve Rate<br><br>(", label, ": ",
                   scales::percent(rate, accuracy = 1), ")"),
@@ -319,12 +331,24 @@ solve_rate_column <- function(offense, rate, label, min_width = 120, align = NUL
     align = align,
     format = colFormat(digits = 0, percent = TRUE),
     style = function(value) {
-      color <- if (is.na(value)) "black" else solve_rate_colors[[side(value)]]
-      list(color = color, fontWeight = "bold")
+      side <- solve_rate_side(value, rate)
+      list(color = if (is.na(side)) "black" else solve_rate_colors[[side]], fontWeight = "bold")
     },
     class = function(value) {
-      if (is.na(value)) "" else paste0("solve-rate-", side(value))
+      side <- solve_rate_side(value, rate)
+      if (is.na(side)) "" else paste0("solve-rate-", side)
     }
+  )
+}
+
+### legend line for a solve-rate table, e.g., "▼ Orange indicates ..."
+### the arrow is hidden from screen readers, which read the words
+solve_rate_legend <- function(side, text) {
+  arrow <- c(above = "▲", below = "▼")[[side]]
+  name <- c(above = "Blue", below = "Orange")[[side]]
+  paste0(
+    '<span style="color:', solve_rate_colors[[side]], '">',
+    '<span aria-hidden="true">', arrow, '</span> ', name, '</span> ', text
   )
 }
 

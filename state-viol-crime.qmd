@@ -513,23 +513,24 @@ srs_solved_by_agency_to_table |>
 
 ### By offense
 
-<span style="color:#B85A0D">▼ Orange</span> indicates a solve rate less than the state rate.
+`r solve_rate_legend("below", "indicates a solve rate less than the state rate.")`
 
-<span style="color:#15607A">▲ Blue</span> indicates a solve rate greater than or equal to the state rate.
+`r solve_rate_legend("above", "indicates a solve rate greater than or equal to the state rate.")`
 
 ```{r}
 #| column: body-outset
 
 ### each agency is compared with the pooled state solve rate for the offense
-offenses <- c("aggravated_assault", "homicide", "rape", "robbery")
-state_solved_rate <- set_names(map_dbl(offenses, agency_state_solve_share), offenses)
-
 solve_rate_layout <- list(
   aggravated_assault = list(offense = "Aggravated Assault", min_width = 100),
   homicide = list(offense = "Homicide", min_width = 100, align = "center"),
   rape = list(offense = "Rape", min_width = 100, align = "left"),
   robbery = list(offense = "Robbery", min_width = 100)
 )
+
+state_solved_rate <- names(solve_rate_layout) |>
+  set_names() |>
+  map_dbl(agency_state_solve_share)
 
 srs_solved_by_agency_and_offense_to_table |>
   filter(population > 0) |>
@@ -639,7 +640,7 @@ spending_trend <- asslgf_clean |>
     )
   )
 
-metric_trend_chart(
+trend_chart(
   spending_trend, "n_inflation_adjusted_latest_year_dollars",
   paste0("Law enforcement expenditures in ", state_name_text),
   paste0("Inflation-adjusted law enforcement expenditures, ", min_year_resources, "–", max_year_resources),
@@ -663,7 +664,7 @@ officer_trend |>
     "<b>", state_name, " – ", year, "</b><br>",
     "Officers per 10k residents: ", scales::comma(officer_pop_rate_per_10k, accuracy = .1)
   )) |>
-  metric_trend_chart(
+  trend_chart(
     "officer_pop_rate_per_10k",
     paste0("Officers per capita in ", state_name_text),
     paste0("Officers per 10k residents, ", min_year_resources_staff_per_offense, "–", max_year_resources_staff_per_offense),
@@ -683,7 +684,7 @@ officer_trend |>
     "<b>", state_name, " – ", year, "</b><br>",
     "Officers per 1k violent crimes: ", scales::comma(officer_per_violent_offense_1k, accuracy = .1)
   )) |>
-  metric_trend_chart(
+  trend_chart(
     "officer_per_violent_offense_1k",
     paste0("Officers per violent offense in ", state_name_text),
     paste0("Officers per 1k violent crimes, ", min_year_resources_staff_per_offense, "–", max_year_resources_staff_per_offense),
