@@ -64,9 +64,11 @@ The latest SRS year comes from the data, so the state pages pick it up automatic
 
 ### Open questions
 
-- **2025 state coverage.** The national methodology gives 2025 national coverage (96.2 percent, from Crime in the United States). The 2024 version also named states whose estimate population fell by more than 10 percent (FL, MS and WY). Check whether any states had a drop like that in 2025 and add them to that paragraph in `index.qmd`.
 - **Illinois 2025 solve rates.** Illinois stays excluded from solve rates because its 2019 clearances are unusable (about 2% of aggravated assaults cleared). Its 2025 clearances look plausible (about 44% for aggravated assault and homicide). Decide whether to show its 2025 solve rate and blank only the change since 2019.
-- **Hardcoded claims.** Some narrative claims are typed by hand, so they won't update with new data. These are the US solve rate trend, the homicide solve rate comparisons by race, gender and age, and the national coverage figure in the methodology, all in `index.qmd`. Recheck them each year, or generate them from the same data the charts use.
+- **Hardcoded claims.** Some narrative claims are typed by hand, so they won't update with new data. Recheck them each year, or generate them from the same data the charts use. All are in `index.qmd`:
+  - the US solve rate trend
+  - the homicide solve rate comparisons by race, gender and age
+  - the coverage paragraph in the methodology. The national NIBRS and SRS shares come from the FBI's *Reported Crimes in the Nation* report for the year. The states listed below 90 percent come from the CDE agency file (`fbi_srs_agency.rds`). Sum `pop_covered` for agencies reporting at least one month, divide by the state's PEP population, and list the states under 90 percent.
 
 ### Layout
 
@@ -79,7 +81,7 @@ The latest SRS year comes from the data, so the state pages pick it up automatic
 | `R/agency-county-data.R` | Agency and county aggregation used by step 1 |
 | `R/local-map-data.R` | County map loading, including the merged NYC feature |
 | `R/download-county-maps.R` | Refreshes `maps/` from the pinned Highcharts map collection |
-| `data/` | Prepped agency data, CSG regions, inflation index, US hex grid |
+| `data/` | Prepped agency data, CSG regions, inflation index, US hex grid, and `ucr_participation_1960_2025.csv` (UCR agency participation by state and year, for reference; the pages don't read it) |
 | `maps/` | Highcharts county maps (see `maps/README.md`) |
 | `img/`, `fonts/`, `styles.css` | Site assets |
 | `tests/` | testthat tests for the helpers |
