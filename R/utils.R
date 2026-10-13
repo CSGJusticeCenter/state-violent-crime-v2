@@ -27,6 +27,20 @@ dollar <- function(x, accuracy = 1, scale = 1, ...) {
   scales::dollar(half_up(x * scale, accuracy) / scale, accuracy = accuracy, scale = scale, ...)
 }
 
+### crime rates per 100,000 residents show whole numbers, except homicide
+### rates, which are small and show one decimal; zero is "0" and missing is ""
+format_rate_100k <- function(x, homicide = FALSE) {
+  homicide <- rep_len(homicide, length(x))
+  out <- ifelse(homicide, comma(x, 0.1), comma(x, 1))
+  out[out == "0.0"] <- "0"
+  ifelse(is.na(x), "", out)
+}
+
+### reactable cell functions for rate columns, so tables match tooltips
+### reactable also passes the row index, which these ignore
+rate_100k_cell <- function(value, ...) format_rate_100k(value)
+homicide_rate_100k_cell <- function(value, ...) format_rate_100k(value, homicide = TRUE)
+
 # define justice reinvestment color palette
 jr_pal <- c("#4095B1", "#273C4C", "#50A25D", "#E17619", "#E25449", "#779F38", "#AFABAB")
 

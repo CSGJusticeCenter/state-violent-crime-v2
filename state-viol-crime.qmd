@@ -38,8 +38,8 @@ srs_by_cat_state <- violent_totals(srs_state_new, first_year, state)
 srs_by_cat_us <- violent_totals(srs_state_new, first_year)
 srs_us <- violent_by_offense(srs_state_new, first_year)
 
-### the US solve-rate line leaves out the states excluded from solve rates
-srs_by_cat_us_solve <- violent_totals(solve_rate_pool(srs_state_new), first_year)
+### the US solve rate leaves out the excluded states but applies to US reported counts
+srs_by_cat_us_solve <- us_solve_trend(srs_state_new, first_year)
 
 ### county map and agency tables come from R/01-prep-agency-county-data.R
 srs_solved_by_county_to_map <- read_rds("data/county_map.rds") |>
@@ -149,7 +149,7 @@ change_text_clear <- change_phrase(pct_change_solved, "point")
 ## Violent crime in `r state_name_text`
 
 ```{r}
-crime_rate_max <- paste0(comma(min_max_viol_crime$incidents_reported_rate_total[2], 1, scale = 1e5))
+crime_rate_max <- format_rate_100k(min_max_viol_crime$incidents_reported_rate_total[2] * 1e5)
 ```
 
 In `r max_year`, `r crime_rate_max` violent crime incidents per 100,000 residents were reported to police in `r state_name_text`. This is `r change_text_crime` the violent crime rate in `r min_year`.
@@ -169,7 +169,7 @@ violent_rates <- srs_by_cat_state |>
     incidents_reported_rate_total = incidents_reported_rate_total * 1e5,
     tooltip = paste0(
       "<b>", state_name, " – ", year, "</b><br>",
-      "Violent incidents per 100k: ", comma(incidents_reported_rate_total, 1), "<br>",
+      "Violent incidents per 100k: ", format_rate_100k(incidents_reported_rate_total), "<br>",
       "Violent incidents reported: ", comma(incidents_reported, 1)
     )
   )
@@ -199,7 +199,7 @@ offense_rates <- srs_state |>
     group = fct_reorder(group, incidents_reported_rate_total),
     tooltip = paste0(
       "<b>", state_name, " – ", group, " – ", year, "</b></br>",
-      "Incidents reported per 100k: ", comma(incidents_reported_rate_total, 1), "<br>",
+      "Incidents reported per 100k: ", format_rate_100k(incidents_reported_rate_total, group == "Homicide"), "<br>",
       "Incidents reported: ", comma(incidents_reported, 1), "<br>",
       "Total violent incidents reported: ", comma(tot_crime, 1), "<br>",
       "Share of all violent incidents: ", percent(pct, 1)
@@ -506,7 +506,7 @@ srs_solved_by_agency_to_table |>
       population = colDef(name = "Jurisdiction Population", minWidth = 100),
       n_reported = colDef(name = paste0("Violent Incidents Reported (", agency_year, ")")),
       n_reported_rate = colDef(name = paste0("Violent Incidents per 100k (", agency_year, ")"),
-                               format = colFormat(digits = 0, separators = TRUE)),
+                               cell = rate_100k_cell),
       solved_rate = colDef(
         name = paste0("Solve Rate (", agency_year, ")"),
         format = colFormat(digits = 0, percent = TRUE)
@@ -564,19 +564,19 @@ srs_solved_by_agency_and_offense_to_table |>
         population = colDef(name = "Jurisdiction Population", minWidth = 110),
         n_reported_rate_aggravated_assault = colDef(
           name = "Aggravated Assault Incidents per 100k",
-          format = colFormat(digits = 0, separators = TRUE), minWidth = 100
+          cell = rate_100k_cell, minWidth = 100
         ),
         n_reported_rate_homicide = colDef(
           name = "Homicide Incidents per 100k",
-          format = colFormat(digits = 0, separators = TRUE), align = "center"
+          cell = homicide_rate_100k_cell, align = "center"
         ),
         n_reported_rate_rape = colDef(
           name = "Rape Incidents per 100k",
-          format = colFormat(digits = 0, separators = TRUE)
+          cell = rate_100k_cell
         ),
         n_reported_rate_robbery = colDef(
           name = "Robbery Incidents per 100k",
-          format = colFormat(digits = 0, separators = TRUE)
+          cell = rate_100k_cell
         )
       ),
       solve_rate_columns(state_solved_rate, paste(state_abbr_params, "State Rate"), solve_rate_layout)

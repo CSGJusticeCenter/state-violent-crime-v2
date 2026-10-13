@@ -118,6 +118,25 @@ test_that("solve rate pool drops excluded states from US solve totals", {
   expect_equal(by_offense$pct_solved, unname(benchmark))
 })
 
+test_that("US solve trend applies the pooled solve rate to every state's reports", {
+  srs <- prep_srs_state(raw_srs()) |>
+    mutate(incidents_unsolved = if_else(state_abbr == "BB", 0, incidents_unsolved))
+
+  ### State A solves 42 of 50; both states report 100
+  us <- us_solve_trend(srs, 2015, exclude = "State B")
+  expect_equal(us$state_name, "United States")
+  expect_equal(us$incidents_reported, 100)
+  expect_equal(us$pct_solved, 42 / 50)
+  expect_equal(us$incidents_solved, 84)
+  expect_equal(us$incidents_unsolved, 16)
+
+  by_offense <- us_solve_trend(srs, 2015, by_offense = TRUE, exclude = "State B")
+  expect_equal(by_offense$group, c("Homicide", "Robbery"))
+  expect_equal(by_offense$incidents_reported, c(20, 80))
+  expect_equal(by_offense$pct_solved, c(6 / 10, 36 / 40))
+  expect_equal(by_offense$incidents_solved, c(12, 72))
+})
+
 test_that("inflation adjustment uses the latest year's dollars", {
   spending <- tibble(year = c(2023, 2024), n = c(100, 100))
   index <- tibble(year = c(2023, 2024), inflation_index = c(100, 110))
