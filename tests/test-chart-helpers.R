@@ -21,16 +21,36 @@ test_that("change maps center their scale on zero", {
   expect_equal(change_map_bounds(c(NA, -2, 5)), c(-5, 5))
 })
 
-test_that("solve rate column colors compare against its rate and label it", {
+test_that("solve rate column tints pills against its rate and labels it", {
   definition <- solve_rate_column("Homicide", 0.5, "U.S. Rate")
   expect_equal(definition$name, "Homicide Solve Rate<br><br>(U.S. Rate: 50%)")
-  expect_equal(definition$style(0.6)$color, "#15607A")
-  expect_equal(definition$style(0.5)$color, "#15607A")
-  expect_equal(definition$style(0.4)$color, "#B85A0D")
-  expect_equal(definition$style(NA_real_)$color, "black")
-  expect_equal(definition$className(0.5), "solve-rate-above")
-  expect_equal(definition$className(0.4), "solve-rate-below")
-  expect_equal(definition$className(NA_real_), "")
+  expect_equal(definition$cell(0.6), solve_rate_pill("60%", "above", "at or above, "))
+  expect_equal(definition$cell(0.5), solve_rate_pill("50%", "above", "at or above, "))
+  expect_equal(definition$cell(0.4), solve_rate_pill("40%", "below", "below, "))
+  expect_equal(definition$cell(NA_real_), "")
+})
+
+test_that("solve rate pill styles by side and hides screen reader words", {
+  expect_equal(
+    solve_rate_pill("40%", "below", "below, "),
+    paste0(
+      '<span class="solve-rate-pill solve-rate-pill-below" style="color:#9A4A0A;background-color:#FBE8DA">',
+      '<span class="visually-hidden">below, </span>40%</span>'
+    )
+  )
+  expect_no_match(solve_rate_pill("Blue", "above"), "visually-hidden")
+})
+
+test_that("above and below pills differ by more than color", {
+  ### only above pills get the outline class, and only below pills a tinted fill
+  expect_match(solve_rate_pill("60%", "above"), "solve-rate-pill-above", fixed = TRUE)
+  expect_equal(unname(solve_rate_fills[["above"]]), "#FFFFFF")
+  expect_false(solve_rate_fills[["below"]] == "#FFFFFF")
+
+  css <- readLines("../styles.css")
+  outline <- grep("^\\.solve-rate-pill-above", css)
+  expect_length(outline, 1)
+  expect_match(css[outline + 1], "border-color: currentColor", fixed = TRUE)
 })
 
 test_that("solve rates compare at the whole percents the table shows", {
@@ -43,7 +63,7 @@ test_that("solve rates compare at the whole percents the table shows", {
 
   definition <- solve_rate_column("Robbery", 0.362, "U.S. Rate")
   expect_equal(definition$name, "Robbery Solve Rate<br><br>(U.S. Rate: 36%)")
-  expect_equal(definition$className(0.357), "solve-rate-above")
+  expect_match(definition$cell(0.357), solve_rate_fills[["above"]], fixed = TRUE)
 })
 
 test_that("solve rate cells and headers round halves up the same way", {
@@ -57,30 +77,33 @@ test_that("solve rate cells and headers round halves up the same way", {
   # Evansville PD homicide, 5 of 8, against Indiana's 63 percent
   expect_equal(solve_rate_side(5 / 8, 0.633), "above")
   definition <- solve_rate_column("Homicide", 0.633, "IN State Rate")
-  expect_equal(definition$cell(5 / 8), "63%")
+  expect_equal(definition$cell(5 / 8), solve_rate_pill("63%", "above", "at or above, "))
   expect_equal(definition$name, "Homicide Solve Rate<br><br>(IN State Rate: 63%)")
 })
 
-test_that("solve rate column stays neutral when its rate is missing", {
+test_that("solve rate column shows plain text when its rate is missing", {
   definition <- solve_rate_column("Rape", NA_real_, "NY State Rate")
-  expect_equal(definition$style(0.4)$color, "black")
-  expect_equal(definition$className(0.4), "")
+  expect_equal(definition$cell(0.4), "40%")
 })
 
-test_that("solve rate legend uses the table colors and hides its arrow", {
-  line <- solve_rate_legend("below", "indicates a lower rate.")
-  expect_match(line, solve_rate_colors[["below"]], fixed = TRUE)
-  expect_match(line, '<span aria-hidden="true">▼</span> Orange</span> indicates a lower rate.', fixed = TRUE)
-  expect_match(solve_rate_legend("above", "x"), solve_rate_colors[["above"]], fixed = TRUE)
+test_that("solve rate legend shows the color name in the table's pill", {
+  expect_equal(
+    solve_rate_legend("below", "indicates a lower rate."),
+    paste(solve_rate_pill("Orange", "below"), "indicates a lower rate.")
+  )
+  expect_match(solve_rate_legend("above", "x"), "Blue</span> x", fixed = TRUE)
 })
 
-test_that("solve rate colors reach 4.5:1 contrast on white", {
+test_that("solve rate text colors reach 4.5:1 contrast on their pill fills", {
   luminance <- function(hex) {
     v <- grDevices::col2rgb(hex)[, 1] / 255
     v <- ifelse(v <= 0.04045, v / 12.92, ((v + 0.055) / 1.055)^2.4)
     sum(c(0.2126, 0.7152, 0.0722) * v)
   }
-  contrast <- vapply(solve_rate_colors, \(hex) 1.05 / (luminance(hex) + 0.05), numeric(1))
+  contrast <- mapply(
+    \(text, fill) (luminance(fill) + 0.05) / (luminance(text) + 0.05),
+    solve_rate_colors, solve_rate_fills[names(solve_rate_colors)]
+  )
   expect_true(all(contrast >= 4.5))
 })
 
@@ -94,7 +117,7 @@ test_that("solve rate columns map each offense to its rate and layout", {
   expect_equal(columns$solved_rate_homicide$name, "Homicide Solve Rate<br><br>(NY State Rate: 68%)")
   expect_equal(columns$solved_rate_homicide$align, "center")
   expect_equal(columns$solved_rate_rape$minWidth, 155)
-  expect_equal(columns$solved_rate_rape$style(0.2)$color, "#B85A0D")
+  expect_equal(columns$solved_rate_rape$cell(0.2), solve_rate_pill("20%", "below", "below, "))
 })
 
 test_that("offense trend uses the selected offense and its own rate range", {

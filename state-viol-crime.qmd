@@ -38,8 +38,8 @@ srs_by_cat_state <- violent_totals(srs_state_new, first_year, state)
 srs_by_cat_us <- violent_totals(srs_state_new, first_year)
 srs_us <- violent_by_offense(srs_state_new, first_year)
 
-### the US solve-rate line leaves out the states excluded from solve rates
-srs_by_cat_us_solve <- violent_totals(solve_rate_pool(srs_state_new), first_year)
+### the US solve rate leaves out the excluded states but applies to US reported counts
+srs_by_cat_us_solve <- us_solve_trend(srs_state_new, first_year)
 
 ### county map and agency tables come from R/01-prep-agency-county-data.R
 srs_solved_by_county_to_map <- read_rds("data/county_map.rds") |>
@@ -149,7 +149,7 @@ change_text_clear <- change_phrase(pct_change_solved, "point")
 ## Violent crime in `r state_name_text`
 
 ```{r}
-crime_rate_max <- paste0(comma(min_max_viol_crime$incidents_reported_rate_total[2], 1, scale = 1e5))
+crime_rate_max <- format_rate_100k(min_max_viol_crime$incidents_reported_rate_total[2] * 1e5)
 ```
 
 In `r max_year`, `r crime_rate_max` violent crime incidents per 100,000 residents were reported to police in `r state_name_text`. This is `r change_text_crime` the violent crime rate in `r min_year`.
@@ -167,9 +167,10 @@ violent_rates <- srs_by_cat_state |>
   bind_rows(srs_by_cat_us) |>
   mutate(
     incidents_reported_rate_total = incidents_reported_rate_total * 1e5,
+    rate_label = format_rate_100k(incidents_reported_rate_total),
     tooltip = paste0(
       "<b>", state_name, " – ", year, "</b><br>",
-      "Violent incidents per 100k: ", comma(incidents_reported_rate_total, 1), "<br>",
+      "Violent incidents per 100k: ", rate_label, "<br>",
       "Violent incidents reported: ", comma(incidents_reported, 1)
     )
   )
@@ -180,6 +181,7 @@ trend_chart(
   "Crime reported to police per 100,000 residents",
   "FBI UCR Program, state crime estimates",
   value_label = "violent incidents per 100,000 residents",
+  value_format = "{point.rate_label}",
   compare = TRUE, expansion = axis_expansion_mult
 )
 ```
@@ -197,9 +199,10 @@ offense_rates <- srs_state |>
   ungroup() |>
   mutate(
     group = fct_reorder(group, incidents_reported_rate_total),
+    rate_label = format_rate_100k(incidents_reported_rate_total, group == "Homicide"),
     tooltip = paste0(
       "<b>", state_name, " – ", group, " – ", year, "</b></br>",
-      "Incidents reported per 100k: ", comma(incidents_reported_rate_total, 1), "<br>",
+      "Incidents reported per 100k: ", rate_label, "<br>",
       "Incidents reported: ", comma(incidents_reported, 1), "<br>",
       "Total violent incidents reported: ", comma(tot_crime, 1), "<br>",
       "Share of all violent incidents: ", percent(pct, 1)
@@ -260,7 +263,7 @@ state_offense_rates |>
     groupPadding = 0.05,
     hcaes(year, incidents_reported_rate_total, group = group),
     accessibility = list(point = list(
-      valueDescriptionFormat = "{point.series.name}, year: {point.x:.0f}, incidents per 100,000 residents: {point.y:.1f}"
+      valueDescriptionFormat = "{point.series.name}, year: {point.x:.0f}, incidents per 100,000 residents: {point.rate_label}"
     ))
   ) |>
   hc_colors(unique(offense_rates$color)) |>
@@ -477,13 +480,11 @@ In the following table, violent crime incident rates, as well as violent crime s
 
 Please note that rates calculated for agencies with smaller jurisdiction populations, as well as fewer overall incidents, are less reliable than those for larger jurisdictions and should be interpreted with caution.
 
-::: {.panel-tabset}
+::: {.panel-tabset .column-body-outset}
 
 ### Overall rates
 
 ```{r}
-#| column: body-outset
-
 srs_solved_by_agency_to_table |>
   select(agency_name,
          county,
@@ -506,7 +507,7 @@ srs_solved_by_agency_to_table |>
       population = colDef(name = "Jurisdiction Population", minWidth = 100),
       n_reported = colDef(name = paste0("Violent Incidents Reported (", agency_year, ")")),
       n_reported_rate = colDef(name = paste0("Violent Incidents per 100k (", agency_year, ")"),
-                               format = colFormat(digits = 0, separators = TRUE)),
+                               cell = rate_100k_cell),
       solved_rate = colDef(
         name = paste0("Solve Rate (", agency_year, ")"),
         format = colFormat(digits = 0, percent = TRUE)
@@ -526,8 +527,6 @@ srs_solved_by_agency_to_table |>
 `r solve_rate_legend("above", "indicates a solve rate greater than or equal to the state rate.")`
 
 ```{r}
-#| column: body-outset
-
 ### each agency is compared with the pooled state solve rate for the offense
 solve_rate_layout <- list(
   aggravated_assault = list(offense = "Aggravated Assault", min_width = 100),
@@ -564,19 +563,19 @@ srs_solved_by_agency_and_offense_to_table |>
         population = colDef(name = "Jurisdiction Population", minWidth = 110),
         n_reported_rate_aggravated_assault = colDef(
           name = "Aggravated Assault Incidents per 100k",
-          format = colFormat(digits = 0, separators = TRUE), minWidth = 100
+          cell = rate_100k_cell, minWidth = 100
         ),
         n_reported_rate_homicide = colDef(
           name = "Homicide Incidents per 100k",
-          format = colFormat(digits = 0, separators = TRUE), align = "center"
+          cell = homicide_rate_100k_cell, align = "center"
         ),
         n_reported_rate_rape = colDef(
           name = "Rape Incidents per 100k",
-          format = colFormat(digits = 0, separators = TRUE)
+          cell = rate_100k_cell
         ),
         n_reported_rate_robbery = colDef(
           name = "Robbery Incidents per 100k",
-          format = colFormat(digits = 0, separators = TRUE)
+          cell = rate_100k_cell
         )
       ),
       solve_rate_columns(state_solved_rate, paste(state_abbr_params, "State Rate"), solve_rate_layout)
@@ -772,7 +771,7 @@ Statewide crime rates are calculated by dividing the number of estimated inciden
 {{< include _methodology-exceptional-clearance.qmd >}}
 
 ::: {.content-visible when-meta="show-solved"}
-The U.S. line on the solve rate chart leaves out `r knitr::combine_words(states_to_exclude_from_solved_rate_viz)`, which did not report reliable clearance data, while U.S. crime rates include every state.
+The U.S. solve rate on the solve rate chart leaves out `r knitr::combine_words(states_to_exclude_from_solved_rate_viz)`, which did not report reliable clearance data. The U.S. counts of reported violent crime include every state, and the U.S. counts of solved violent crime apply the solve rate to those reported counts.
 :::
 
 Agency- and county-level violent crime and solve rate data presented above are restricted to agencies reporting data for all 12 months in `r agency_year`. The calculation of population covered by reporting agencies, as well as the number of reporting agencies by county, is also based on agencies with violent crime data for all 12 months. 

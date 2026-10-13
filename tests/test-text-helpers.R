@@ -17,6 +17,18 @@ test_that("display formatters round halves up", {
   expect_identical(comma(NA_real_), scales::comma(NA_real_))
 })
 
+test_that("rates per 100k show one decimal only for homicide", {
+  expect_equal(format_rate_100k(c(4.5, 62.2, 1234.5, NA)), c("5", "62", "1,235", ""))
+  expect_equal(format_rate_100k(c(4.05, 0, 0.04, NA), homicide = TRUE), c("4.1", "0", "0", ""))
+  expect_equal(format_rate_100k(c(4.05, 62.25), c(TRUE, FALSE)), c("4.1", "62"))
+})
+
+test_that("rate cell functions ignore the row index reactable passes", {
+  expect_equal(rate_100k_cell(348.3, 2), "348")
+  expect_equal(homicide_rate_100k_cell(8.53, 2), "8.5")
+  expect_equal(homicide_rate_100k_cell(0, 1), "0")
+})
+
 test_that("signed cells show a sign, round, and leave missing values blank", {
   expect_equal(add_plus_sign_percent_point_change(3.4), "+3")
   expect_equal(add_plus_sign_percent_point_change(-5.6), "-6")

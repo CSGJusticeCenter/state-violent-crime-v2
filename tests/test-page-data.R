@@ -118,6 +118,45 @@ test_that("solve rate pool drops excluded states from US solve totals", {
   expect_equal(by_offense$pct_solved, unname(benchmark))
 })
 
+test_that("US solve trend applies the pooled solve rate to every state's reports", {
+  srs <- prep_srs_state(raw_srs()) |>
+    mutate(incidents_unsolved = if_else(state_abbr == "BB", 0, incidents_unsolved))
+
+  ### State A solves 42 of 50; both states report 100
+  us <- us_solve_trend(srs, 2015, exclude = "State B")
+  expect_equal(us$state_name, "United States")
+  expect_equal(us$incidents_reported, 100)
+  expect_equal(us$pct_solved, 42 / 50)
+  expect_equal(us$incidents_solved, 84)
+  expect_equal(us$incidents_unsolved, 16)
+
+  by_offense <- us_solve_trend(srs, 2015, by_offense = TRUE, exclude = "State B")
+  expect_equal(by_offense$group, c("Homicide", "Robbery"))
+  expect_equal(by_offense$incidents_reported, c(20, 80))
+  expect_equal(by_offense$pct_solved, c(6 / 10, 36 / 40))
+  expect_equal(by_offense$incidents_solved, c(12, 72))
+})
+
+test_that("US solve trend matches each year's pooled rate to that year", {
+  ### in 2024 State A solves everything; in 2025 it solves 42 of 50
+  srs <- prep_srs_state(bind_rows(raw_srs(), mutate(raw_srs(), year = 2024))) |>
+    mutate(incidents_unsolved = if_else(state_abbr == "AA" & year == 2024, 0, incidents_unsolved))
+
+  us <- us_solve_trend(srs, 2015, exclude = "State B") |> arrange(year)
+  expect_equal(us$year, c(2024, 2025))
+  expect_equal(us$pct_solved, c(1, 42 / 50))
+  expect_equal(us$incidents_solved, c(100, 84))
+
+  by_offense <- us_solve_trend(srs, 2015, by_offense = TRUE, exclude = "State B") |>
+    arrange(year, group)
+  expect_equal(by_offense$pct_solved, c(1, 1, 6 / 10, 36 / 40))
+})
+
+test_that("US solve trend stops when a pooled rate is missing", {
+  srs <- prep_srs_state(raw_srs())
+  expect_error(us_solve_trend(srs, 2015, exclude = c("State A", "State B")), "pooled solve rate")
+})
+
 test_that("inflation adjustment uses the latest year's dollars", {
   spending <- tibble(year = c(2023, 2024), n = c(100, 100))
   index <- tibble(year = c(2023, 2024), inflation_index = c(100, 110))

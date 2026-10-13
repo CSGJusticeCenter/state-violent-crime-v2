@@ -25,10 +25,9 @@ first_year <- latest_year - 10
 srs_by_cat_us <- violent_totals(srs_state_new, first_year)
 srs_us <- violent_by_offense(srs_state_new, first_year)
 
-### US solve rates leave out the states excluded from solve rates
-srs_solve_pool <- solve_rate_pool(srs_state_new)
-srs_by_cat_us_solve <- violent_totals(srs_solve_pool, first_year)
-srs_us_solve <- violent_by_offense(srs_solve_pool, first_year)
+### US solve rates leave out the excluded states but apply to US reported counts
+srs_by_cat_us_solve <- us_solve_trend(srs_state_new, first_year)
+srs_us_solve <- us_solve_trend(srs_state_new, first_year, by_offense = TRUE)
 
 ### violent crime counts and rates by state, one column per year
 ### solve rates are multiplied by 100 for highcharts formatting
@@ -61,6 +60,7 @@ srs_state_to_map <- srs_state_new |>
 ### changes show a sign, e.g., "+5%" or "-12%"
 srs_state_to_map <- srs_state_to_map |>
   mutate(
+    rate_label = format_rate_100k(viol_crime_rate_100k_latest),
     no_solve_data = paste0(
       state_name, " did not report enough data", "<br>",
       "on solved crime to the FBI to", "<br>",
@@ -70,12 +70,12 @@ srs_state_to_map <- srs_state_to_map |>
       "<b>", state_name, "</b><br>",
       "Change in violent crime rate: ",
       sprintf("%+3d%%", as.numeric(comma(viol_crime_rate_percent_change, 1))), "<br>",
-      "Violent incidents per 100k (", latest_year, "): ", comma(viol_crime_rate_100k_latest, 1), "<br>",
-      "Violent incidents per 100k (", base_year, "): ", comma(viol_crime_rate_100k_base, 1)
+      "Violent incidents per 100k (", latest_year, "): ", format_rate_100k(viol_crime_rate_100k_latest), "<br>",
+      "Violent incidents per 100k (", base_year, "): ", format_rate_100k(viol_crime_rate_100k_base)
     ),
     tooltip_crime_rate = paste0(
       "<b>", state_name, " – ", latest_year, "</b><br>",
-      "Violent incidents per 100k: ", comma(viol_crime_rate_100k_latest, 1), "<br>",
+      "Violent incidents per 100k: ", rate_label, "<br>",
       "Violent incidents reported: ", comma(n_reported_latest, 1), "<br>"
     ),
     tooltip_solve_change = if_else(
@@ -194,7 +194,7 @@ state_map_specs <- list(
     subtitle = "Crime reported to police per 100,000 residents",
     caption = "FBI UCR Program, state crime estimates",
     colors = rate_colors, label_format = "{value:,.0f}", legend_width = 250,
-    accessibility = "state: {point.state_name}, violent crime rate: {point.value:.1f}"
+    accessibility = "state: {point.state_name}, violent crime rate: {point.rate_label}"
   ),
   solve_change = list(
     value = "solved_rate_percent_point_change", tooltip = "tooltip_solve_change",
@@ -259,7 +259,7 @@ Between `r base_year` and `r latest_year`, the percentage of violent crimes solv
 
 ## Trends in reported violent crime
 
-In `r max(srs_by_cat_us$year)`, `r srs_by_cat_us |> filter(year == max(year)) |> pull(incidents_reported_rate_total) |> comma(scale = 1e5)` violent crime incidents per 100,000 residents were reported to police in the United States.
+In `r max(srs_by_cat_us$year)`, `r format_rate_100k(srs_by_cat_us$incidents_reported_rate_total[srs_by_cat_us$year == latest_year] * 1e5)` violent crime incidents per 100,000 residents were reported to police in the United States.
 
 ::: {.panel-tabset}
 
@@ -269,9 +269,10 @@ In `r max(srs_by_cat_us$year)`, `r srs_by_cat_us |> filter(year == max(year)) |>
 us_violent_rates <- srs_by_cat_us |>
   mutate(
     incidents_reported_rate_total = incidents_reported_rate_total * 1e5,
+    rate_label = format_rate_100k(incidents_reported_rate_total),
     tooltip = paste0(
       "<b>", state_name, " – ", year, "</b><br>",
-      "Violent incidents per 100k: ", comma(incidents_reported_rate_total, 1), "<br>",
+      "Violent incidents per 100k: ", rate_label, "<br>",
       "Violent incidents reported: ", comma(incidents_reported, 1)
     )
   )
@@ -282,6 +283,7 @@ trend_chart(
   "Crime reported to police per 100,000 residents",
   "FBI UCR Program, state crime estimates",
   value_label = "violent incidents per 100,000 residents",
+  value_format = "{point.rate_label}",
   expansion = axis_expansion_mult, floor = NULL
 )
 ```
@@ -297,9 +299,10 @@ us_offense_rates <- srs_us |>
     pct = incidents_reported / tot_crime,
     incidents_reported_rate_total = incidents_reported_rate_total * 1e5,
     group = fct_reorder(group, incidents_reported_rate_total),
+    rate_label = format_rate_100k(incidents_reported_rate_total, group == "Homicide"),
     tooltip = paste0(
       "<b>", group, " – ", year, "</b></br>",
-      "Incidents reported per 100k: ", comma(incidents_reported_rate_total, 1), "<br>",
+      "Incidents reported per 100k: ", rate_label, "<br>",
       "Incidents reported: ", comma(incidents_reported, 1), "<br>",
       "Total violent incidents reported: ", comma(tot_crime, 1), "<br>",
       "Share of all violent incidents: ", percent(pct, 1)
@@ -311,19 +314,8 @@ us_offense_rates <- srs_us |>
 ## Homicide
 
 ```{r}
-### homicide tooltips show one decimal because the rate is small
-us_homicide_rates <- us_offense_rates |>
-  filter(group == "Homicide") |>
-  mutate(tooltip = paste0(
-    "<b>", group, " – ", year, "</b></br>",
-    "Incidents reported per 100k: ", comma(incidents_reported_rate_total, 0.1), "<br>",
-    "Incidents reported: ", comma(incidents_reported, 1), "<br>",
-    "Total violent incidents reported: ", comma(tot_crime, 1), "<br>",
-    "Share of all violent incidents: ", percent(pct, 1)
-  ))
-
 offense_trend_chart(
-  us_homicide_rates, "Homicide", paste0("Homicide in ", state_name_text),
+  us_offense_rates, "Homicide", paste0("Homicide in ", state_name_text),
   "Homicide incidents reported to police per 100,000 residents",
   offense_color("Homicide")
 )
@@ -369,7 +361,7 @@ us_offense_rates |>
     groupPadding = 0.05,
     hcaes(year, incidents_reported_rate_total, group = group),
     accessibility = list(point = list(
-      valueDescriptionFormat = "{point.series.name}, year: {point.x:.0f}, incidents per 100,000 residents: {point.y:.1f}"
+      valueDescriptionFormat = "{point.series.name}, year: {point.x:.0f}, incidents per 100,000 residents: {point.rate_label}"
     ))
   ) |>
   hc_colors(unique(us_offense_rates$color)) |>
@@ -475,7 +467,10 @@ srs_state_to_map |>
     sort_col = list("state_name" = "asc"),
     columns = list(
       state_name = colDef(name = "State"),
-      viol_crime_rate_100k_latest = colDef(name = paste0("Violent Incidents per 100k (", latest_year, ")")), 
+      viol_crime_rate_100k_latest = colDef(
+        name = paste0("Violent Incidents per 100k (", latest_year, ")"),
+        cell = rate_100k_cell
+      ),
       n_reported_latest = colDef(name = paste0("Violent Incidents Reported (", latest_year, ")")), 
       viol_crime_rate_percent_change = colDef(
         name = paste0("Percent change in violent crime rate (", base_year, " to ", latest_year, ")"),
@@ -549,19 +544,19 @@ srs_state_by_offense_latest |>
         ),
         n_reported_rate_aggravated_assault = colDef(
           name = "Aggravated Assault Incidents per 100k",
-          format = colFormat(digits = 0, separators = TRUE), minWidth = 120
+          cell = rate_100k_cell, minWidth = 120
         ),
         n_reported_rate_homicide = colDef(
           name = "Homicide Incidents per 100k",
-          format = colFormat(digits = 0, separators = TRUE), align = "center"
+          cell = homicide_rate_100k_cell, align = "center"
         ),
         n_reported_rate_rape = colDef(
           name = "Rape Incidents per 100k",
-          format = colFormat(digits = 0, separators = TRUE)
+          cell = rate_100k_cell
         ),
         n_reported_rate_robbery = colDef(
           name = "Robbery Incidents per 100k",
-          format = colFormat(digits = 0, separators = TRUE)
+          cell = rate_100k_cell
         )
       ),
       solve_rate_columns(us_solved_rate_latest, "U.S. Rate", solve_rate_layout)
@@ -752,7 +747,7 @@ Crime rates are calculated by dividing the number of estimated incidents by the 
 
 {{< include _methodology-exceptional-clearance.qmd >}}
 
-U.S. solve rates from the FBI's state estimates leave out `r knitr::combine_words(states_to_exclude_from_solved_rate_viz)`, which did not report reliable clearance data, while U.S. crime rates include every state. U.S. homicide solve rates from the Supplementary Homicide Reports include every state.
+U.S. solve rates from the FBI's state estimates leave out `r knitr::combine_words(states_to_exclude_from_solved_rate_viz)`, which did not report reliable clearance data. The U.S. counts of reported violent crime include every state, and the U.S. counts of solved violent crime apply the solve rate to those reported counts. Each offense applies its own solve rate, so solved counts by offense may not add up to the count for all violent crime. U.S. homicide solve rates from the Supplementary Homicide Reports include every state.
 
 Data regarding law enforcement expenditures were downloaded from the U.S. Census Bureau [Annual Survey of State and Local Government Finances](https://www.census.gov/programs-surveys/gov-finances.html){target="_parent"}. Expenditures include police protection spending by state governments and all local governments in each state, such as counties and municipalities. Expenditures are adjusted for inflation to constant dollars of the most recent year using the Chained Consumer Price Index for All Urban Consumers (C-CPI-U), following the [Census Bureau's guidance](https://www.census.gov/topics/income-poverty/income/guidance/current-vs-constant-dollars.html){target="_parent"}.
 
