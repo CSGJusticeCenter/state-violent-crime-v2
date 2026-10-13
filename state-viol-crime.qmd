@@ -477,13 +477,11 @@ In the following table, violent crime incident rates, as well as violent crime s
 
 Please note that rates calculated for agencies with smaller jurisdiction populations, as well as fewer overall incidents, are less reliable than those for larger jurisdictions and should be interpreted with caution.
 
-::: {.panel-tabset}
+::: {.panel-tabset .column-body-outset}
 
 ### Overall rates
 
 ```{r}
-#| column: body-outset
-
 srs_solved_by_agency_to_table |>
   select(agency_name,
          county,
@@ -526,8 +524,6 @@ srs_solved_by_agency_to_table |>
 `r solve_rate_legend("above", "indicates a solve rate greater than or equal to the state rate.")`
 
 ```{r}
-#| column: body-outset
-
 ### each agency is compared with the pooled state solve rate for the offense
 solve_rate_layout <- list(
   aggravated_assault = list(offense = "Aggravated Assault", min_width = 100),
