@@ -21,5 +21,17 @@ pep <- read_rds(csg_sp_path("jr_data_library", "data", "analysis", "census", "pe
 agency_county_data <- build_agency_county_data(raw, agency_year, base_year)
 agency_county_data$state_coverage <- state_reporting_coverage(raw, pep, agency_year)
 
+### clearance screen for the pages' 11-year window, and New York 2022 with
+### NYPD's clearance rates from R/download-nypd-clearance.R
+agency_county_data$clearance_screen <- clearance_reporting_gaps(raw, (agency_year - 10):agency_year)
+nypd_clearance <- read_csv("data/nypd_clearance_2022.csv", show_col_types = FALSE)
+agency_county_data$clearance_repairs <- repair_agency_clearances(raw, nypd_clearance)
+
+flagged <- filter(agency_county_data$clearance_screen, share_no_clearances >= max_no_clearance_share)
+message(
+  "Clearance screen flags ", nrow(flagged), " state-years: ",
+  paste(flagged$state_name, flagged$year, collapse = ", ")
+)
+
 dir.create("data", showWarnings = FALSE)
 iwalk(agency_county_data, \(x, name) write_rds(x, file.path("data", paste0(name, ".rds"))))

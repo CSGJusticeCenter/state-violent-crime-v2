@@ -111,3 +111,35 @@ test_that("mismatched rows for one agency-offense fail loudly", {
   )
   expect_error(build_agency_county_data(bad, 2025, 2019), "duplicate|missing")
 })
+
+clearance_raw <- bind_rows(
+  agency("CITY", 2022, 100, 0, "36061"),
+  agency("TOWN", 2022, 20, 10, "36001"),
+  agency("TINY", 2022, 5, 0, "36003"),
+  agency("CITY", 2023, 100, 60, "36061"),
+  agency("TOWN", 2023, 20, 10, "36001")
+)
+
+test_that("the clearance screen measures offenses from agencies with no clearances", {
+  gaps <- clearance_reporting_gaps(clearance_raw, 2022:2023)
+  expect_equal(gaps$share_no_clearances[gaps$year == 2022], 100 / 125)
+  expect_equal(gaps$share_no_clearances[gaps$year == 2023], 0)
+})
+
+test_that("small agencies with no clearances do not trip the screen", {
+  gaps <- clearance_reporting_gaps(filter(clearance_raw, ori != "CITY"), 2022)
+  expect_equal(gaps$share_no_clearances, 0)
+})
+
+test_that("repairs replace one agency's clearances and keep the rest", {
+  repairs <- tibble(year = 2022, ori = "CITY", group = "Homicide", clearance_rate = 0.6)
+  repaired <- repair_agency_clearances(clearance_raw, repairs)
+  expect_equal(repaired$state_name, "NY")
+  expect_equal(repaired$group, "Homicide")
+  expect_equal(repaired$pct_cleared, (60 + 10 + 0) / 125)
+})
+
+test_that("repairs stop when the agency is missing", {
+  repairs <- tibble(year = 2022, ori = "GONE", group = "Homicide", clearance_rate = 0.6)
+  expect_error(repair_agency_clearances(clearance_raw, repairs), "every repaired agency")
+})
