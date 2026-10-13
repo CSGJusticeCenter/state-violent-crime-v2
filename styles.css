@@ -82,16 +82,17 @@ h4 {
   display: -webkit-flex !important;
 }
 
-/* arrows mark solve rates at or above and below the comparison rate in tables */
-/* the second content line gives screen readers words; browsers without that syntax keep the first */
-.solve-rate-above::before {
-  content: "\25B2\00A0";
-  content: "\25B2\00A0" / "at or above, ";
+/* tinted pills mark solve rates at or above and below the comparison rate */
+.solve-rate-pill {
+  display: inline-block;
+  padding: 0.1em 0.6em;
+  border-radius: 1em;
 }
 
-.solve-rate-below::before {
-  content: "\25BC\00A0";
-  content: "\25BC\00A0" / "below, ";
+/* sticky columns give wide tables phantom width, which adds a second scrollbar
+   to the output wrapper; the table keeps its own scrollbar */
+.Reactable {
+  overflow-x: clip;
 }
 
 .rt-align-right {

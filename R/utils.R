@@ -338,9 +338,21 @@ shr_panel_chart <- function(spec, prep, years, series = NULL) {
   shr_rate_chart(data, spec$title, years, caption, categories = categories, series = series)
 }
 
-### text colors for solve rates at or above and below a comparison rate
-### both reach at least 4.5:1 contrast on white
-solve_rate_colors <- c(above = "#15607A", below = "#B85A0D")
+### text and pill fill colors for solve rates at or above and below a
+### comparison rate; each text color reaches at least 4.5:1 contrast on its fill
+solve_rate_colors <- c(above = "#15607A", below = "#9A4A0A")
+solve_rate_fills <- c(above = "#E1F0F5", below = "#FBE8DA")
+
+### text in a pill tinted for one side of the comparison rate
+### sr_text adds words that only screen readers announce
+solve_rate_pill <- function(text, side, sr_text = NULL) {
+  paste0(
+    '<span class="solve-rate-pill" style="color:', solve_rate_colors[[side]],
+    ";background-color:", solve_rate_fills[[side]], '">',
+    if (!is.null(sr_text)) paste0('<span class="visually-hidden">', sr_text, "</span>"),
+    text, "</span>"
+  )
+}
 
 ### whole percent for a solve rate, with halves rounded up (0.625 is 63)
 solve_rate_percent <- function(x) half_up(x * 100, 1)
@@ -357,37 +369,28 @@ solve_rate_side <- function(value, rate) {
   if (solve_rate_percent(value) >= solve_rate_percent(rate)) "above" else "below"
 }
 
-### solve rate column colored against a comparison rate
+### solve rate column with each rate in a pill tinted against a comparison rate
 ### label names that rate in the header, e.g., "(U.S. Rate: 47%)"
-### the solve-rate-above and solve-rate-below classes add arrows in styles.css,
-### so the comparison doesn't rely on color alone
+### rates without a comparison show as plain text
 solve_rate_column <- function(offense, rate, label, min_width = 120, align = NULL) {
+  sr_text <- c(above = "at or above, ", below = "below, ")
   colDef(
     name = paste0(offense, " Solve Rate<br><br>(", label, ": ", format_solve_rate(rate), ")"),
     html = TRUE,
     minWidth = min_width,
     align = align,
-    cell = format_solve_rate,
-    style = function(value) {
+    cell = function(value) {
       side <- solve_rate_side(value, rate)
-      list(color = if (is.na(side)) "black" else solve_rate_colors[[side]], fontWeight = "bold")
-    },
-    class = function(value) {
-      side <- solve_rate_side(value, rate)
-      if (is.na(side)) "" else paste0("solve-rate-", side)
+      text <- format_solve_rate(value)
+      if (is.na(side)) text else solve_rate_pill(text, side, sr_text[[side]])
     }
   )
 }
 
-### legend line for a solve-rate table, e.g., "▼ Orange indicates ..."
-### the arrow is hidden from screen readers, which read the words
+### legend line for a solve-rate table, e.g., "[Orange] indicates ..."
 solve_rate_legend <- function(side, text) {
-  arrow <- c(above = "▲", below = "▼")[[side]]
   name <- c(above = "Blue", below = "Orange")[[side]]
-  paste0(
-    '<span style="color:', solve_rate_colors[[side]], '">',
-    '<span aria-hidden="true">', arrow, '</span> ', name, '</span> ', text
-  )
+  paste(solve_rate_pill(name, side), text)
 }
 
 ### solve_rate_column() for each offense in layout, named solved_rate_<offense>
