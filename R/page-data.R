@@ -6,11 +6,32 @@ base_year <- 2019
 ### states without reliable clearance data in the base or latest year
 states_to_exclude_from_solved_rate_viz <- c("Illinois")
 
-### solve-rate trend charts skip 2021, when NIBRS transition cut reporting
-solve_rate_skip_year <- 2021
+### the NIBRS transition cut reporting in 2021, so solve rates for that year show
+### only where reporting agencies covered at least min_solve_coverage of the population
+### coverage comes from R/download-ucr-coverage.R
+low_coverage_solve_year <- 2021
+min_solve_coverage <- 0.7
+solve_coverage_path <- "data/ucr_coverage_2021.csv"
 
 ### homicide charts pool SHR from this year on because coverage is low in 2021
 shr_first_year <- 2022
+
+### the clearance screen hides solve rates for state-years where agencies that
+### reported at least min_screen_reported violent offenses but no clearances hold
+### at least max_no_clearance_share of the state's reported violent offenses
+### R/01-prep-agency-county-data.R writes the screen and the repaired rates that
+### replace failed clearances
+max_no_clearance_share <- 0.05
+min_screen_reported <- 10
+clearance_screen_path <- "data/clearance_screen.rds"
+clearance_repairs_path <- "data/clearance_repairs.rds"
+
+### repaired offenses the pages show. The others count toward the violent crime
+### total but have no solve rate of their own
+repaired_offenses_shown <- c("Robbery", "Aggravated assault")
+
+### label for the all-offense total in solve-rate exclusions and exports
+total_label <- "Violent crime"
 
 ### the methodology names states where reporting agencies cover less than this
 ### share of the population
@@ -46,9 +67,80 @@ prep_srs_state <- function(raw) {
     mutate(incidents_reported_rate_total = incidents_reported / pop_total)
 }
 
-read_srs_state <- function() {
+read_srs_state <- function(screen = read_rds(clearance_screen_path),
+                           repairs = read_rds(clearance_repairs_path)) {
   read_rds(csg_sp_path("jr_data_library", "data", "analysis", "fbi", "srs", "fbi_srs_estimated_crimes_state.rds")) |>
-    prep_srs_state()
+    prep_srs_state() |>
+    repair_clearances(repairs) |>
+    flag_screened_solve_rates(screen, repairs)
+}
+
+### replace cleared and unsolved counts where repairs give a state clearance rate
+repair_clearances <- function(srs, repairs) {
+  key <- paste(srs$year, srs$state_name, srs$group)
+  rate <- repairs$pct_cleared[match(key, paste(repairs$year, repairs$state_name, repairs$group))]
+  mutate(
+    srs,
+    incidents_cleared = if_else(is.na(rate), incidents_cleared, incidents_reported * rate),
+    incidents_unsolved = if_else(is.na(rate), incidents_unsolved, incidents_reported - incidents_cleared)
+  )
+}
+
+### hide_total_solve marks state-years whose violent crime solve rate the pages hide
+### hide_offense_solve marks offense rows whose own solve rate the pages hide
+### screened state-years without repairs hide both. Repaired offenses outside
+### repaired_offenses_shown hide only their own rate
+flag_screened_solve_rates <- function(srs, screen, repairs,
+                                      max_share = max_no_clearance_share,
+                                      shown = repaired_offenses_shown,
+                                      exclude = states_to_exclude_from_solved_rate_viz) {
+  repaired_years <- distinct(repairs, year, state_name)
+  incomplete <- count(repairs, year, state_name) |> filter(n != length(violent_offenses))
+  if (nrow(incomplete) > 0) stop("Clearance repairs need every violent offense for a state-year")
+
+  ### a year without screen rows would pass unscreened
+  shown_years <- intersect(unique(srs$year), (max(srs$year) - 10):max(srs$year))
+  unscreened <- setdiff(shown_years, screen$year)
+  if (length(unscreened) > 0) {
+    stop(
+      "The clearance screen has no rows for ", paste(sort(unscreened), collapse = ", "),
+      ". Rerun R/01-prep-agency-county-data.R with a later agency_year"
+    )
+  }
+
+  failed <- screen |>
+    filter(share_no_clearances >= max_share) |>
+    anti_join(repaired_years, by = c("year", "state_name"))
+  failed_key <- paste(failed$year, failed$state_name)
+  hidden_repairs <- filter(repairs, !group %in% shown)
+  hidden_key <- paste(hidden_repairs$year, hidden_repairs$state_name, hidden_repairs$group)
+
+  flagged <- mutate(
+    srs,
+    hide_total_solve = paste(year, state_name) %in% failed_key,
+    hide_offense_solve = hide_total_solve | paste(year, state_name, group) %in% hidden_key
+  )
+
+  ### maps and narrative compare these years, so a hidden rate in one needs a decision
+  compared <- c(base_year, max(srs$year) - 10, max(srs$year))
+  conflicts <- flagged |>
+    filter(crime_cat == "Violent", year %in% compared, hide_offense_solve, !state_name %in% exclude) |>
+    distinct(year, state_name)
+  if (nrow(conflicts) > 0) {
+    stop(
+      "The clearance screen hides solve rates in a compared year: ",
+      paste(conflicts$state_name, conflicts$year, collapse = ", ")
+    )
+  }
+  flagged
+}
+
+### TRUE for rows whose solve rates the clearance screen hides
+### rows without a group, or with total_label, are violent crime totals
+screened_out <- function(df) {
+  column <- function(name) if (name %in% names(df)) df[[name]] else rep(NA, nrow(df))
+  total <- if ("group" %in% names(df)) df$group %in% total_label else rep(TRUE, nrow(df))
+  coalesce(if_else(total, column("hide_total_solve"), column("hide_offense_solve")), FALSE)
 }
 
 add_solve_rates <- function(df) {
@@ -72,12 +164,15 @@ violent_rows <- function(srs, first_year, state = NULL) {
 
 ### all violent crime by year for one state, or the US when state is NULL
 ### homicide rows carry the population once per state
+### a state keeps its hide_total_solve flag, and the US never has one
 violent_totals <- function(srs, first_year, state = NULL) {
+  flag <- if (is.null(state)) character() else "hide_total_solve"
   violent_rows(srs, first_year, state) |>
     group_by(year, state_name, state_abbr) |>
     summarize(
       pop_total = sum(pop_total[group == "Homicide"], na.rm = TRUE),
       across(c(incidents_reported, incidents_unsolved), \(x) sum(x, na.rm = TRUE)),
+      across(any_of(flag), any),
       .groups = "drop"
     ) |>
     mutate(incidents_reported_rate_total = incidents_reported / pop_total) |>
@@ -99,10 +194,13 @@ violent_by_offense <- function(srs, first_year, state = NULL) {
     add_solve_rates()
 }
 
-### states pooled into US solve rates, leaving out the excluded states
-### US crime counts and rates pool every state
-solve_rate_pool <- function(srs, exclude = states_to_exclude_from_solved_rate_viz) {
-  filter(srs, !state_name %in% exclude)
+### states pooled into US solve rates, leaving out the excluded states and rows
+### the clearance screen hides. US crime counts and rates pool every state
+solve_rate_pool <- function(srs, exclude = states_to_exclude_from_solved_rate_viz, by_offense = FALSE) {
+  hidden <- if (by_offense) "hide_offense_solve" else "hide_total_solve"
+  keep <- !srs$state_name %in% exclude
+  if (hidden %in% names(srs)) keep <- keep & !coalesce(srs[[hidden]], FALSE)
+  srs[keep, ]
 }
 
 ### US violent crime by year, or by year and offense when by_offense is TRUE
@@ -111,7 +209,7 @@ solve_rate_pool <- function(srs, exclude = states_to_exclude_from_solved_rate_vi
 us_solve_trend <- function(srs, first_year, by_offense = FALSE,
                            exclude = states_to_exclude_from_solved_rate_viz) {
   summarize_us <- if (by_offense) violent_by_offense else violent_totals
-  pooled_rates <- solve_rate_pool(srs, exclude) |>
+  pooled_rates <- solve_rate_pool(srs, exclude, by_offense) |>
     summarize_us(first_year) |>
     select(any_of(c("year", "group")), pct_solved)
 
@@ -130,11 +228,51 @@ us_solve_trend <- function(srs, first_year, by_offense = FALSE,
 
 ### pooled US solve rate by offense in one year, named by snake_case offense
 us_solve_benchmark <- function(srs, year, exclude = states_to_exclude_from_solved_rate_viz) {
-  solve_rate_pool(srs, exclude) |>
+  solve_rate_pool(srs, exclude, by_offense = TRUE) |>
     violent_by_offense(year) |>
     filter(year == !!year) |>
     pull(pct_solved, name = group) |>
     set_names(janitor::make_clean_names)
+}
+
+### population coverage by state, DC and the United States in low_coverage_solve_year
+read_solve_coverage <- function(path = solve_coverage_path) {
+  read_csv(path, show_col_types = FALSE) |>
+    select(state_name, coverage)
+}
+
+### TRUE for rows in low_coverage_solve_year, with that year's coverage
+solve_coverage_rows <- function(df, coverage_tbl, coverage_year = low_coverage_solve_year) {
+  in_year <- df$year == coverage_year
+  row_coverage <- coverage_tbl$coverage[match(as.character(df$state_name), coverage_tbl$state_name)]
+  if (anyNA(row_coverage[in_year])) stop("Missing ", coverage_year, " coverage for some solve-rate rows")
+  list(in_year = in_year, coverage = row_coverage)
+}
+
+### TRUE for rows whose solve rates the site hides in low_coverage_solve_year
+low_solve_coverage <- function(df, coverage_tbl, min_coverage = min_solve_coverage) {
+  rows <- solve_coverage_rows(df, coverage_tbl)
+  rows$in_year & rows$coverage < min_coverage
+}
+
+### TRUE for rows whose solve rates the site hides for low 2021 coverage, the
+### clearance screen or an excluded state
+solve_rate_hidden <- function(df, coverage_tbl, exclude = states_to_exclude_from_solved_rate_viz) {
+  low_solve_coverage(df, coverage_tbl) | screened_out(df) | df$state_name %in% exclude
+}
+
+### solve-rate trend rows, dropping rows solve_rate_hidden marks
+### excluded states skip these charts, so this keeps their rows
+### coverage_note is a tooltip line for the rows that stay in low_coverage_solve_year
+solve_rate_years <- function(df, coverage_tbl) {
+  rows <- solve_coverage_rows(df, coverage_tbl)
+  df |>
+    mutate(coverage_note = if_else(
+      rows$in_year,
+      sprintf("<br>Agencies covering %.0f%% of the population reported in %d", rows$coverage * 100, low_coverage_solve_year),
+      ""
+    )) |>
+    filter(!solve_rate_hidden(df, coverage_tbl, exclude = character()))
 }
 
 ### first 4 characters of year drop footnote markers (e.g., "20252" is 2025)

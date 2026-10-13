@@ -236,6 +236,26 @@ trend_chart <- function(data, value, title, subtitle = NULL, caption, value_labe
   chart
 }
 
+### hollow markers on every point in year, outlined in the series color
+### series without their own color take it from the chart's hc_colors() palette
+hc_hollow_year <- function(chart, year) {
+  series_list <- chart$x$hc_opts$series
+  palette <- chart$x$hc_opts$colors
+  chart$x$hc_opts$series <- lapply(seq_along(series_list), function(i) {
+    series <- series_list[[i]]
+    color <- series$color %||% palette[(i - 1) %% length(palette) + 1]
+    if (length(color) != 1) stop("hc_hollow_year() needs a color for every series")
+    series$data <- lapply(series$data, function(point) {
+      if (isTRUE(point$x == year)) {
+        point$marker <- list(fillColor = "#FFFFFF", lineColor = color, lineWidth = 2)
+      }
+      point
+    })
+    series
+  })
+  chart
+}
+
 ### reported rate trend for one offense
 ### data needs rate_label, the rate as tooltips show it, for screen readers
 offense_trend_chart <- function(data, offense, title, subtitle, color,

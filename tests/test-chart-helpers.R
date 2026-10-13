@@ -280,3 +280,28 @@ test_that("trend uses the selected column and requested padding", {
   expect_equal(chart$x$hc_opts$yAxis$max, 5.5)
   expect_equal(vapply(chart$x$hc_opts$series[[1]]$data, `[[`, numeric(1), "y"), c(2, 3))
 })
+
+test_that("hollow year markers apply only to points in that year", {
+  df <- tibble(year = rep(c(2020, 2021, 2022), 2), y = 1:6, g = rep(c("a", "b"), each = 3))
+  chart <- hchart(df, "spline", hcaes(year, y, group = g)) |>
+    hc_colors(c("#111111", "#222222")) |>
+    hc_hollow_year(2021)
+  points_a <- chart$x$hc_opts$series[[1]]$data
+  points_b <- chart$x$hc_opts$series[[2]]$data
+
+  expect_null(points_a[[1]]$marker)
+  expect_equal(points_a[[2]]$marker, list(fillColor = "#FFFFFF", lineColor = "#111111", lineWidth = 2))
+  expect_equal(points_b[[2]]$marker$lineColor, "#222222")
+  expect_null(points_a[[3]]$marker)
+})
+
+test_that("hollow year markers use a series' own color first", {
+  df <- tibble(year = c(2020, 2021), y = 1:2)
+  chart <- hchart(df, "spline", hcaes(year, y), color = "#333333") |> hc_hollow_year(2021)
+  expect_equal(chart$x$hc_opts$series[[1]]$data[[2]]$marker$lineColor, "#333333")
+})
+
+test_that("hollow year markers stop without a series color", {
+  df <- tibble(year = c(2020, 2021), y = 1:2)
+  expect_error(hchart(df, "spline", hcaes(year, y)) |> hc_hollow_year(2021), "needs a color")
+})

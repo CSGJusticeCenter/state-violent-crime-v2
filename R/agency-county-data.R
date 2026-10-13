@@ -184,3 +184,62 @@ state_reporting_coverage <- function(raw, pep, coverage_year) {
     select(year, state_abbr, state_name, pop_reporting, pop_total, coverage) |>
     arrange(state_abbr)
 }
+
+# Violent offenses reported and cleared by agency, year and offense, across every
+# reporting status. The clearance screen and repairs judge the whole state.
+agency_clearance_counts <- function(raw, years) {
+  raw |>
+    filter(
+      year %in% years,
+      group %in% violent_offenses,
+      indicator %in% c("Incidents reported", "Incidents cleared")
+    ) |>
+    mutate(
+      state_name = as.character(state_name),
+      indicator = if_else(indicator == "Incidents reported", "reported", "cleared")
+    ) |>
+    summarize(n = sum(n, na.rm = TRUE), .by = c(year, state_name, ori, group, indicator)) |>
+    pivot_wider(names_from = indicator, values_from = n, values_fill = 0)
+}
+
+# Share of each state's reported violent offenses that came from agencies
+# reporting at least min_reported violent offenses and no clearances, by year.
+clearance_reporting_gaps <- function(raw, years, min_reported = min_screen_reported) {
+  agency_clearance_counts(raw, years) |>
+    summarize(across(c(reported, cleared), sum), .by = c(year, state_name, ori)) |>
+    mutate(no_clearances = reported >= min_reported & cleared == 0) |>
+    summarize(
+      share_no_clearances = sum(reported[no_clearances]) / sum(reported),
+      .by = c(year, state_name)
+    ) |>
+    arrange(state_name, year)
+}
+
+# State clearance rates by offense with listed agencies' clearances replaced.
+# repairs has year, ori, group and the agency's clearance_rate from another
+# source. Every other agency keeps its reported clearances.
+repair_agency_clearances <- function(raw, repairs) {
+  incomplete <- repairs |>
+    summarize(complete = n() == length(violent_offenses) && setequal(group, violent_offenses), .by = c(year, ori)) |>
+    filter(!complete)
+  if (nrow(incomplete) > 0) {
+    stop("Repairs need one rate for every violent offense: ", paste(incomplete$ori, incomplete$year, collapse = ", "))
+  }
+
+  counts <- agency_clearance_counts(raw, unique(repairs$year))
+  missing <- anti_join(distinct(repairs, year, ori), counts, by = c("year", "ori"))
+  if (nrow(missing) > 0) {
+    stop("Repaired agencies are missing from the agency file: ", paste(missing$ori, missing$year, collapse = ", "))
+  }
+
+  repaired_states <- counts |>
+    semi_join(repairs, by = c("year", "ori")) |>
+    distinct(year, state_name)
+
+  counts |>
+    semi_join(repaired_states, by = c("year", "state_name")) |>
+    left_join(select(repairs, year, ori, group, clearance_rate), by = c("year", "ori", "group")) |>
+    mutate(cleared = if_else(is.na(clearance_rate), cleared, reported * clearance_rate)) |>
+    summarize(pct_cleared = sum(cleared) / sum(reported), .by = c(year, state_name, group)) |>
+    arrange(state_name, year, group)
+}

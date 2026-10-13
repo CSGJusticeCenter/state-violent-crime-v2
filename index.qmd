@@ -28,6 +28,8 @@ srs_us <- violent_by_offense(srs_state_new, first_year)
 ### US solve rates leave out the excluded states but apply to US reported counts
 srs_by_cat_us_solve <- us_solve_trend(srs_state_new, first_year)
 srs_us_solve <- us_solve_trend(srs_state_new, first_year, by_offense = TRUE)
+solve_coverage <- read_solve_coverage()
+us_solve_coverage <- solve_coverage$coverage[solve_coverage$state_name == "United States"]
 
 ### violent crime counts and rates by state, one column per year
 ### solve rates are multiplied by 100 for highcharts formatting
@@ -377,7 +379,7 @@ us_offense_rates |>
 
 ## Trends in solved violent crime
 
-In `r max(srs_by_cat_us_solve$year)`, `r srs_by_cat_us_solve |> filter(year == max(year)) |> pull(pct_solved) |> percent(suffix = " percent")` of violent crime incidents reported to police in the United States were solved. The percentage of violent crimes that law enforcement solved fell from 2019 to 2022 and rose each year from 2023 to `r max(srs_by_cat_us_solve$year)`, reaching its highest level since at least `r min(srs_by_cat_us_solve$year)`.
+In `r max(srs_by_cat_us_solve$year)`, `r srs_by_cat_us_solve |> filter(year == max(year)) |> pull(pct_solved) |> percent(suffix = " percent")` of violent crime incidents reported to police in the United States were solved. The percentage of violent crimes that law enforcement solved fell from 2019 to 2021 and rose each year from 2022 to `r max(srs_by_cat_us_solve$year)`, reaching its highest level since at least `r min(srs_by_cat_us_solve$year)`.
 
 ::: {.panel-tabset}
 
@@ -385,14 +387,15 @@ In `r max(srs_by_cat_us_solve$year)`, `r srs_by_cat_us_solve |> filter(year == m
 
 ```{r}
 us_violent_solve_rates <- srs_by_cat_us_solve |>
-  filter(year != solve_rate_skip_year) |>
+  solve_rate_years(solve_coverage) |>
   mutate(
     pct_solved = pct_solved * 100,
     tooltip = paste0(
       "<b>", state_name, " – ", year, "</b><br>",
       "Solve rate: ", percent(pct_solved / 100, 1), "<br>",
       "Violent incidents reported: ", comma(incidents_reported, 1), "<br>",
-      "Violent incidents solved: ", comma(incidents_solved, 1)
+      "Violent incidents solved: ", comma(incidents_solved, 1),
+      coverage_note
     )
   )
 
@@ -402,14 +405,15 @@ trend_chart(
   caption = "FBI UCR Program, state crime estimates and clearances",
   value_label = "solve rate", value_format = "{point.y:.1f}%",
   expansion = axis_expansion_mult, ceiling = 100, y_format = "{value:,.0f}%"
-)
+) |>
+  hc_hollow_year(low_coverage_solve_year)
 ```
 
 ## By offense
 
 ```{r}
 us_offense_solve_rates <- srs_us_solve |>
-  filter(year != solve_rate_skip_year) |>
+  solve_rate_years(solve_coverage) |>
   left_join(offense_pal, by = c("group" = "crime")) |>
   mutate(
     pct_solved = pct_solved * 100,
@@ -418,7 +422,8 @@ us_offense_solve_rates <- srs_us_solve |>
       "<b>", group, " – ", year, "</b></br>",
       "Solve rate: ", percent(pct_solved / 100, 1), "<br>",
       "Violent incidents reported: ", comma(incidents_reported, 1), "<br>",
-      "Violent incidents solved: ", comma(incidents_solved, 1)
+      "Violent incidents solved: ", comma(incidents_solved, 1),
+      coverage_note
     )
   ) |>
   arrange(desc(year), pct_solved)
@@ -440,7 +445,8 @@ us_offense_solve_rates |>
     max = 100,
     endOnTick = FALSE,
     labels = list(format = "{value:,.0f}%")
-  )
+  ) |>
+  hc_hollow_year(low_coverage_solve_year)
 ```
 
 :::
@@ -741,13 +747,15 @@ low_coverage_text <- if (length(low_coverage_states) > 0) {
 
 Data regarding crime and solve rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr){target="_parent"}. Counts of reported violent crime between `r min(srs_by_cat_us$year)` and `r latest_year` are derived from the Summary Reporting System (SRS) and the National Incident-Based Reporting System (NIBRS). The FBI estimates reported crime for each state from agency-level reports, accounting for agencies that did not report, and publishes these estimates through `r latest_year` on its [Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/downloads){target="_parent"}. Solve rates apply each state's clearance rate among agencies that reported to the FBI, from the Crime Data Explorer, to the FBI's state estimates of reported crime.
 
-The FBI stopped SRS data collection after data year 2020 and required law enforcement agencies to use NIBRS to report crime statistics to the FBI. This change decreased the number of agencies that submitted their crime data and thus reduced the reliability of state estimates in 2021, so the solve rate charts omit 2021. The FBI later allowed agencies unable to submit NIBRS data to submit SRS data again. In 2025, agencies reporting through NIBRS or SRS covered 96.2 percent of the U.S. population, and agencies reporting through NIBRS covered 89.5 percent, according to the FBI's [*Reported Crimes in the Nation, 2025*](https://cde.ucr.cjis.gov/LATEST/resources/reports/UCR_Summary_of_Reported_Crimes_in_the_Nation_2025.pdf){target="_parent"}.`r low_coverage_text`
+The FBI stopped SRS data collection after data year 2020 and required law enforcement agencies to use NIBRS to report crime statistics to the FBI. This change decreased the number of agencies that submitted their crime data and thus reduced the reliability of state estimates in 2021. Agencies covering `r percent(us_solve_coverage, 1, suffix = " percent")` of the U.S. population reported in 2021, so the national solve rate charts include 2021. The U.S. solve rate for 2021 pools the same states as other years, including states whose own 2021 solve rates are omitted. State pages show 2021 solve rates only where reporting agencies covered at least `r percent(min_solve_coverage, suffix = " percent")` of the state's population. The FBI later allowed agencies unable to submit NIBRS data to submit SRS data again. In 2025, agencies reporting through NIBRS or SRS covered 96.2 percent of the U.S. population, and agencies reporting through NIBRS covered 89.5 percent, according to the FBI's [*Reported Crimes in the Nation, 2025*](https://cde.ucr.cjis.gov/LATEST/resources/reports/UCR_Summary_of_Reported_Crimes_in_the_Nation_2025.pdf){target="_parent"}.`r low_coverage_text`
 
 Crime rates are calculated by dividing the number of estimated incidents by the total population. Population data come from the U.S. Census Bureau [Population Estimates Program](https://www.census.gov/programs-surveys/popest.html){target="_parent"}.
 
 {{< include _methodology-exceptional-clearance.qmd >}}
 
 U.S. solve rates from the FBI's state estimates leave out `r knitr::combine_words(states_to_exclude_from_solved_rate_viz)`, which did not report reliable clearance data. The U.S. counts of reported violent crime include every state, and the U.S. counts of solved violent crime apply the solve rate to those reported counts. Each offense applies its own solve rate, so solved counts by offense may not add up to the count for all violent crime. U.S. homicide solve rates from the Supplementary Homicide Reports include every state.
+
+Solve rates leave out any state and year in which agencies that reported at least `r min_screen_reported` violent crimes to the FBI but no clearances accounted for at least `r percent(max_no_clearance_share, suffix = " percent")` of the state's reported violent crimes. In 2022, the New York City Police Department (NYPD) reported crimes to the FBI but no clearances. For that year, New York's solve rates for all violent crime, aggravated assault, and robbery use the clearance rates the NYPD published in its [quarterly clearance reports](https://www.nyc.gov/site/nypd/stats/reports-analysis/clearance.page){target="_parent"} in place of its FBI clearances. The annual rates average the four quarterly reports. In 2019 and 2020, these reports matched the NYPD's FBI clearance rates for aggravated assault and robbery within half a percentage point. They did not match as closely for homicide and rape, so New York's 2022 homicide and rape solve rates are omitted. New York's 2022 homicides and rapes are also left out of the U.S. homicide and rape solve rates. The New York and U.S. solve rates for all violent crime still include them, using the NYPD's reported clearance rates.
 
 Data regarding law enforcement expenditures were downloaded from the U.S. Census Bureau [Annual Survey of State and Local Government Finances](https://www.census.gov/programs-surveys/gov-finances.html){target="_parent"}. Expenditures include police protection spending by state governments and all local governments in each state, such as counties and municipalities. Expenditures are adjusted for inflation to constant dollars of the most recent year using the Chained Consumer Price Index for All Urban Consumers (C-CPI-U), following the [Census Bureau's guidance](https://www.census.gov/topics/income-poverty/income/guidance/current-vs-constant-dollars.html){target="_parent"}.
 
