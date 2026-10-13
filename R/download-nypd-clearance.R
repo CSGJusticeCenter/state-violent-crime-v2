@@ -25,12 +25,23 @@ read_report_quarter <- function(quarter) {
   )
   on.exit(unlink(path))
 
-  x <- readxl::read_excel(path, col_names = FALSE, col_types = "text", .name_repair = "unique_quiet")
+  # nyc.gov can answer a bad link with an HTML page
+  x <- tryCatch(
+    readxl::read_excel(path, col_names = FALSE, col_types = "text", .name_repair = "unique_quiet"),
+    error = function(e) stop(url, " is not an Excel report: ", conditionMessage(e))
+  )
+
+  title <- sprintf("%s Quarter - CY %d", c("1st", "2nd", "3rd", "4th")[quarter], year)
+  if (!title %in% trimws(x[[1]])) stop(url, " does not say ", title)
+
   header_row <- which(apply(x, 1, function(r) any(trimws(r) == "Citywide", na.rm = TRUE)))[1]
   if (is.na(header_row)) stop("Unexpected layout in ", url)
   citywide <- x[[which(trimws(unlist(x[header_row, ])) == "Citywide")]]
   rates <- as.numeric(citywide[match(offenses$report_label, trimws(x[[1]]))])
   if (anyNA(rates)) stop("Unexpected layout in ", url)
+
+  # clearances can include crimes from earlier quarters, so rates can top 1
+  if (any(rates < 0 | rates > 1.5)) stop("Citywide rates out of range in ", url)
 
   rates
 }

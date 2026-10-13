@@ -17,10 +17,12 @@ solve_coverage_path <- "data/ucr_coverage_2021.csv"
 shr_first_year <- 2022
 
 ### the clearance screen hides solve rates for state-years where agencies that
-### reported violent offenses but no clearances hold at least this share of the
-### state's reported violent offenses. R/01-prep-agency-county-data.R writes the
-### screen and the repaired rates that replace failed clearances
+### reported at least min_screen_reported violent offenses but no clearances hold
+### at least max_no_clearance_share of the state's reported violent offenses
+### R/01-prep-agency-county-data.R writes the screen and the repaired rates that
+### replace failed clearances
 max_no_clearance_share <- 0.05
+min_screen_reported <- 10
 clearance_screen_path <- "data/clearance_screen.rds"
 clearance_repairs_path <- "data/clearance_repairs.rds"
 
@@ -95,6 +97,16 @@ flag_screened_solve_rates <- function(srs, screen, repairs,
   repaired_years <- distinct(repairs, year, state_name)
   incomplete <- count(repairs, year, state_name) |> filter(n != length(violent_offenses))
   if (nrow(incomplete) > 0) stop("Clearance repairs need every violent offense for a state-year")
+
+  ### a year without screen rows would pass unscreened
+  shown_years <- intersect(unique(srs$year), (max(srs$year) - 10):max(srs$year))
+  unscreened <- setdiff(shown_years, screen$year)
+  if (length(unscreened) > 0) {
+    stop(
+      "The clearance screen has no rows for ", paste(sort(unscreened), collapse = ", "),
+      ". Rerun R/01-prep-agency-county-data.R with a later agency_year"
+    )
+  }
 
   failed <- screen |>
     filter(share_no_clearances >= max_share) |>
@@ -243,9 +255,15 @@ low_solve_coverage <- function(df, coverage_tbl, min_coverage = min_solve_covera
   rows$in_year & rows$coverage < min_coverage
 }
 
-### solve-rate trend rows, dropping low-coverage rows in low_coverage_solve_year
-### and rows the clearance screen hides
-### coverage_note is a tooltip line for the rows that stay in that year
+### TRUE for rows whose solve rates the site hides for low 2021 coverage, the
+### clearance screen or an excluded state
+solve_rate_hidden <- function(df, coverage_tbl, exclude = states_to_exclude_from_solved_rate_viz) {
+  low_solve_coverage(df, coverage_tbl) | screened_out(df) | df$state_name %in% exclude
+}
+
+### solve-rate trend rows, dropping rows solve_rate_hidden marks
+### excluded states skip these charts, so this keeps their rows
+### coverage_note is a tooltip line for the rows that stay in low_coverage_solve_year
 solve_rate_years <- function(df, coverage_tbl) {
   rows <- solve_coverage_rows(df, coverage_tbl)
   df |>
@@ -254,7 +272,7 @@ solve_rate_years <- function(df, coverage_tbl) {
       sprintf("<br>Agencies covering %.0f%% of the population reported in %d", rows$coverage * 100, low_coverage_solve_year),
       ""
     )) |>
-    filter(!low_solve_coverage(df, coverage_tbl), !screened_out(df))
+    filter(!solve_rate_hidden(df, coverage_tbl, exclude = character()))
 }
 
 ### first 4 characters of year drop footnote markers (e.g., "20252" is 2025)

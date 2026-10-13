@@ -131,15 +131,29 @@ test_that("small agencies with no clearances do not trip the screen", {
   expect_equal(gaps$share_no_clearances, 0)
 })
 
+### one rate per violent offense for an agency in 2022
+agency_repairs <- function(ori, rate = 0.6) {
+  tibble(year = 2022, ori = ori, group = violent_offenses, clearance_rate = rate)
+}
+
 test_that("repairs replace one agency's clearances and keep the rest", {
-  repairs <- tibble(year = 2022, ori = "CITY", group = "Homicide", clearance_rate = 0.6)
-  repaired <- repair_agency_clearances(clearance_raw, repairs)
+  repaired <- repair_agency_clearances(clearance_raw, agency_repairs("CITY"))
   expect_equal(repaired$state_name, "NY")
   expect_equal(repaired$group, "Homicide")
   expect_equal(repaired$pct_cleared, (60 + 10 + 0) / 125)
 })
 
+test_that("repairs can replace two agencies in one state", {
+  repairs <- bind_rows(agency_repairs("CITY"), agency_repairs("TOWN", rate = 1))
+  repaired <- repair_agency_clearances(clearance_raw, repairs)
+  expect_equal(repaired$pct_cleared, (60 + 20 + 0) / 125)
+})
+
+test_that("repairs stop when an offense is missing", {
+  repairs <- filter(agency_repairs("CITY"), group != "Robbery")
+  expect_error(repair_agency_clearances(clearance_raw, repairs), "every violent offense: CITY 2022")
+})
+
 test_that("repairs stop when the agency is missing", {
-  repairs <- tibble(year = 2022, ori = "GONE", group = "Homicide", clearance_rate = 0.6)
-  expect_error(repair_agency_clearances(clearance_raw, repairs), "every repaired agency")
+  expect_error(repair_agency_clearances(clearance_raw, agency_repairs("GONE")), "missing from the agency file: GONE 2022")
 })

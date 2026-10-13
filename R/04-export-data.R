@@ -26,9 +26,7 @@ format_export <- function(df) {
       solved = round(incidents_solved),
       unsolved = reported - solved,
       solve_rate = pct_solved,
-      hide_solved = low_solve_coverage(pick(year, state_name), solve_coverage) |
-        screened_out(pick(everything())) |
-        state_name %in% states_to_exclude_from_solved_rate_viz,
+      hide_solved = solve_rate_hidden(pick(everything()), solve_coverage),
       across(c(solved, unsolved, solve_rate), \(x) if_else(hide_solved, NA, x))
     ) |>
     arrange(state_name, year, offense) |>

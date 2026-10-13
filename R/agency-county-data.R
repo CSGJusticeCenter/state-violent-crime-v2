@@ -204,7 +204,7 @@ agency_clearance_counts <- function(raw, years) {
 
 # Share of each state's reported violent offenses that came from agencies
 # reporting at least min_reported violent offenses and no clearances, by year.
-clearance_reporting_gaps <- function(raw, years, min_reported = 10) {
+clearance_reporting_gaps <- function(raw, years, min_reported = min_screen_reported) {
   agency_clearance_counts(raw, years) |>
     summarize(across(c(reported, cleared), sum), .by = c(year, state_name, ori)) |>
     mutate(no_clearances = reported >= min_reported & cleared == 0) |>
@@ -219,11 +219,22 @@ clearance_reporting_gaps <- function(raw, years, min_reported = 10) {
 # repairs has year, ori, group and the agency's clearance_rate from another
 # source. Every other agency keeps its reported clearances.
 repair_agency_clearances <- function(raw, repairs) {
+  incomplete <- repairs |>
+    summarize(complete = n() == length(violent_offenses) && setequal(group, violent_offenses), .by = c(year, ori)) |>
+    filter(!complete)
+  if (nrow(incomplete) > 0) {
+    stop("Repairs need one rate for every violent offense: ", paste(incomplete$ori, incomplete$year, collapse = ", "))
+  }
+
   counts <- agency_clearance_counts(raw, unique(repairs$year))
+  missing <- anti_join(distinct(repairs, year, ori), counts, by = c("year", "ori"))
+  if (nrow(missing) > 0) {
+    stop("Repaired agencies are missing from the agency file: ", paste(missing$ori, missing$year, collapse = ", "))
+  }
+
   repaired_states <- counts |>
     semi_join(repairs, by = c("year", "ori")) |>
     distinct(year, state_name)
-  stopifnot("every repaired agency is in the agency file" = nrow(repaired_states) == nrow(distinct(repairs, year, ori)))
 
   counts |>
     semi_join(repaired_states, by = c("year", "state_name")) |>

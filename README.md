@@ -57,7 +57,7 @@ Notes:
 | Agency year | `R/01-prep-agency-county-data.R` (`agency_year`) |
 | Base year for maps, tables and agency changes | `R/page-data.R` (`base_year`); rerun step 1 after changing it |
 | SHR pooling start year | `R/page-data.R` (`shr_first_year`) |
-| Clearance screen threshold and repaired offenses shown | `R/page-data.R` (`max_no_clearance_share`, `repaired_offenses_shown`). Pages stop if the screen hides a base, first or latest year; decide on a repair or exclusion before rendering |
+| Clearance screen threshold and repaired offenses shown | `R/page-data.R` (`max_no_clearance_share`, `min_screen_reported`, `repaired_offenses_shown`). Pages stop if the screen hides a base, first or latest year; decide on a repair or exclusion before rendering. Pages also stop if the screen lacks a shown year, so raise `agency_year` in step 1 and rerun it when the SRS data adds a year |
 | 2021 solve-rate coverage bar | `R/page-data.R` (`min_solve_coverage`); coverage comes from `data/ucr_coverage_2021.csv`, built by `R/download-ucr-coverage.R` |
 | Inflation index file | `data/annual-index-value_annual-percent-change_YYYY.xls`, referenced in `R/page-data.R` (`inflation_index_path`) |
 | Narrative text | `index.qmd`, `state-viol-crime.qmd` and `_methodology-*.qmd` |
