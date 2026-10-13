@@ -30,15 +30,27 @@ test_that("solve rate column tints pills against its rate and labels it", {
   expect_equal(definition$cell(NA_real_), "")
 })
 
-test_that("solve rate pill tints by side and hides screen reader words", {
+test_that("solve rate pill styles by side and hides screen reader words", {
   expect_equal(
     solve_rate_pill("40%", "below", "below, "),
     paste0(
-      '<span class="solve-rate-pill" style="color:#9A4A0A;background-color:#FBE8DA">',
+      '<span class="solve-rate-pill solve-rate-pill-below" style="color:#9A4A0A;background-color:#FBE8DA">',
       '<span class="visually-hidden">below, </span>40%</span>'
     )
   )
   expect_no_match(solve_rate_pill("Blue", "above"), "visually-hidden")
+})
+
+test_that("above and below pills differ by more than color", {
+  ### only above pills get the outline class, and only below pills a tinted fill
+  expect_match(solve_rate_pill("60%", "above"), "solve-rate-pill-above", fixed = TRUE)
+  expect_equal(unname(solve_rate_fills[["above"]]), "#FFFFFF")
+  expect_false(solve_rate_fills[["below"]] == "#FFFFFF")
+
+  css <- readLines("../styles.css")
+  outline <- grep("^\\.solve-rate-pill-above", css)
+  expect_length(outline, 1)
+  expect_match(css[outline + 1], "border-color: currentColor", fixed = TRUE)
 })
 
 test_that("solve rates compare at the whole percents the table shows", {

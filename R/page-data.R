@@ -115,13 +115,17 @@ us_solve_trend <- function(srs, first_year, by_offense = FALSE,
     summarize_us(first_year) |>
     select(any_of(c("year", "group")), pct_solved)
 
-  summarize_us(srs, first_year) |>
+  us <- summarize_us(srs, first_year) |>
     select(-incidents_unsolved, -incidents_solved, -pct_solved) |>
     left_join(pooled_rates, by = setdiff(names(pooled_rates), "pct_solved")) |>
     mutate(
       incidents_solved = incidents_reported * pct_solved,
       incidents_unsolved = incidents_reported - incidents_solved
     )
+
+  ### a missing pooled rate would print "NA%" in tooltips
+  if (anyNA(us$pct_solved)) stop("US solve trend has years or offenses without a pooled solve rate")
+  us
 }
 
 ### pooled US solve rate by offense in one year, named by snake_case offense

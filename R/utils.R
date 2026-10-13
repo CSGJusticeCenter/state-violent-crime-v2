@@ -237,6 +237,7 @@ trend_chart <- function(data, value, title, subtitle = NULL, caption, value_labe
 }
 
 ### reported rate trend for one offense
+### data needs rate_label, the rate as tooltips show it, for screen readers
 offense_trend_chart <- function(data, offense, title, subtitle, color,
                                 caption = "FBI UCR Program, state crime estimates",
                                 compare = FALSE) {
@@ -244,6 +245,7 @@ offense_trend_chart <- function(data, offense, title, subtitle, color,
     dplyr::filter(data, group == offense), "incidents_reported_rate_total",
     title, subtitle, caption,
     value_label = paste(tolower(offense), "incidents per 100,000 residents"),
+    value_format = "{point.rate_label}",
     color = color, compare = compare
   )
 }
@@ -340,14 +342,17 @@ shr_panel_chart <- function(spec, prep, years, series = NULL) {
 
 ### text and pill fill colors for solve rates at or above and below a
 ### comparison rate; each text color reaches at least 4.5:1 contrast on its fill
+### below pills are filled and above pills are outlined, so the two differ
+### without color; the outline is in styles.css
 solve_rate_colors <- c(above = "#15607A", below = "#9A4A0A")
-solve_rate_fills <- c(above = "#E1F0F5", below = "#FBE8DA")
+solve_rate_fills <- c(above = "#FFFFFF", below = "#FBE8DA")
 
-### text in a pill tinted for one side of the comparison rate
+### text in a pill styled for one side of the comparison rate
 ### sr_text adds words that only screen readers announce
 solve_rate_pill <- function(text, side, sr_text = NULL) {
   paste0(
-    '<span class="solve-rate-pill" style="color:', solve_rate_colors[[side]],
+    '<span class="solve-rate-pill solve-rate-pill-', side,
+    '" style="color:', solve_rate_colors[[side]],
     ";background-color:", solve_rate_fills[[side]], '">',
     if (!is.null(sr_text)) paste0('<span class="visually-hidden">', sr_text, "</span>"),
     text, "</span>"

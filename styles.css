@@ -82,11 +82,25 @@ h4 {
   display: -webkit-flex !important;
 }
 
-/* tinted pills mark solve rates at or above and below the comparison rate */
+/* pills mark solve rates below (filled) and at or above (outlined) the comparison rate */
+/* a border, unlike a shadow, stays visible in Windows high contrast mode */
+/* every pill has the same border so both kinds are the same size; filled pills
+   keep it transparent, and drop it in high contrast mode, which would draw it */
 .solve-rate-pill {
   display: inline-block;
-  padding: 0.1em 0.6em;
+  padding: 0.05em 0.55em;
+  border: 1.5px solid transparent;
   border-radius: 1em;
+}
+
+.solve-rate-pill-above {
+  border-color: currentColor;
+}
+
+@media (forced-colors: active) {
+  .solve-rate-pill-below {
+    border-style: none;
+  }
 }
 
 /* sticky columns give wide tables phantom width, which adds a second scrollbar
