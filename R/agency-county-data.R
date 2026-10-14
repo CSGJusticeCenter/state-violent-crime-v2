@@ -85,7 +85,8 @@ agency_data_flag <- function(reported, cleared, population) {
 # county_map: one row per primary county, with the five NYC boroughs merged
 #   into nyc_fips. Statewide, tribal, county-less and flagged agencies stay
 #   off the map.
-# agency_table: one row per agency, with change in solve rate since base_year.
+# agency_table: one row per agency, with change in solve rate since base_year
+#   and the base year's reported count (n_reported_base).
 #   data_flag comes from agency_data_flag(). Flagged agencies have no crime
 #   rate (no_violent_crime) or no solve rates (no_clearances) in either year.
 # agency_offense_table: one row per agency, with counts and rates by offense,
@@ -111,7 +112,7 @@ build_agency_county_data <- function(raw, agency_year, base_year) {
 
   base_rates <- agency_total |>
     filter(year == base_year) |>
-    select(ori, solved_rate_base = solved_rate)
+    select(ori, n_reported_base = n_reported, solved_rate_base = solved_rate)
 
   current <- agency_total |> filter(year == agency_year)
 
@@ -133,7 +134,7 @@ build_agency_county_data <- function(raw, agency_year, base_year) {
     select(
       state_name, state_abbr, ori, agency_name, county, county_fips, county_fips_all,
       county_method, population, n_reported, n_reported_rate, n_solved, solved_rate,
-      solved_rate_change, data_flag, agency_year, base_year
+      n_reported_base, solved_rate_change, data_flag, agency_year, base_year
     )
 
   county_map <- current |>

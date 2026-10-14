@@ -330,18 +330,34 @@ shr_rate_chart <- function(data, title, years, caption, categories = NULL, serie
 }
 
 ### x-axis order for an SHR panel, or NULL to keep the data's order
-### sort_desc ranks groups by their solve rate pooled across all series,
-### so every series shares one order
+### sort_desc ranks groups by their solve rate pooled across the bars shown in
+### all series, so every series shares one order; groups with no bar go last
 shr_category_order <- function(data, spec) {
   if (!is.null(spec$order)) return(intersect(spec$order, data$group))
   if (!isTRUE(spec$sort_desc)) return(NULL)
-  data |>
+  shown <- if ("clearance_rate" %in% names(data)) !is.na(data$clearance_rate) else TRUE
+  ranked <- data[shown, ] |>
     dplyr::summarize(
       rate = sum(`Incidents cleared`) / sum(`Incidents reported`),
       .by = group
     ) |>
     dplyr::arrange(dplyr::desc(rate)) |>
     dplyr::pull(group)
+  c(ranked, setdiff(unique(data$group), ranked))
+}
+
+### caption line naming SHR bars hidden for few homicides, or NULL
+### series names the column whose value labels each hidden bar
+shr_hidden_note <- function(data, series = NULL) {
+  hidden <- data[is.na(data$clearance_rate), ]
+  if (nrow(hidden) == 0) return(NULL)
+  label <- as.character(hidden$group)
+  if (!is.null(series)) label <- paste0(label, " (", hidden[[series]], ")")
+  paste0(
+    "Not shown, fewer than ", min_rate_reported, " homicides: ",
+    paste0(label, ", ", comma(hidden$`Incidents cleared`), " of ",
+           comma(hidden$`Incidents reported`), " solved", collapse = "; ")
+  )
 }
 
 ### one panel from shr_panels
@@ -356,10 +372,16 @@ shr_panel_chart <- function(spec, prep, years, series = NULL) {
     data <- dplyr::arrange(data, group)
   }
 
-  small_note <- if (anyNA(data$clearance_rate)) {
-    paste0("Groups with fewer than ", min_rate_reported, " homicides are not shown")
+  hidden_note <- shr_hidden_note(data, series)
+
+  ### with one series, a hidden group's empty slot is dropped; with several,
+  ### the slot stays so the other series keeps its bar
+  if (is.null(series)) {
+    data <- dplyr::filter(data, !is.na(clearance_rate))
+    if (!is.null(categories)) categories <- intersect(categories, as.character(data$group))
   }
-  caption <- paste(c(spec$note, small_note, shr_source(years)), collapse = "<br>")
+
+  caption <- paste(c(spec$note, hidden_note, shr_source(years)), collapse = "<br>")
   shr_rate_chart(data, spec$title, years, caption, categories = categories, series = series)
 }
 
@@ -390,16 +412,26 @@ title_attr <- function(title) {
 
 ### "5 of 8 incidents solved" for a solve-rate cell's hover text, or NULL
 solved_count_text <- function(solved, reported) {
-  if (is.na(solved) || is.na(reported)) return(NULL)
+  if (length(solved) != 1 || length(reported) != 1 || is.na(solved) || is.na(reported)) return(NULL)
   paste(comma(solved), "of", comma(reported), "incidents solved")
 }
 
-### reactable class function that grays cells in rows with few incidents
-### a class, unlike a style, keeps the table's default cell style
-### reported holds each row's incident count in the table's data order
-small_n_class <- function(reported, min_reported = min_rate_reported) {
+### gray cell text for a rate from few incidents, with words that tell screen
+### readers why it's gray; blank text stays blank
+small_n_text <- function(text, min_reported = min_rate_reported, title = NULL) {
+  if (text == "") return(text)
+  paste0(
+    '<span class="small-n-note"', title_attr(title), ">", text,
+    '<span class="visually-hidden"> (fewer than ', min_reported, " incidents)</span></span>"
+  )
+}
+
+### reactable cell function that formats a value and grays it in rows with
+### few incidents; reported holds each row's count in the table's data order
+small_n_cell <- function(reported, format, min_reported = min_rate_reported) {
   function(value, index) {
-    if (isTRUE(reported[index] < min_reported)) "small-n-note"
+    text <- format(value)
+    if (isTRUE(reported[index] < min_reported)) small_n_text(text, min_reported) else text
   }
 }
 
@@ -413,7 +445,7 @@ agency_flag_notes <- c(
 ### flags holds each row's data_flag in the table's data order
 agency_name_cell <- function(flags) {
   function(value, index) {
-    name <- htmltools::htmlEscape(value)
+    name <- if (is.na(value)) "" else htmltools::htmlEscape(value)
     flag <- flags[index]
     if (is.na(flag)) return(name)
     paste0(name, '<br><span class="agency-flag">', agency_flag_notes[[flag]], "</span>")
@@ -441,6 +473,7 @@ solve_rate_side <- function(value, rate) {
 ### reported and solved hold each row's counts in the table's data order; with
 ### them, cells show the counts on hover, and rates from fewer than
 ### min_reported incidents show as gray text without a pill
+### index is unused without reported, so tests can call cell(value)
 solve_rate_column <- function(offense, rate, label, min_width = 120, align = NULL,
                               reported = NULL, solved = NULL,
                               min_reported = min_rate_reported) {
@@ -450,13 +483,11 @@ solve_rate_column <- function(offense, rate, label, min_width = 120, align = NUL
     html = TRUE,
     minWidth = min_width,
     align = align,
-    cell = function(value, index = NULL) {
+    cell = function(value, index) {
       text <- format_solve_rate(value)
       n <- if (is.null(reported)) NA else reported[index]
       title <- if (is.na(value) || is.null(solved)) NULL else solved_count_text(solved[index], n)
-      if (isTRUE(n < min_reported)) {
-        return(paste0('<span class="small-n-note"', title_attr(title), ">", text, "</span>"))
-      }
+      if (isTRUE(n < min_reported)) return(small_n_text(text, min_reported, title))
       side <- solve_rate_side(value, rate)
       if (is.na(side)) text else solve_rate_pill(text, side, sr_text[[side]], title)
     }
@@ -523,9 +554,15 @@ format_signed <- function(value, suffix = "") {
 add_plus_sign_percent_change <- function(value) format_signed(value, "%")
 add_plus_sign_percent_point_change <- function(value) format_signed(value)
 
-### percent change from the first to the last year of a series
-pct_change_first_last <- function(x, year) {
-  (x[year == max(year)] - x[year == min(year)]) / x[year == min(year)]
+### percent change in x from year `from` to year `to`
+### stops unless each year appears exactly once, so a missing year can't read as no change
+pct_change_between <- function(x, year, from, to) {
+  for (y in c(from, to)) {
+    if (sum(year == y, na.rm = TRUE) != 1) {
+      stop("Expected one ", y, " value for a percent change, found ", sum(year == y, na.rm = TRUE), call. = FALSE)
+    }
+  }
+  (x[year %in% to] - x[year %in% from]) / x[year %in% from]
 }
 
 ### text helpers stop on missing input, so the failed page shows in the render log

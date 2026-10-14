@@ -311,6 +311,13 @@ solved_rate_max <- paste0(comma(min_max_viol_crime$pct_solved[2] * 100, 1), " pe
 ### estimates as the charts, so the tables compare agencies with the charted rates
 state_solved_rate <- state_solve_benchmark(srs_state_new, state, agency_year)
 
+### a screened offense in the agency year would print "NA percent"
+if (show_solved && anyNA(state_solved_rate)) {
+  stop("The clearance screen hides ", state, "'s ", agency_year, " solve rate for ",
+       paste(names(state_solved_rate)[is.na(state_solved_rate)], collapse = ", "),
+       ", which the agency tables compare against.", call. = FALSE)
+}
+
 state_solve_rate_text <- function(offense) {
   comma(state_solved_rate[[offense]] * 100, 1)
 }
@@ -500,7 +507,7 @@ Please note that rates calculated for agencies with smaller jurisdiction populat
 
 ### Overall rates
 
-[Gray solve rates are based on fewer than `r min_rate_reported` reported incidents.]{.small-n-note}
+[Gray solve rates and changes are based on fewer than `r min_rate_reported` reported incidents in a year.]{.small-n-note}
 
 ```{r}
 agency_rows <- srs_solved_by_agency_to_table |>
@@ -531,13 +538,14 @@ agency_rows |>
                                cell = rate_100k_cell),
       solved_rate = colDef(
         name = paste0("Solve Rate (", agency_year, ")"),
-        format = colFormat(digits = 0, percent = TRUE),
-        class = small_n_class(agency_rows$n_reported)
+        html = TRUE,
+        cell = small_n_cell(agency_rows$n_reported, format_solve_rate)
       ),
       solved_rate_change = colDef(
         name = paste0("Percentage point change in solve rate (", agency_base_year, " to ", agency_year, ")"),
-        cell = add_plus_sign_percent_point_change,
-        class = small_n_class(agency_rows$n_reported)
+        html = TRUE,
+        ### a change is as shaky as the smaller of its two years
+        cell = small_n_cell(pmin(agency_rows$n_reported, agency_rows$n_reported_base), format_signed)
       )
     )
   )
@@ -549,7 +557,7 @@ agency_rows |>
 
 `r solve_rate_legend("above", "indicates a solve rate greater than or equal to the state rate.")`
 
-[Gray solve rates are based on fewer than `r min_rate_reported` reported incidents. Hover over a solve rate to see its counts.]{.small-n-note}
+[Gray solve rates are based on fewer than `r min_rate_reported` reported incidents.]{.small-n-note}
 
 ```{r}
 ### each agency is compared with the state solve rate for the offense
@@ -623,17 +631,15 @@ agency_offense_rows |>
 max_year_resources <- max(asslgf_clean$year)
 min_year_resources <- min(asslgf_clean$year)
 
-spending_since_base <- filter(asslgf_clean, year %in% c(base_year, max_year_resources))
-pct_change_spending <- pct_change_first_last(spending_since_base$n_inflation_adjusted_latest_year_dollars, spending_since_base$year)
+pct_change_spending <- with(asslgf_clean, pct_change_between(n_inflation_adjusted_latest_year_dollars, year, base_year, max_year_resources))
 
 ### chart years, and percent change since base_year for officers per violent crime text
 max_year_resources_staff_per_offense <- max(ucr_employee_data_by_state_clean$year)
 min_year_resources_staff_per_offense <- min(ucr_employee_data_by_state_clean$year)
 
-officers_since_base <- filter(ucr_employee_data_by_state_clean, year %in% c(base_year, max_year_resources_staff_per_offense))
-pct_change_staffing_per_violent_offense <- pct_change_first_last(
-  officers_since_base$officer_per_violent_offense_1k,
-  officers_since_base$year
+pct_change_staffing_per_violent_offense <- with(
+  ucr_employee_data_by_state_clean,
+  pct_change_between(officer_per_violent_offense_1k, year, base_year, max_year_resources_staff_per_offense)
 )
 
 ### the cause sentence is skipped when the rate stayed about the same
@@ -806,7 +812,7 @@ The U.S. solve rate divides the total of estimated solved crimes across states b
 
 Agency- and county-level violent crime and solve rate data presented above are restricted to agencies reporting data for all 12 months in `r agency_year`. Agencies that serve at least `r comma(min_pop_no_violent_crime)` residents but report no violent crime, and agencies that report at least `r min_screen_reported` violent incidents but no solved crimes, likely reported incompletely. The tables list these agencies without their rates, and the map leaves them out. State solve rates still include them, as reported to the FBI. Solve rates based on fewer than `r min_rate_reported` incidents appear in gray in the tables. The calculation of population covered by reporting agencies, as well as the number of reporting agencies by county, is also based on agencies with violent crime data for all 12 months. 
 
-Each law enforcement agency appears on the map in exactly one county. Agencies based in a single county use that county. Agencies whose jurisdiction spans several counties use the county holding the largest share of the agency's place or county subdivision population in the Census Bureau's 2025 Population Estimates, or the largest listed county when no place matches. The agency tables list every county an agency covers. Agencies with no listed county are placed in the county that holds their address location when one is available. Statewide and tribal agencies, along with a few agencies with no county or location, appear in the tables and in state totals but not on the map. In New York, the New York City Police Department and other agencies based in the five boroughs are combined into a single New York City area on the map. The population covered by reporting agencies is the sum of the jurisdiction populations of agencies reporting data for all 12 months in `r agency_year`. The change in solve rate since `r agency_base_year` compares each agency with itself and appears only for agencies that reported all 12 months in both years.
+Each law enforcement agency appears on the map in exactly one county. Agencies based in a single county use that county. Agencies whose jurisdiction spans several counties use the county holding the largest share of the agency's place or county subdivision population in the Census Bureau's 2025 Population Estimates, or the largest listed county when no place matches. The agency tables list every county an agency covers. Agencies with no listed county are placed in the county that holds their address location when one is available. Statewide and tribal agencies, along with a few agencies with no county or location, appear in the tables and in state totals but not on the map. In New York, the New York City Police Department and other agencies based in the five boroughs are combined into a single New York City area on the map. The population covered by reporting agencies is the sum of the jurisdiction populations of agencies reporting data for all 12 months in `r agency_year`. The change in solve rate since `r agency_base_year` compares each agency with itself and appears only for agencies that reported all 12 months in both years. It is also blank for agencies that reported at least `r min_screen_reported` violent incidents but no solved crimes in `r agency_base_year`.
 
 Counties with fewer than 25 reported violent incidents in `r agency_year` are excluded from the map, as calculations of solve rates are not reliable. 
 

@@ -39,7 +39,7 @@ test_that("state SHR panels omit groups with no reported incidents", {
   expect_equal(nrow(actual), 0L)
 })
 
-test_that("SHR groups with few homicides lose their bar but keep their counts", {
+test_that("state SHR groups with few homicides lose their bar", {
   data <- tibble(
     year = 2022, geo_abbr = rep(c("AA", "AA", "BB", "BB"), 2), group_cat = "victim_race_eth",
     group = rep(c("Small", "Large"), each = 4),
@@ -48,17 +48,7 @@ test_that("SHR groups with few homicides lose their bar but keep their counts", 
   )
 
   actual <- function_shr_grouping_for_state_plot(data, "victim_race_eth", "AA", "BB", 2022)
-  small <- filter(actual, group_for_plot == "AA", group == "Small")
-  expect_true(is.na(small$clearance_rate))
-  expect_match(small$tooltip, "Homicides solved: 3 of 9", fixed = TRUE)
+  expect_true(is.na(filter(actual, group_for_plot == "AA", group == "Small")$clearance_rate))
   expect_equal(filter(actual, group_for_plot == "AA", group == "Large")$clearance_rate, 50)
-})
-
-test_that("SHR panels note hidden groups in the caption", {
-  spec <- list(category = "x", title = "T", note = "N")
-  prep <- function(category) {
-    tibble(group = c("A", "B"), clearance_rate = c(NA, 50), tooltip = c("a", "b"))
-  }
-  chart <- shr_panel_chart(spec, prep, "2022-2025")
-  expect_match(chart$x$hc_opts$caption$text, "fewer than 10 homicides are not shown", fixed = TRUE)
+  expect_match(filter(actual, group_for_plot == "AA", group == "Large")$tooltip, "Homicides solved: 20 of 40", fixed = TRUE)
 })

@@ -197,6 +197,8 @@ test_that("flagged agencies stay in the tables without their rates", {
 test_that("a base year with no clearances blanks the solve rate change", {
   at <- flag_built$agency_table
   expect_equal(at$solved_rate[at$ori == "BASE0"], 0.5)
+  expect_equal(at$n_reported_base[at$ori == "BASE0"], 20)
+  expect_true(is.na(at$n_reported_base[at$ori == "OK"]))
   expect_true(is.na(at$solved_rate_change[at$ori == "BASE0"]))
 })
 

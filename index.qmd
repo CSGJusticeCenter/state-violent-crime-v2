@@ -116,10 +116,7 @@ states_solved_down <- srs_state_to_map |> filter(solved_rate_percent_point_chang
 states_solved_up <- srs_state_to_map |> filter(solved_rate_percent_point_change > 0) |> pull(state_abbr)
 
 ### national violent crime rate change and offenses lower or higher than the base year
-us_rate_change <- srs_by_cat_us |>
-  filter(year %in% c(base_year, latest_year)) |>
-  summarize(change = pct_change_first_last(incidents_reported_rate_total, year)) |>
-  pull(change)
+us_rate_change <- with(srs_by_cat_us, pct_change_between(incidents_reported_rate_total, year, base_year, latest_year))
 
 offense_rate_change <- srs_us |>
   filter(year %in% c(base_year, latest_year)) |>
@@ -585,23 +582,14 @@ State and local expenditures include spending on police, sheriffs, and highway p
 exp_min_year <- min(asslgf_clean_national$year)
 exp_max_year <- max(asslgf_clean_national$year)
 
-pct_change_spending <- asslgf_clean_national |>
-  filter(year %in% c(base_year, exp_max_year)) |>
-  summarize(change = pct_change_first_last(n_inflation_adjusted_latest_year_dollars, year)) |>
-  pull(change)
+pct_change_spending <- with(asslgf_clean_national, pct_change_between(n_inflation_adjusted_latest_year_dollars, year, base_year, exp_max_year))
 
 lee_min_year <- min(ucr_employee_data_national_clean$year)
 lee_max_year <- max(ucr_employee_data_national_clean$year)
 
-officers_since_base <- filter(ucr_employee_data_national_clean, year %in% c(base_year, lee_max_year))
+pct_change_staffing <- with(ucr_employee_data_national_clean, pct_change_between(officer_pop_rate_per_10k, year, base_year, lee_max_year))
 
-pct_change_staffing <- officers_since_base |>
-  summarize(change = pct_change_first_last(officer_pop_rate_per_10k, year)) |>
-  pull(change)
-
-pct_change_staffing_per_violent_offense <- officers_since_base |>
-  summarize(change = pct_change_first_last(officer_per_violent_offense_1k, year)) |>
-  pull(change)
+pct_change_staffing_per_violent_offense <- with(ucr_employee_data_national_clean, pct_change_between(officer_per_violent_offense_1k, year, base_year, lee_max_year))
 ```
 
 ::: {.panel-tabset}
