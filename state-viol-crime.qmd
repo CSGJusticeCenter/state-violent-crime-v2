@@ -27,7 +27,6 @@ if (!exists("params")) {
 state <- csg_state_convert(params$state, from = "abbr", "name")
 state_abbr_params <- params$state
 state_name_text <- if_else(params$state == "DC", "the District of Columbia", state)
-show_solved <- !state %in% states_to_exclude_from_solved_rate_viz
 
 ### New York 2022 solve rates use NYPD clearance reports
 nypd_note <- if (state == "New York") {
@@ -53,7 +52,7 @@ srs_by_cat_state <- violent_totals(srs_state_new, first_year, state)
 srs_by_cat_us <- violent_totals(srs_state_new, first_year)
 srs_us <- violent_by_offense(srs_state_new, first_year)
 
-### the US solve rate leaves out the excluded states but applies to US reported counts
+### the US solve rate leaves out hidden solve rates but applies to US reported counts
 srs_by_cat_us_solve <- us_solve_trend(srs_state_new, first_year)
 solve_coverage <- read_solve_coverage()
 state_solve_coverage <- solve_coverage$coverage[solve_coverage$state_name == state]
@@ -75,21 +74,24 @@ if (agency_base_year != base_year) {
        base_year, ". Rerun R/01-prep-agency-county-data.R.", call. = FALSE)
 }
 
+### states whose solve rates start after the base year get blank agency changes
+base_year_hidden <- before_first_solve_year(tibble(year = base_year, state_name = state))
+
 srs_solved_by_agency_to_table <- agency_table_all |>
-  filter(state_abbr == state_abbr_params)
+  filter(state_abbr == state_abbr_params) |>
+  mutate(solved_rate_change = if (base_year_hidden) NA_real_ else solved_rate_change)
+
+first_solve_year_text <- if (state %in% names(solve_rate_first_years)) {
+  paste0(" ", state, " solve rates start in ", solve_rate_first_years[[state]],
+         ", the first year with reliable clearance data.")
+} else {
+  ""
+}
 
 srs_solved_by_agency_and_offense_to_table <- read_rds("data/agency_offense_table.rds") |>
   filter(state_abbr == state_abbr_params)
 
-### pages without solve-rate data drop "and arrests" from the title
-doc_title <- if_else(
-  show_solved,
-  paste(state, "data on violent crime and arrests"),
-  paste(state, "data on violent crime")
-)
-
-### shown in place of each solve-rate section on pages without solve-rate data
-no_solve_data_text <- paste(state_name_text, "did not report enough data on solved crime to the FBI to make reliable estimates.")
+doc_title <- paste(state, "data on violent crime and arrests")
 ```
 
 ```{r }
@@ -133,18 +135,6 @@ title: "`r doc_title`"
 ---
 
 ```{r}
-#| output: asis
-
-### show-solved shows the solve-rate sections; when it's false or missing,
-### the pages show no_solve_data_text instead
-### the flag is written here because when-meta needs a YAML boolean, and an
-### inline-R value in the title block arrives as a string
-### the title stays in that block because a title written from a chunk
-### doesn't reach the page's <title>
-cat("---\nshow-solved: ", tolower(show_solved), "\n---\n", sep = "")
-```
-
-```{r}
 min_max_viol_crime <- srs_by_cat_state |> 
   filter(year %in% range(year)) |> 
   arrange(year)
@@ -160,7 +150,16 @@ us_latest_rate <- srs_by_cat_us$incidents_reported_rate_total[srs_by_cat_us$year
 us_state_rate_comp <- (min_max_viol_crime$incidents_reported_rate_total[2] - us_latest_rate) / us_latest_rate
 us_state_rate_text_crime <- change_phrase(us_state_rate_comp)
 
-pct_change_solved <- min_max_viol_crime$pct_solved[2] - min_max_viol_crime$pct_solved[1]
+### solve rates compare the latest year with the first year the charts show
+min_max_solved <- srs_by_cat_state |>
+  solve_rate_years(solve_coverage) |>
+  filter(year %in% range(year)) |>
+  arrange(year)
+
+if (min_max_solved$year[2] != max_year) stop(state, " has no solve rate for ", max_year)
+min_solve_year <- min_max_solved$year[1]
+
+pct_change_solved <- min_max_solved$pct_solved[2] - min_max_solved$pct_solved[1]
 change_text_clear <- change_phrase(pct_change_solved, "point")
 ```
 
@@ -296,15 +295,8 @@ state_offense_rates |>
 
 ## Solved violent crime in `r state_name_text`
 
-::: {.content-hidden when-meta="show-solved"}
-`r no_solve_data_text`
-:::
-
-::: {.content-visible when-meta="show-solved"}
-
 ```{r}
-### code in the show-solved blocks still runs on pages that hide them, such as Illinois
-solved_rate_max <- paste0(comma(min_max_viol_crime$pct_solved[2] * 100, 1), " percent")
+solved_rate_max <- paste0(comma(min_max_solved$pct_solved[2] * 100, 1), " percent")
 
 ### state averages pool every full-reporting agency in the state,
 ### including statewide and tribal agencies that are off the map
@@ -324,7 +316,7 @@ agency_state_solve_rate <- function(offense) {
 total_agencies <- comma(n_distinct(srs_solved_by_agency_to_table$ori))
 ```
 
-In `r max_year`, `r solved_rate_max` of violent crimes reported to police in `r state_name_text` were solved. This is `r change_text_clear` the solve rate in `r min_year`.
+In `r max_year`, `r solved_rate_max` of violent crimes reported to police in `r state_name_text` were solved. This is `r change_text_clear` the solve rate in `r min_solve_year`.`r first_solve_year_text`
 
 Solve rates are the number of reported crimes cleared by arrest or by exceptional means divided by the number of reported crimes. For more information, see the data sources and methodology section below.
 
@@ -399,15 +391,7 @@ offense_solve_rates |>
 
 :::
 
-:::
-
 ## Solved violent crime by county in `r state_name_text`
-
-::: {.content-hidden when-meta="show-solved"}
-`r no_solve_data_text`
-:::
-
-::: {.content-visible when-meta="show-solved"}
 
 ```{r}
 #| fig-height: 5.5
@@ -488,15 +472,7 @@ hcmap_local(
   hc_setup()
 ```
 
-:::
-
 ## Solved violent crime by agency in `r state_name_text`
-
-::: {.content-hidden when-meta="show-solved"}
-`r no_solve_data_text`
-:::
-
-::: {.content-visible when-meta="show-solved"}
 
 In the following table, violent crime incident rates, as well as violent crime solve rates, are included for each of the `r total_agencies` law enforcement agencies that reported data in `r state_name_text` in `r agency_year`. Violent crime solve rates by offense differ across agencies across the state. The average solve rate for aggravated assault is `r agency_state_solve_rate("aggravated_assault")` percent. Homicide is `r agency_state_solve_rate("homicide")` percent, and rape is `r agency_state_solve_rate("rape")` percent.
 
@@ -604,8 +580,6 @@ srs_solved_by_agency_and_offense_to_table |>
     )
   )
 ```
-
-:::
 
 :::
 
@@ -786,19 +760,17 @@ shr_panel_chart(shr_panels$victims, shr_state_region, shr_years, series = "group
 
 Data on crime and solve rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr){target="_parent"}. Statewide counts of reported violent crime from `r first_year` through `r latest_year` come from the Summary Reporting System (SRS) and the National Incident-Based Reporting System (NIBRS). The FBI estimates reported crime for each state from agency-level reports, accounting for agencies that did not report, and publishes these estimates on its [Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/downloads){target="_parent"}. State solve rates are calculated by dividing crimes cleared by crimes reported among agencies that reported to the FBI. Solved crimes are estimated by multiplying the state's solve rate by the FBI's estimate of its reported crimes. The county and agency sections use agency-level data from the Crime Data Explorer for `r agency_year`, which combines NIBRS and SRS reports converted to the SRS format.
 
-The FBI stopped collecting SRS data after 2020 and required agencies to report through NIBRS. Fewer agencies reported as a result, so `r low_coverage_solve_year` estimates are less reliable. Starting with 2022 data, the FBI again accepted SRS reports from agencies that could not submit NIBRS data. [Agencies covering `r percent(state_solve_coverage, 1, suffix = " percent")` of `r state_name_text`'s population reported in `r low_coverage_solve_year`. The solve rate charts show `r low_coverage_solve_year` only where reporting agencies covered at least `r percent(min_solve_coverage, suffix = " percent")` of the population, so they `r if_else(state_solve_coverage >= min_solve_coverage, "include", "omit")` `r low_coverage_solve_year` for `r state_name_text`. The U.S. solve rate includes `r low_coverage_solve_year`, when agencies covering `r percent(us_solve_coverage, 1, suffix = " percent")` of the U.S. population reported.]{.content-visible when-meta="show-solved"}
+The FBI stopped collecting SRS data after 2020 and required agencies to report through NIBRS. Fewer agencies reported as a result, so `r low_coverage_solve_year` estimates are less reliable. Starting with 2022 data, the FBI again accepted SRS reports from agencies that could not submit NIBRS data. Agencies covering `r percent(state_solve_coverage, 1, suffix = " percent")` of `r state_name_text`'s population reported in `r low_coverage_solve_year`. The solve rate charts show `r low_coverage_solve_year` only where reporting agencies covered at least `r percent(min_solve_coverage, suffix = " percent")` of the population, so they `r if_else(state_solve_coverage >= min_solve_coverage, "include", "omit")` `r low_coverage_solve_year` for `r state_name_text`. The U.S. solve rate includes `r low_coverage_solve_year`, when agencies covering `r percent(us_solve_coverage, 1, suffix = " percent")` of the U.S. population reported.
 
 State crime rates are calculated by dividing estimated reported crimes by the state's total population. Population data come from the U.S. Census Bureau [Population Estimates Program](https://www.census.gov/programs-surveys/popest.html){target="_parent"}.
 
 {{< include _methodology-exceptional-clearance.qmd >}}
 
-::: {.content-visible when-meta="show-solved"}
-The U.S. solve rate divides the total of estimated solved crimes across states by the total of estimated reported crimes. U.S. solve rates leave out `r knitr::combine_words(states_to_exclude_from_solved_rate_viz)`, which did not report reliable clearance data.`r nypd_note`
-:::
+The U.S. solve rate divides the total of estimated solved crimes across states by the total of estimated reported crimes. `r illinois_solve_note(solve_coverage)``r nypd_note`
 
 Agency- and county-level violent crime and solve rate data presented above are restricted to agencies reporting data for all 12 months in `r agency_year`. The calculation of population covered by reporting agencies, as well as the number of reporting agencies by county, is also based on agencies with violent crime data for all 12 months. 
 
-Each law enforcement agency appears on the map in exactly one county. Agencies based in a single county use that county. Agencies whose jurisdiction spans several counties use the county holding the largest share of the agency's place or county subdivision population in the Census Bureau's 2025 Population Estimates, or the largest listed county when no place matches. The agency tables list every county an agency covers. Agencies with no listed county are placed in the county that holds their address location when one is available. Statewide and tribal agencies, along with a few agencies with no county or location, appear in the tables and in state totals but not on the map. In New York, the New York City Police Department and other agencies based in the five boroughs are combined into a single New York City area on the map. The population covered by reporting agencies is the sum of the jurisdiction populations of agencies reporting data for all 12 months in `r agency_year`. The change in solve rate since `r agency_base_year` compares each agency with itself and appears only for agencies that reported all 12 months in both years.
+Each law enforcement agency appears on the map in exactly one county. Agencies based in a single county use that county. Agencies whose jurisdiction spans several counties use the county holding the largest share of the agency's place or county subdivision population in the Census Bureau's 2025 Population Estimates, or the largest listed county when no place matches. The agency tables list every county an agency covers. Agencies with no listed county are placed in the county that holds their address location when one is available. Statewide and tribal agencies, along with a few agencies with no county or location, appear in the tables and in state totals but not on the map. In New York, the New York City Police Department and other agencies based in the five boroughs are combined into a single New York City area on the map. The population covered by reporting agencies is the sum of the jurisdiction populations of agencies reporting data for all 12 months in `r agency_year`. The change in solve rate since `r agency_base_year` compares each agency with itself and appears only for agencies that reported all 12 months in both years.`r if (base_year_hidden) paste0(" It is blank for ", state_name_text, " because its agencies did not report clearances in ", agency_base_year, ".") else ""`
 
 Counties with fewer than 25 reported violent incidents in `r agency_year` are excluded from the map, as calculations of solve rates are not reliable. 
 

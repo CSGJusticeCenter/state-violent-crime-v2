@@ -25,7 +25,7 @@ first_year <- latest_year - 10
 srs_by_cat_us <- violent_totals(srs_state_new, first_year)
 srs_us <- violent_by_offense(srs_state_new, first_year)
 
-### US solve rates leave out the excluded states but apply to US reported counts
+### US solve rates leave out hidden solve rates but apply to US reported counts
 srs_by_cat_us_solve <- us_solve_trend(srs_state_new, first_year)
 srs_us_solve <- us_solve_trend(srs_state_new, first_year, by_offense = TRUE)
 solve_coverage <- read_solve_coverage()
@@ -33,19 +33,20 @@ us_solve_coverage <- solve_coverage$coverage[solve_coverage$state_name == "Unite
 
 ### violent crime counts and rates by state, one column per year
 ### solve rates are multiplied by 100 for highcharts formatting
-### excluded states get missing solve rates, so the maps gray them out
+### hidden solve rates are missing, so the maps gray them out
 srs_state_to_map <- srs_state_new |>
   filter(crime_cat == "Violent", year %in% c(base_year, latest_year)) |>
   group_by(state_name, state_abbr, pop_total, year) |>
   summarize(
     n_reported = sum(incidents_reported, na.rm = TRUE),
     n_solved = sum(incidents_cleared, na.rm = TRUE),
+    hide_total_solve = any(hide_total_solve),
     .groups = "drop"
   ) |>
   mutate(
     period = if_else(year == base_year, "base", "latest"),
     viol_crime_rate_100k = (n_reported / pop_total) * 100000,
-    solved_rate = n_solved / n_reported * 100
+    solved_rate = if_else(hide_total_solve, NA_real_, n_solved / n_reported * 100)
   ) |>
   pivot_wider(
     id_cols = c(state_name, state_abbr),
@@ -54,8 +55,7 @@ srs_state_to_map <- srs_state_new |>
   ) |>
   mutate(
     solved_rate_percent_point_change = solved_rate_latest - solved_rate_base,
-    viol_crime_rate_percent_change = (viol_crime_rate_100k_latest - viol_crime_rate_100k_base) / viol_crime_rate_100k_base * 100,
-    across(starts_with("solved_rate_"), \(x) if_else(state_name %in% states_to_exclude_from_solved_rate_viz, NA_real_, x))
+    viol_crime_rate_percent_change = (viol_crime_rate_100k_latest - viol_crime_rate_100k_base) / viol_crime_rate_100k_base * 100
   )
 
 ### map tooltips, one column per map, and links to each state's page
@@ -67,6 +67,13 @@ srs_state_to_map <- srs_state_to_map |>
       state_name, " did not report enough data", "<br>",
       "on solved crime to the FBI to", "<br>",
       "make reliable estimates."
+    ),
+    no_base_solve_data = paste0(
+      "<b>", state_name, "</b><br>",
+      state_name, " did not report enough data", "<br>",
+      "on solved crime to the FBI in ", base_year, "<br>",
+      "to measure a change.", "<br>",
+      "Solve rate (", latest_year, "): ", comma(solved_rate_latest, 1), "%"
     ),
     tooltip_crime_change = paste0(
       "<b>", state_name, "</b><br>",
@@ -80,9 +87,10 @@ srs_state_to_map <- srs_state_to_map |>
       "Violent incidents per 100k: ", rate_label, "<br>",
       "Violent incidents reported: ", comma(n_reported_latest, 1), "<br>"
     ),
-    tooltip_solve_change = if_else(
-      state_name %in% states_to_exclude_from_solved_rate_viz, no_solve_data,
-      paste0(
+    tooltip_solve_change = case_when(
+      is.na(solved_rate_latest) ~ no_solve_data,
+      is.na(solved_rate_base) ~ no_base_solve_data,
+      .default = paste0(
         "<b>", state_name, "</b><br>",
         "Change in solve rate: ",
         sprintf("%+3d", as.numeric(comma(solved_rate_percent_point_change, 1))), "<br>",
@@ -91,7 +99,7 @@ srs_state_to_map <- srs_state_to_map |>
       )
     ),
     tooltip_solve_rate = if_else(
-      state_name %in% states_to_exclude_from_solved_rate_viz, no_solve_data,
+      is.na(solved_rate_latest), no_solve_data,
       paste0(
         "<b>", state_name, " – ", latest_year, "</b><br>",
         "Solve rate: ", comma(solved_rate_latest, 1), "%", "<br>",
@@ -100,7 +108,8 @@ srs_state_to_map <- srs_state_to_map |>
       )
     ),
     url = paste0("https://projects.csgjusticecenter.org/tools-for-states-to-address-crime/50-state-crime-data/?state=", tolower(state_abbr)),
-    no_solve_data = NULL
+    no_solve_data = NULL,
+    no_base_solve_data = NULL
   )
 
 ### describe a set of states for text, e.g., "12 states and the District of Columbia"
@@ -114,6 +123,16 @@ states_rate_up <- srs_state_to_map |> filter(viol_crime_rate_percent_change > 0)
 
 states_solved_down <- srs_state_to_map |> filter(solved_rate_percent_point_change < 0) |> pull(state_abbr)
 states_solved_up <- srs_state_to_map |> filter(solved_rate_percent_point_change > 0) |> pull(state_abbr)
+states_no_base_solve <- srs_state_to_map |> filter(is.na(solved_rate_base)) |> pull(state_name)
+
+no_base_solve_text <- if (length(states_no_base_solve) > 0) {
+  paste0(
+    knitr::combine_words(states_no_base_solve), " did not report enough data to the FBI on whether crimes were solved in ",
+    base_year, " to measure a change."
+  )
+} else {
+  ""
+}
 
 ### national violent crime rate change and offenses lower or higher than the base year
 us_rate_change <- srs_by_cat_us |>
@@ -257,7 +276,7 @@ state_map_chart(srs_state_to_map, hex_gj, state_map_specs$solve_rate)
 
 Between `r base_year` and `r latest_year`, the percentage of violent crimes solved by law enforcement increased in `r describe_states(states_solved_up)` and decreased in `r describe_states(states_solved_down)`.
 
-`r knitr::combine_words(states_to_exclude_from_solved_rate_viz)` did not report enough data to the FBI on whether crimes were solved to make reliable estimates.
+`r no_base_solve_text`
 
 ## Trends in reported violent crime
 
@@ -507,12 +526,13 @@ srs_state_to_map |>
 
 ```{r}
 ### reported rates per 100k and solve rates by state and violent offense type
-### solve rates can exceed 1 when a year clears older cases; excluded states
+### solve rates can exceed 1 when a year clears older cases; hidden solve rates
 ### and states with no reported incidents show blank solve rates
 srs_state_by_offense_latest <- srs_state_new |>
   filter(crime_cat == "Violent", year == latest_year) |>
   mutate(
     solved_rate = (incidents_reported - incidents_unsolved) / incidents_reported,
+    solved_rate = if_else(hide_offense_solve | is.nan(solved_rate), NA_real_, solved_rate),
     n_reported_rate = incidents_reported / pop_total * 100000
   ) |>
   pivot_wider(
@@ -520,14 +540,10 @@ srs_state_by_offense_latest <- srs_state_new |>
     names_from = group,
     values_from = c(n_reported_rate, solved_rate)
   ) |>
-  janitor::clean_names() |>
-  mutate(across(
-    starts_with("solved_rate_"),
-    \(x) if_else(state_name %in% states_to_exclude_from_solved_rate_viz | is.nan(x), NA_real_, x)
-  ))
+  janitor::clean_names()
 
 ### each state is compared with the pooled US solve rate for the offense,
-### leaving out the states excluded from solve rates
+### leaving out hidden solve rates
 us_solved_rate_latest <- us_solve_benchmark(srs_state_new, latest_year)
 
 solve_rate_layout <- list(
@@ -755,7 +771,7 @@ Crime rates are calculated by dividing estimated reported crimes by the total po
 
 {{< include _methodology-exceptional-clearance.qmd >}}
 
-U.S. solve rates leave out `r knitr::combine_words(states_to_exclude_from_solved_rate_viz)`, which did not report reliable clearance data. In 2022, the New York City Police Department (NYPD) reported crimes to the FBI but no clearances. For that year, New York's solve rates for all violent crime, aggravated assault, and robbery use the average of the NYPD's four [quarterly clearance reports](https://www.nyc.gov/site/nypd/stats/reports-analysis/clearance.page){target="_parent"}. In 2019 and 2020, those reports matched the NYPD's FBI clearance rates within half a percentage point for aggravated assault and robbery but not for homicide and rape. New York's 2022 homicide and rape solve rates are therefore omitted, and New York is left out of the 2022 U.S. homicide and rape solve rates.
+`r illinois_solve_note(solve_coverage)` In 2022, the New York City Police Department (NYPD) reported crimes to the FBI but no clearances. For that year, New York's solve rates for all violent crime, aggravated assault, and robbery use the average of the NYPD's four [quarterly clearance reports](https://www.nyc.gov/site/nypd/stats/reports-analysis/clearance.page){target="_parent"}. In 2019 and 2020, those reports matched the NYPD's FBI clearance rates within half a percentage point for aggravated assault and robbery but not for homicide and rape. New York's 2022 homicide and rape solve rates are therefore omitted, and New York is left out of the 2022 U.S. homicide and rape solve rates.
 
 Data on law enforcement expenditures come from the U.S. Census Bureau [Annual Survey of State and Local Government Finances](https://www.census.gov/programs-surveys/gov-finances.html){target="_parent"}. Expenditures include police protection spending by state governments and all local governments in each state, such as counties and municipalities. Expenditures are in dollars of the most recent year, adjusted with the Chained Consumer Price Index for All Urban Consumers (C-CPI-U), following the [Census Bureau's guidance](https://www.census.gov/topics/income-poverty/income/guidance/current-vs-constant-dollars.html){target="_parent"}.
 

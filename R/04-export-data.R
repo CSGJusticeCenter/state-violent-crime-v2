@@ -46,7 +46,7 @@ format_export <- function(df) {
     )
 }
 
-### US solve rates pool every state but the excluded ones, as on the US page
+### US solve rates leave out hidden solve rates, as on the US page
 us <- bind_rows(
   us_solve_trend(srs, first_year) |> mutate(group = total_label),
   us_solve_trend(srs, first_year, by_offense = TRUE)

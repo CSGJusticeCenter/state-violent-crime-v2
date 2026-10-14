@@ -82,39 +82,42 @@ test_that("violent rows keep violent offenses from first_year on", {
   expect_equal(unique(us$state_name), "United States")
 })
 
-test_that("US solve benchmark pools every state except the excluded ones", {
+### hides every State B solve rate, as the screen or a late first solve year would
+hide_state_b <- function(srs) {
+  mutate(srs, hide_total_solve = state_name == "State B", hide_offense_solve = hide_total_solve)
+}
+
+test_that("US solve benchmark pools every state without hidden solve rates", {
   srs <- prep_srs_state(raw_srs()) |>
     mutate(incidents_unsolved = if_else(state_abbr == "BB", 0, incidents_unsolved))
 
   ### State A alone: homicide 6/10 solved, robbery 36/40
-  benchmark <- us_solve_benchmark(srs, 2025, exclude = "State B")
+  benchmark <- us_solve_benchmark(hide_state_b(srs), 2025)
   expect_named(benchmark, c("homicide", "robbery"))
   expect_equal(unname(benchmark), c(6 / 10, 36 / 40))
 
   ### both states pooled: State B solves everything
-  pooled <- us_solve_benchmark(srs, 2025, exclude = character())
+  pooled <- us_solve_benchmark(srs, 2025)
   expect_equal(unname(pooled), c(16 / 20, 76 / 80))
-
-  expect_equal(states_to_exclude_from_solved_rate_viz, "Illinois")
 })
 
-test_that("solve rate pool drops excluded states from US solve totals", {
+test_that("solve rate pool drops hidden states from US solve totals", {
   srs <- prep_srs_state(raw_srs()) |>
     mutate(incidents_unsolved = if_else(state_abbr == "BB", 0, incidents_unsolved))
 
-  expect_equal(unique(solve_rate_pool(srs, exclude = "State B")$state_name), "State A")
-  expect_equal(sort(unique(solve_rate_pool(srs, exclude = character())$state_name)), c("State A", "State B"))
+  expect_equal(unique(solve_rate_pool(hide_state_b(srs))$state_name), "State A")
+  expect_equal(sort(unique(solve_rate_pool(srs)$state_name)), c("State A", "State B"))
   expect_equal(nrow(solve_rate_pool(srs)), nrow(srs))
 
   ### State A alone: 42 of 50 violent incidents solved
-  us <- violent_totals(solve_rate_pool(srs, exclude = "State B"), 2015)
+  us <- violent_totals(solve_rate_pool(hide_state_b(srs)), 2015)
   expect_equal(us$state_name, "United States")
   expect_equal(us$incidents_reported, 50)
   expect_equal(us$incidents_solved, 42)
   expect_equal(us$pct_solved, 42 / 50)
 
-  by_offense <- violent_by_offense(solve_rate_pool(srs, exclude = "State B"), 2015)
-  benchmark <- us_solve_benchmark(srs, 2025, exclude = "State B")
+  by_offense <- violent_by_offense(solve_rate_pool(hide_state_b(srs)), 2015)
+  benchmark <- us_solve_benchmark(hide_state_b(srs), 2025)
   expect_equal(by_offense$pct_solved, unname(benchmark))
 })
 
@@ -123,14 +126,14 @@ test_that("US solve trend applies the pooled solve rate to every state's reports
     mutate(incidents_unsolved = if_else(state_abbr == "BB", 0, incidents_unsolved))
 
   ### State A solves 42 of 50; both states report 100
-  us <- us_solve_trend(srs, 2015, exclude = "State B")
+  us <- us_solve_trend(hide_state_b(srs), 2015)
   expect_equal(us$state_name, "United States")
   expect_equal(us$incidents_reported, 100)
   expect_equal(us$pct_solved, 42 / 50)
   expect_equal(us$incidents_solved, 84)
   expect_equal(us$incidents_unsolved, 16)
 
-  by_offense <- us_solve_trend(srs, 2015, by_offense = TRUE, exclude = "State B")
+  by_offense <- us_solve_trend(hide_state_b(srs), 2015, by_offense = TRUE)
   expect_equal(by_offense$group, c("Homicide", "Robbery"))
   expect_equal(by_offense$incidents_reported, c(20, 80))
   expect_equal(by_offense$pct_solved, c(6 / 10, 36 / 40))
@@ -142,19 +145,20 @@ test_that("US solve trend matches each year's pooled rate to that year", {
   srs <- prep_srs_state(bind_rows(raw_srs(), mutate(raw_srs(), year = 2024))) |>
     mutate(incidents_unsolved = if_else(state_abbr == "AA" & year == 2024, 0, incidents_unsolved))
 
-  us <- us_solve_trend(srs, 2015, exclude = "State B") |> arrange(year)
+  us <- us_solve_trend(hide_state_b(srs), 2015) |> arrange(year)
   expect_equal(us$year, c(2024, 2025))
   expect_equal(us$pct_solved, c(1, 42 / 50))
   expect_equal(us$incidents_solved, c(100, 84))
 
-  by_offense <- us_solve_trend(srs, 2015, by_offense = TRUE, exclude = "State B") |>
+  by_offense <- us_solve_trend(hide_state_b(srs), 2015, by_offense = TRUE) |>
     arrange(year, group)
   expect_equal(by_offense$pct_solved, c(1, 1, 6 / 10, 36 / 40))
 })
 
 test_that("US solve trend stops when a pooled rate is missing", {
-  srs <- prep_srs_state(raw_srs())
-  expect_error(us_solve_trend(srs, 2015, exclude = c("State A", "State B")), "pooled solve rate")
+  srs <- prep_srs_state(raw_srs()) |>
+    mutate(hide_total_solve = TRUE, hide_offense_solve = TRUE)
+  expect_error(us_solve_trend(srs, 2015), "pooled solve rate")
 })
 
 test_that("inflation adjustment uses the latest year's dollars", {
@@ -258,7 +262,28 @@ test_that("repairs must cover every violent offense", {
 test_that("the screen stops when it hides a compared year", {
   screen <- tibble(year = c(2022, 2025), state_name = "State B", share_no_clearances = c(0, 0.5))
   expect_error(flag_screened_solve_rates(two_year_srs(), screen, no_repairs), "State B 2025")
-  expect_no_error(flag_screened_solve_rates(two_year_srs(), mutate(screen, state_name = "Illinois"), no_repairs))
+})
+
+test_that("years before a state's first solve year hide both rates", {
+  srs <- flag_screened_solve_rates(two_year_srs(), screen_2022(share = 0), no_repairs,
+                                   first_years = c(`State B` = 2025))
+  b <- filter(srs, state_name == "State B")
+  expect_true(all(b$hide_total_solve[b$year == 2022]))
+  expect_true(all(b$hide_offense_solve[b$year == 2022]))
+  expect_false(any(b$hide_offense_solve[b$year == 2025]))
+  expect_false(any(filter(srs, state_name == "State A")$hide_offense_solve))
+})
+
+test_that("years before a state's first solve year skip the compared-year check", {
+  screen <- tibble(year = c(2022, 2025), state_name = "State B", share_no_clearances = c(0, 0.5))
+  srs <- flag_screened_solve_rates(two_year_srs(), screen, no_repairs, first_years = c(`State B` = 2026))
+  expect_true(all(filter(srs, state_name == "State B")$hide_total_solve))
+})
+
+test_that("first solve years match rows by state and leave other states alone", {
+  df <- tibble(year = c(2021, 2022, 2021), state_name = factor(c("Illinois", "Illinois", "Ohio")))
+  expect_equal(before_first_solve_year(df), c(TRUE, FALSE, FALSE))
+  expect_equal(solve_rate_first_years, c(Illinois = 2022))
 })
 
 test_that("the screen stops when a shown year has no screen rows", {
@@ -268,7 +293,7 @@ test_that("the screen stops when a shown year has no screen rows", {
 
 test_that("US solve rates pool unscreened states and US counts keep every state", {
   srs <- flag_screened_solve_rates(two_year_srs(), screen_2022(), no_repairs)
-  us <- filter(us_solve_trend(srs, 2015, exclude = character()), year == 2022)
+  us <- filter(us_solve_trend(srs, 2015), year == 2022)
 
   ### State A alone sets the rate, 42 of 50 solved, applied to both states' 100 crimes
   expect_equal(us$pct_solved, 42 / 50)
@@ -280,7 +305,7 @@ test_that("US offense solve rates drop hidden offenses and keep repaired ones", 
   srs <- two_year_srs() |>
     repair_clearances(repairs_2022()) |>
     flag_screened_solve_rates(screen_2022(), repairs_2022())
-  us <- filter(us_solve_trend(srs, 2015, by_offense = TRUE, exclude = character()), year == 2022)
+  us <- filter(us_solve_trend(srs, 2015, by_offense = TRUE), year == 2022)
 
   ### homicide uses State A's 6 of 10, and robbery pools A's 36 and B's repaired 20 of 80
   expect_equal(us$pct_solved[us$group == "Homicide"], 6 / 10)
@@ -288,23 +313,22 @@ test_that("US offense solve rates drop hidden offenses and keep repaired ones", 
   expect_equal(us$pct_solved[us$group == "Robbery"], 56 / 80)
 })
 
-test_that("solve_rate_hidden marks what solve_rate_years drops plus excluded states", {
+test_that("solve_rate_hidden marks what solve_rate_years drops", {
   srs <- flag_screened_solve_rates(two_year_srs(), screen_2022(), no_repairs)
   offenses <- bind_rows(violent_by_offense(srs, 2015, "State A"), violent_by_offense(srs, 2015, "State B"))
   coverage <- tibble(state_name = c("State A", "State B"), coverage = 1)
 
   kept <- solve_rate_years(offenses, coverage)
-  expect_equal(nrow(kept), sum(!solve_rate_hidden(offenses, coverage, exclude = character())))
-  expect_equal(sum(solve_rate_hidden(offenses, coverage, exclude = character())), 2)
-  expect_true(all(solve_rate_hidden(offenses, coverage, exclude = "State A")[offenses$state_name == "State A"]))
+  expect_equal(nrow(kept), sum(!solve_rate_hidden(offenses, coverage)))
+  expect_equal(sum(solve_rate_hidden(offenses, coverage)), 2)
 })
 
 test_that("screened rows leave the US pools and the trend rows", {
   srs <- flag_screened_solve_rates(two_year_srs(), screen_2022(), repairs_2022())
 
   ### State B 2022 stays in the total pool but leaves the homicide pool
-  expect_equal(nrow(solve_rate_pool(srs, exclude = character())), nrow(srs))
-  by_offense_pool <- solve_rate_pool(srs, exclude = character(), by_offense = TRUE)
+  expect_equal(nrow(solve_rate_pool(srs)), nrow(srs))
+  by_offense_pool <- solve_rate_pool(srs, by_offense = TRUE)
   expect_false(any(by_offense_pool$year == 2022 & by_offense_pool$state_name == "State B" & by_offense_pool$group == "Homicide"))
 
   totals <- violent_totals(srs, 2015, "State B")

@@ -57,8 +57,9 @@ Notes:
 | Agency year | `R/01-prep-agency-county-data.R` (`agency_year`) |
 | Base year for maps, tables and agency changes | `R/page-data.R` (`base_year`); rerun step 1 after changing it |
 | SHR pooling start year | `R/page-data.R` (`shr_first_year`) |
-| Clearance screen threshold and repaired offenses shown | `R/page-data.R` (`max_no_clearance_share`, `min_screen_reported`, `repaired_offenses_shown`). Pages stop if the screen hides a base, first or latest year; decide on a repair or exclusion before rendering. Pages also stop if the screen lacks a shown year, so raise `agency_year` in step 1 and rerun it when the SRS data adds a year |
+| Clearance screen threshold and repaired offenses shown | `R/page-data.R` (`max_no_clearance_share`, `min_screen_reported`, `repaired_offenses_shown`). Pages stop if the screen hides a base, first or latest year; add a repair or a first solve year before rendering. Pages also stop if the screen lacks a shown year, so raise `agency_year` in step 1 and rerun it when the SRS data adds a year |
 | 2021 solve-rate coverage bar | `R/page-data.R` (`min_solve_coverage`); coverage comes from `data/ucr_coverage_2021.csv`, built by `R/download-ucr-coverage.R` |
+| First solve year for states whose clearances start late | `R/page-data.R` (`solve_rate_first_years`). Earlier years are hidden on all pages and left out of U.S. solve rates. Illinois starts in 2022 |
 | Inflation index file | `data/annual-index-value_annual-percent-change_YYYY.xls`, referenced in `R/page-data.R` (`inflation_index_path`) |
 | Narrative text | `index.qmd`, `state-viol-crime.qmd` and `_methodology-*.qmd` |
 
@@ -66,7 +67,7 @@ The latest SRS year comes from the data, so the state pages pick it up automatic
 
 ### Open questions
 
-- **Illinois 2025 solve rates.** Illinois stays excluded from solve rates because its 2019 clearances are unusable (about 2% of aggravated assaults cleared). Its 2025 clearances look plausible (about 44% for aggravated assault and homicide). Decide whether to show its 2025 solve rate and blank only the change since 2019.
+- **Chicago NIBRS counts.** Since Chicago PD moved to NIBRS in 2021, its aggravated assaults in the CDE data (about 3,400 a year) run about 75% below the city's own count of aggravated assaults and batteries (about 14,000). Its 2022 homicide clearances (20%) are also well below the share of homicides with an arrest in city data (44%). Robbery matches. Illinois aggravated assault and homicide solve rates, and Illinois aggravated assault trends across 2019–2022, may be off until this is explained.
 - **Hardcoded claims.** Some narrative claims are typed by hand, so they won't update with new data. Recheck them each year, or generate them from the same data the charts use. All are in `index.qmd`:
   - the US solve rate trend
   - the homicide solve rate comparisons by race, gender and age

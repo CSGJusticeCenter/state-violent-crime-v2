@@ -3,8 +3,10 @@
 ### pre-pandemic year that maps, tables and agency changes compare against
 base_year <- 2019
 
-### states without reliable clearance data in the base or latest year
-states_to_exclude_from_solved_rate_viz <- c("Illinois")
+### first year of reliable clearance data for states whose clearances start after
+### the earliest year shown. Earlier solve rates are hidden and left out of US
+### solve rates
+solve_rate_first_years <- c(Illinois = 2022)
 
 ### the NIBRS transition cut reporting in 2021, so solve rates for that year show
 ### only where reporting agencies covered at least min_solve_coverage of the population
@@ -86,14 +88,21 @@ repair_clearances <- function(srs, repairs) {
   )
 }
 
+### TRUE for rows before their state's entry in first_years
+before_first_solve_year <- function(df, first_years = solve_rate_first_years) {
+  first <- unname(first_years[as.character(df$state_name)])
+  coalesce(df$year < first, FALSE)
+}
+
 ### hide_total_solve marks state-years whose violent crime solve rate the pages hide
 ### hide_offense_solve marks offense rows whose own solve rate the pages hide
-### screened state-years without repairs hide both. Repaired offenses outside
-### repaired_offenses_shown hide only their own rate
+### screened state-years without repairs, and years before a state's first solve
+### year, hide both. Repaired offenses outside repaired_offenses_shown hide only
+### their own rate
 flag_screened_solve_rates <- function(srs, screen, repairs,
                                       max_share = max_no_clearance_share,
                                       shown = repaired_offenses_shown,
-                                      exclude = states_to_exclude_from_solved_rate_viz) {
+                                      first_years = solve_rate_first_years) {
   repaired_years <- distinct(repairs, year, state_name)
   incomplete <- count(repairs, year, state_name) |> filter(n != length(violent_offenses))
   if (nrow(incomplete) > 0) stop("Clearance repairs need every violent offense for a state-year")
@@ -115,16 +124,18 @@ flag_screened_solve_rates <- function(srs, screen, repairs,
   hidden_repairs <- filter(repairs, !group %in% shown)
   hidden_key <- paste(hidden_repairs$year, hidden_repairs$state_name, hidden_repairs$group)
 
+  early <- before_first_solve_year(srs, first_years)
   flagged <- mutate(
     srs,
-    hide_total_solve = paste(year, state_name) %in% failed_key,
+    hide_total_solve = early | paste(year, state_name) %in% failed_key,
     hide_offense_solve = hide_total_solve | paste(year, state_name, group) %in% hidden_key
   )
 
   ### maps and narrative compare these years, so a hidden rate in one needs a decision
+  ### years before a state's first solve year are already decided
   compared <- c(base_year, max(srs$year) - 10, max(srs$year))
-  conflicts <- flagged |>
-    filter(crime_cat == "Violent", year %in% compared, hide_offense_solve, !state_name %in% exclude) |>
+  conflicts <- flagged[!early, ] |>
+    filter(crime_cat == "Violent", year %in% compared, hide_offense_solve) |>
     distinct(year, state_name)
   if (nrow(conflicts) > 0) {
     stop(
@@ -194,22 +205,20 @@ violent_by_offense <- function(srs, first_year, state = NULL) {
     add_solve_rates()
 }
 
-### states pooled into US solve rates, leaving out the excluded states and rows
-### the clearance screen hides. US crime counts and rates pool every state
-solve_rate_pool <- function(srs, exclude = states_to_exclude_from_solved_rate_viz, by_offense = FALSE) {
+### states pooled into US solve rates, leaving out rows with hidden solve rates
+### US crime counts and rates pool every state
+solve_rate_pool <- function(srs, by_offense = FALSE) {
   hidden <- if (by_offense) "hide_offense_solve" else "hide_total_solve"
-  keep <- !srs$state_name %in% exclude
-  if (hidden %in% names(srs)) keep <- keep & !coalesce(srs[[hidden]], FALSE)
-  srs[keep, ]
+  if (!hidden %in% names(srs)) return(srs)
+  srs[!coalesce(srs[[hidden]], FALSE), ]
 }
 
 ### US violent crime by year, or by year and offense when by_offense is TRUE
-### the solve rate pools every state except the excluded ones, and solved and
+### the solve rate pools the states solve_rate_pool keeps, and solved and
 ### unsolved counts apply that rate to the reported count for every state
-us_solve_trend <- function(srs, first_year, by_offense = FALSE,
-                           exclude = states_to_exclude_from_solved_rate_viz) {
+us_solve_trend <- function(srs, first_year, by_offense = FALSE) {
   summarize_us <- if (by_offense) violent_by_offense else violent_totals
-  pooled_rates <- solve_rate_pool(srs, exclude, by_offense) |>
+  pooled_rates <- solve_rate_pool(srs, by_offense) |>
     summarize_us(first_year) |>
     select(any_of(c("year", "group")), pct_solved)
 
@@ -227,8 +236,8 @@ us_solve_trend <- function(srs, first_year, by_offense = FALSE,
 }
 
 ### pooled US solve rate by offense in one year, named by snake_case offense
-us_solve_benchmark <- function(srs, year, exclude = states_to_exclude_from_solved_rate_viz) {
-  solve_rate_pool(srs, exclude, by_offense = TRUE) |>
+us_solve_benchmark <- function(srs, year) {
+  solve_rate_pool(srs, by_offense = TRUE) |>
     violent_by_offense(year) |>
     filter(year == !!year) |>
     pull(pct_solved, name = group) |>
@@ -256,13 +265,12 @@ low_solve_coverage <- function(df, coverage_tbl, min_coverage = min_solve_covera
 }
 
 ### TRUE for rows whose solve rates the site hides for low 2021 coverage, the
-### clearance screen or an excluded state
-solve_rate_hidden <- function(df, coverage_tbl, exclude = states_to_exclude_from_solved_rate_viz) {
-  low_solve_coverage(df, coverage_tbl) | screened_out(df) | df$state_name %in% exclude
+### clearance screen or a later first solve year
+solve_rate_hidden <- function(df, coverage_tbl) {
+  low_solve_coverage(df, coverage_tbl) | screened_out(df)
 }
 
 ### solve-rate trend rows, dropping rows solve_rate_hidden marks
-### excluded states skip these charts, so this keeps their rows
 ### coverage_note is a tooltip line for the rows that stay in low_coverage_solve_year
 solve_rate_years <- function(df, coverage_tbl) {
   rows <- solve_coverage_rows(df, coverage_tbl)
@@ -272,7 +280,19 @@ solve_rate_years <- function(df, coverage_tbl) {
       sprintf("<br>Agencies covering %.0f%% of the population reported in %d", rows$coverage * 100, low_coverage_solve_year),
       ""
     )) |>
-    filter(!solve_rate_hidden(df, coverage_tbl, exclude = character()))
+    filter(!solve_rate_hidden(df, coverage_tbl))
+}
+
+### methodology note on Illinois clearances and its first solve year
+illinois_solve_note <- function(coverage_tbl, first_year = solve_rate_first_years[["Illinois"]]) {
+  coverage <- coverage_tbl$coverage[coverage_tbl$state_name == "Illinois"]
+  paste0(
+    "Illinois agencies reported crimes but almost no clearances to the FBI through 2020. ",
+    "They began reporting clearances in ", low_coverage_solve_year, ", when agencies covering ",
+    sprintf("%.0f", coverage * 100), " percent of the state's population reported. ",
+    "Illinois solve rates therefore start in ", first_year, ", and U.S. solve rates include Illinois from ",
+    first_year, " on. Before ", first_year, ", U.S. solve rates leave out Illinois."
+  )
 }
 
 ### first 4 characters of year drop footnote markers (e.g., "20252" is 2025)
