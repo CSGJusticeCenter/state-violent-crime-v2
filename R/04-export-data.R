@@ -9,8 +9,8 @@ source("R/page-data.R")
 export_dir <- "exports"
 
 srs <- read_srs_state()
-latest_year <- max(srs$year)
-first_year <- latest_year - 10
+first_year <- 2020
+last_year <- 2025
 solve_coverage <- read_solve_coverage()
 
 states <- sort(unique(as.character(srs$state_name)))
@@ -18,8 +18,12 @@ states <- sort(unique(as.character(srs$state_name)))
 ### one row per year and offense, with the violent crime total first
 ### solved counts round to whole incidents and unsolved counts fill the rest
 ### solve rates are blank where the site hides them
+### backlog_since_2020 sums unsolved counts from 2020, skipping hidden years
+### backlog_missing_years marks sums that skip a year, so they are a minimum
+### the backlog is blank until a year has an unsolved count
 format_export <- function(df) {
   df |>
+    filter(year <= last_year) |>
     mutate(
       offense = factor(group, c(total_label, violent_offenses)),
       reported = round(incidents_reported),
@@ -30,7 +34,16 @@ format_export <- function(df) {
       across(c(solved, unsolved, solve_rate), \(x) if_else(hide_solved, NA, x))
     ) |>
     arrange(state_name, year, offense) |>
-    select(year, state_name, state_abbr, offense, reported, solved, unsolved, solve_rate)
+    mutate(
+      backlog_since_2020 = cumsum(coalesce(unsolved, 0)),
+      backlog_since_2020 = if_else(cumall(is.na(unsolved)), NA, backlog_since_2020),
+      backlog_missing_years = cumany(is.na(unsolved)),
+      .by = c(state_name, offense)
+    ) |>
+    select(
+      year, state_name, state_abbr, offense, reported, solved, unsolved,
+      backlog_since_2020, backlog_missing_years, solve_rate
+    )
 }
 
 ### US solve rates pool every state but the excluded ones, as on the US page
@@ -51,5 +64,5 @@ state <- bind_rows(
   format_export()
 
 dir.create(export_dir, showWarnings = FALSE)
-write_csv(us, file.path(export_dir, "violent-crime-solve-rates-us.csv"), na = "")
-write_csv(state, file.path(export_dir, "violent-crime-solve-rates-states.csv"), na = "")
+write_csv(us, file.path(export_dir, "violent-crime-backlog-us.csv"), na = "")
+write_csv(state, file.path(export_dir, "violent-crime-backlog-states.csv"), na = "")
