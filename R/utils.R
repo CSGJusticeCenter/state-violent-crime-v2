@@ -37,7 +37,11 @@ format_rate_100k <- function(x, homicide = FALSE) {
 }
 
 ### table cells show missing values as a dash, explained in a note under each table
-na_text <- "—"
+### screen readers skip the dash, so they read "not available" in its place
+na_text <- paste0(
+  '<span aria-hidden="true">—</span>',
+  '<span class="visually-hidden">not available</span>'
+)
 
 ### reactable cell functions for rate columns, so tables match tooltips
 ### reactable also passes the row index, which these ignore
@@ -467,6 +471,12 @@ format_solve_rate <- function(x) {
   if (is.na(x)) na_text else paste0(solve_rate_percent(x), "%")
 }
 
+### solve rate as page text, e.g., "63 percent", rounded as in tables
+solve_rate_text <- function(x) {
+  check_change(x)
+  paste(solve_rate_percent(x), "percent")
+}
+
 ### "above" or "below" for a solve rate against a comparison rate, or NA
 ### both are compared as the whole percents the cell and header show
 solve_rate_side <- function(value, rate) {
@@ -512,6 +522,14 @@ table_offenses <- c(
   robbery = "Robbery"
 )
 
+### an offense's per-100k and solve rate column names
+offense_pair <- function(offense) paste0(c("n_reported_rate_", "solved_rate_"), offense)
+
+### every offense's column names in table order, for selecting table data
+offense_column_names <- function(offenses = table_offenses) {
+  unlist(lapply(names(offenses), offense_pair))
+}
+
 ### per-100k and solve rate columns for each offense, in pairs
 ### columns are n_reported_rate_<offense> and solved_rate_<offense>
 ### rates is named by offense and holds the comparison solve rates
@@ -532,24 +550,27 @@ offense_columns <- function(rates, crime_rates = NULL, offenses = table_offenses
         solved = counts[[paste0("n_solved_", offense)]]
       )
     ) |>
-      rlang::set_names(paste0(c("n_reported_rate_", "solved_rate_"), offense))
+      rlang::set_names(offense_pair(offense))
   })
   purrr::list_flatten(unname(columns))
 }
 
 ### one header group per offense over its offense_columns() pair
 offense_column_groups <- function(offenses = table_offenses) {
-  purrr::imap(offenses, \(label, offense) {
-    colGroup(name = label, columns = paste0(c("n_reported_rate_", "solved_rate_"), offense))
-  }) |>
+  purrr::imap(offenses, \(label, offense) colGroup(name = label, columns = offense_pair(offense))) |>
     unname()
+}
+
+### label for a state's total row, e.g., "NY state total" or "DC total"
+state_total_label <- function(abbr) {
+  if (abbr == "DC") "DC total" else paste(abbr, "state total")
 }
 
 ### minimum column widths, in pixels, shared by every table
 table_widths <- list(name = 200, county = 130, population = 120, number = 100)
 
 ### first column with the row names, kept in view while the table scrolls
-### footer labels the comparison row, e.g., "U.S. rate"
+### footer labels the total row, e.g., "U.S. total"
 ### a right border sets off the sticky column
 sticky_name_column <- function(name, footer = NULL, ...) {
   border <- list(borderRight = "1px solid #eee")
@@ -576,6 +597,14 @@ reactable_theme <- reactableTheme(
   footerStyle = list(fontWeight = 700)
 )
 
+### default table cell: whole numbers with commas, escaped text, or the missing-value dash
+default_cell <- function(value, ...) {
+  if (is.na(value)) return(na_text)
+  if (is.numeric(value)) comma(value) else htmltools::htmlEscape(value)
+}
+
+### cells render as HTML so missing values can carry screen reader text
+### missing values sort last in both directions
 reactable_template <- function(df, sort_col = "rate", ...) {
   reactable(
     df,
@@ -589,8 +618,9 @@ reactable_template <- function(df, sort_col = "rate", ...) {
       minWidth = table_widths$number,
       vAlign = "center",
       headerVAlign = "bottom",
-      na = na_text,
-      format = colFormat(digits = 0, separators = TRUE)
+      html = TRUE,
+      sortNALast = TRUE,
+      cell = default_cell
     ),
     ...
   )

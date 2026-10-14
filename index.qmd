@@ -28,6 +28,9 @@ srs_us <- violent_by_offense(srs_state_new, first_year)
 ### US solve rates leave out the excluded states but apply to US reported counts
 srs_by_cat_us_solve <- us_solve_trend(srs_state_new, first_year)
 srs_us_solve <- us_solve_trend(srs_state_new, first_year, by_offense = TRUE)
+
+### text and the state tables' U.S. total rows share these values
+us_total <- total_rate_benchmark(srs_by_cat_us, base_year, latest_year, solves = srs_by_cat_us_solve)
 solve_coverage <- read_solve_coverage()
 us_solve_coverage <- solve_coverage$coverage[solve_coverage$state_name == "United States"]
 
@@ -116,7 +119,7 @@ states_solved_down <- srs_state_to_map |> filter(solved_rate_percent_point_chang
 states_solved_up <- srs_state_to_map |> filter(solved_rate_percent_point_change > 0) |> pull(state_abbr)
 
 ### national violent crime rate change and offenses lower or higher than the base year
-us_rate_change <- with(srs_by_cat_us, pct_change_between(incidents_reported_rate_total, year, base_year, latest_year))
+us_rate_change <- us_total$rate_change / 100
 
 offense_rate_change <- srs_us |>
   filter(year %in% c(base_year, latest_year)) |>
@@ -258,7 +261,7 @@ Between `r base_year` and `r latest_year`, the percentage of violent crimes solv
 
 ## Trends in reported violent crime
 
-In `r max(srs_by_cat_us$year)`, `r format_rate_100k(srs_by_cat_us$incidents_reported_rate_total[srs_by_cat_us$year == latest_year] * 1e5)` violent crime incidents per 100,000 residents were reported to police in the United States.
+In `r latest_year`, `r format_rate_100k(us_total$rate_100k)` violent crime incidents per 100,000 residents were reported to police in the United States.
 
 ::: {.panel-tabset}
 
@@ -376,7 +379,7 @@ us_offense_rates |>
 
 ## Trends in solved violent crime
 
-In `r max(srs_by_cat_us_solve$year)`, `r srs_by_cat_us_solve |> filter(year == max(year)) |> pull(pct_solved) |> percent(suffix = " percent")` of violent crime incidents reported to police in the United States were solved. The percentage of violent crimes that law enforcement solved fell from 2019 to 2021 and rose each year from 2022 to `r max(srs_by_cat_us_solve$year)`, reaching its highest level since at least `r min(srs_by_cat_us_solve$year)`.
+In `r latest_year`, `r solve_rate_text(us_total$solve_rate)` of violent crime incidents reported to police in the United States were solved. The percentage of violent crimes that law enforcement solved fell from 2019 to 2021 and rose each year from 2022 to `r max(srs_by_cat_us_solve$year)`, reaching its highest level since at least `r min(srs_by_cat_us_solve$year)`.
 
 ::: {.panel-tabset}
 
@@ -457,9 +460,6 @@ The following tables include violent crime rates and solve rates by state and of
 ### Overall rates
 
 ```{r}
-### US solve rates pool every state except the excluded ones
-us_total <- total_rate_benchmark(srs_by_cat_us, base_year, latest_year, solves = srs_by_cat_us_solve)
-
 srs_state_to_map |>
   select(
     state_name,
@@ -486,7 +486,7 @@ srs_state_to_map |>
       n_reported_latest = colDef(name = "Incidents", footer = comma(us_total$incidents)),
       solved_rate_latest = colDef(
         name = "Solve rate",
-        format = colFormat(suffix = "%", digits = 0),
+        cell = \(value, ...) format_solve_rate(value / 100),
         footer = format_solve_rate(us_total$solve_rate)
       ),
       viol_crime_rate_percent_change = colDef(
@@ -541,7 +541,7 @@ srs_state_by_offense_latest <- srs_state_new |>
 us_solved_rate_latest <- us_solve_benchmark(srs_state_new, latest_year)
 
 srs_state_by_offense_latest |>
-  select(state_name, all_of(names(offense_columns(us_solved_rate_latest)))) |>
+  select(state_name, all_of(offense_column_names())) |>
   reactable_template(
     sort_col = list("state_name" = "asc"),
     columnGroups = offense_column_groups(),

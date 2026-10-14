@@ -57,7 +57,8 @@ inflation_index_path <- "data/annual-index-value_annual-percent-change_2025.xls"
 change_colors <- c("#00475d", "#007392", "#9ed4ef", "#FFFFFF", "#EDB799", "#D25E2D", "#7B3014")
 rate_colors <- c("#d4e9f8", "#9ed4ef", "#007392", "#00475d")
 
-### this order sets the offense column order in the agency tables
+### violent offenses in the order of the agency data columns and data exports
+### page tables order offenses by table_offenses in R/utils.R
 violent_offenses <- c("Homicide", "Rape", "Robbery", "Aggravated assault")
 
 ### one row per state, year and offense with reported, unsolved and cleared counts

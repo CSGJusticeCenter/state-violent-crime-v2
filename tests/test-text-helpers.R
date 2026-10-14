@@ -29,7 +29,7 @@ test_that("rate cell functions ignore the row index reactable passes", {
   expect_equal(homicide_rate_100k_cell(0, 1), "0")
 })
 
-test_that("signed cells show a sign, round, and leave missing values blank", {
+test_that("signed cells show a sign, round, and show missing values as a dash", {
   expect_equal(add_plus_sign_percent_point_change(3.4), "+3")
   expect_equal(add_plus_sign_percent_point_change(-5.6), "-6")
   expect_equal(add_plus_sign_percent_point_change(0.3), "0")

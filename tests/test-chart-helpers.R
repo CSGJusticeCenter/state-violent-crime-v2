@@ -68,7 +68,12 @@ test_that("solve rates compare at the whole percents the table shows", {
   expect_match(definition$cell(0.357), solve_rate_fills[["above"]], fixed = TRUE)
 })
 
-test_that("solve rate cells and headers round halves up the same way", {
+test_that("solve rate cells, footers and page text round halves up the same way", {
+  for (x in c(0.625, 0.125, 0.355, 0.3549, 1.25)) {
+    expect_equal(solve_rate_text(x), sub("%", " percent", format_solve_rate(x), fixed = TRUE))
+  }
+  expect_error(solve_rate_text(NA_real_), "finite")
+
   expect_equal(format_solve_rate(0.625), "63%")
   expect_equal(format_solve_rate(0.125), "13%")
   expect_equal(format_solve_rate(0.355), "36%")
@@ -135,11 +140,39 @@ test_that("offense columns pair each offense's rate with its solve rate", {
 })
 
 test_that("sticky name column keeps its border on the header and footer", {
-  definition <- sticky_name_column("Agency", footer = "NY state rate")
-  expect_equal(definition$footer, "NY state rate")
+  definition <- sticky_name_column("Agency", footer = "NY state total")
+  expect_equal(definition$footer, "NY state total")
   expect_equal(definition$minWidth, table_widths$name)
   expect_equal(definition$headerStyle, definition$style)
   expect_equal(definition$footerStyle, definition$style)
+})
+
+test_that("total rows name states, except DC, which isn't a state", {
+  expect_equal(state_total_label("NY"), "NY state total")
+  expect_equal(state_total_label("DC"), "DC total")
+})
+
+test_that("offense column names follow the table offense order in pairs", {
+  expect_equal(
+    offense_column_names(c(rape = "Rape", homicide = "Homicide")),
+    c("n_reported_rate_rape", "solved_rate_rape", "n_reported_rate_homicide", "solved_rate_homicide")
+  )
+  expect_equal(names(offense_columns(c(aggravated_assault = 0.5, homicide = 0.6, rape = 0.3, robbery = 0.4))),
+               offense_column_names())
+  expect_equal(unlist(lapply(offense_column_groups(), `[[`, "columns")), offense_column_names())
+})
+
+test_that("missing values show a dash that screen readers hear as not available", {
+  expect_match(na_text, '<span aria-hidden="true">—</span>', fixed = TRUE)
+  expect_match(na_text, '<span class="visually-hidden">not available</span>', fixed = TRUE)
+})
+
+test_that("default cells format numbers, escape text and mark missing values", {
+  expect_equal(default_cell(1234567), "1,234,567")
+  expect_equal(default_cell(2.5), "3")
+  expect_equal(as.character(default_cell("Kings & Queens")), "Kings &amp; Queens")
+  expect_equal(default_cell(NA_real_), na_text)
+  expect_equal(default_cell(NA_character_), na_text)
 })
 
 test_that("offense trend uses the selected offense and its own rate range", {

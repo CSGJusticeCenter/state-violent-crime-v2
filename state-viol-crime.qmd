@@ -78,7 +78,8 @@ if (agency_base_year != base_year) {
 ### state total rows in the agency tables match the charts and text only in the same year
 if (agency_year != latest_year) {
   stop("The agency tables use ", agency_year, " but the state estimates end in ",
-       latest_year, ". Update the agency data.", call. = FALSE)
+       latest_year, ". Update the agency data and rerun R/01-prep-agency-county-data.R.",
+       call. = FALSE)
 }
 
 srs_solved_by_agency_to_table <- agency_table_all |>
@@ -151,33 +152,21 @@ cat("---\nshow-solved: ", tolower(show_solved), "\n---\n", sep = "")
 ```
 
 ```{r}
-### text compares the latest year with base_year
-min_max_viol_crime <- srs_by_cat_state |>
-  filter(year %in% c(base_year, latest_year)) |>
-  arrange(year)
+### text and the agency tables' state total rows share these values, comparing
+### the latest year with base_year
+state_total <- total_rate_benchmark(srs_by_cat_state, base_year, latest_year)
+us_total <- total_rate_benchmark(srs_by_cat_us, base_year, latest_year, solves = srs_by_cat_us_solve)
 
-max_year <- min_max_viol_crime$year[2]
-min_year <- min_max_viol_crime$year[1] 
+change_text_crime <- change_phrase(state_total$rate_change / 100)
+us_state_rate_text_crime <- change_phrase((state_total$rate_100k - us_total$rate_100k) / us_total$rate_100k)
 
-pct_change_crime <- (min_max_viol_crime$incidents_reported_rate_total[2] - min_max_viol_crime$incidents_reported_rate_total[1]) / min_max_viol_crime$incidents_reported_rate_total[1]
-
-change_text_crime <- change_phrase(pct_change_crime)
-
-us_latest_rate <- srs_by_cat_us$incidents_reported_rate_total[srs_by_cat_us$year == latest_year]
-us_state_rate_comp <- (min_max_viol_crime$incidents_reported_rate_total[2] - us_latest_rate) / us_latest_rate
-us_state_rate_text_crime <- change_phrase(us_state_rate_comp)
-
-pct_change_solved <- min_max_viol_crime$pct_solved[2] - min_max_viol_crime$pct_solved[1]
-change_text_clear <- change_phrase(pct_change_solved, "point")
+### pages without solve-rate data hide the solve text, and their solve rates may be missing
+change_text_clear <- if (show_solved) change_phrase(state_total$solve_change / 100, "point") else ""
 ```
 
 ## Violent crime in `r state_name_text`
 
-```{r}
-crime_rate_max <- format_rate_100k(min_max_viol_crime$incidents_reported_rate_total[2] * 1e5)
-```
-
-In `r max_year`, `r crime_rate_max` violent crime incidents per 100,000 residents were reported to police in `r state_name_text`. This is `r change_text_crime` the violent crime rate in `r min_year`.
+In `r latest_year`, `r format_rate_100k(state_total$rate_100k)` violent crime incidents per 100,000 residents were reported to police in `r state_name_text`. This is `r change_text_crime` the violent crime rate in `r base_year`.
 
 The crime rate in `r state_name_text` in `r latest_year` was `r us_state_rate_text_crime` the United States average.
 
@@ -310,8 +299,9 @@ state_offense_rates |>
 ::: {.content-visible when-meta="show-solved"}
 
 ```{r}
-### code in the show-solved blocks still runs on pages that hide them, such as Illinois
-solved_rate_max <- paste0(comma(min_max_viol_crime$pct_solved[2] * 100, 1), " percent")
+### code in the show-solved blocks still runs on pages that hide them, such as
+### Illinois, so solve text is empty there
+solved_rate_latest_text <- if (show_solved) solve_rate_text(state_total$solve_rate) else ""
 
 ### state solve rates by offense in the agency year, from the same state
 ### estimates as the charts, so the tables compare agencies with the charted rates
@@ -325,13 +315,13 @@ if (show_solved && anyNA(state_solved_rate)) {
 }
 
 state_solve_rate_text <- function(offense) {
-  comma(state_solved_rate[[offense]] * 100, 1)
+  if (show_solved) solve_rate_text(state_solved_rate[[offense]]) else ""
 }
 
 total_agencies <- comma(n_distinct(srs_solved_by_agency_to_table$ori))
 ```
 
-In `r max_year`, `r solved_rate_max` of violent crimes reported to police in `r state_name_text` were solved. This is `r change_text_clear` the solve rate in `r min_year`.
+In `r latest_year`, `r solved_rate_latest_text` of violent crimes reported to police in `r state_name_text` were solved. This is `r change_text_clear` the solve rate in `r base_year`.
 
 Solve rates are the number of reported crimes cleared by arrest or by exceptional means divided by the number of reported crimes. For more information, see the data sources and methodology section below.
 
@@ -505,7 +495,7 @@ hcmap_local(
 
 ::: {.content-visible when-meta="show-solved"}
 
-In the following table, violent crime incident rates, as well as violent crime solve rates, are included for each of the `r total_agencies` law enforcement agencies that reported data in `r state_name_text` in `r agency_year`. Violent crime solve rates by offense differ across agencies across the state. The state solve rate for aggravated assault is `r state_solve_rate_text("aggravated_assault")` percent. Homicide is `r state_solve_rate_text("homicide")` percent, and rape is `r state_solve_rate_text("rape")` percent.
+In the following table, violent crime incident rates, as well as violent crime solve rates, are included for each of the `r total_agencies` law enforcement agencies that reported data in `r state_name_text` in `r agency_year`. Violent crime solve rates by offense differ across agencies across the state. The state solve rate for aggravated assault is `r state_solve_rate_text("aggravated_assault")`. Homicide is `r state_solve_rate_text("homicide")`, and rape is `r state_solve_rate_text("rape")`.
 
 Please note that rates calculated for agencies with smaller jurisdiction populations, as well as fewer overall incidents, are less reliable than those for larger jurisdictions and should be interpreted with caution. Some agencies report no violent crime or no solved crimes, which suggests incomplete reporting, so the tables leave out their rates. State solve rates come from the FBI's state data and include every reporting agency.
 
@@ -518,8 +508,6 @@ Please note that rates calculated for agencies with smaller jurisdiction populat
 ```{r}
 agency_rows <- srs_solved_by_agency_to_table |>
   arrange(desc(population))
-
-state_total <- total_rate_benchmark(srs_by_cat_state, agency_base_year, agency_year)
 
 agency_rows |>
   select(agency_name,
@@ -538,7 +526,7 @@ agency_rows |>
     ),
     columns = list(
       agency_name = sticky_name_column(
-        "Agency", footer = paste(state_abbr_params, "state total"), html = TRUE,
+        "Agency", footer = state_total_label(state_abbr_params), html = TRUE,
         cell = agency_name_cell(agency_rows$data_flag)
       ),
       county = colDef(name = "County", minWidth = table_widths$county),
@@ -568,7 +556,7 @@ agency_rows |>
   )
 ```
 
-[A dash (—) marks a rate that is left out because the agency reported no violent crime or no solved crimes. Solve-rate change also shows a dash when the agency lacks full reporting in `r agency_base_year` or `r agency_year`.]{.small-n-note}
+[A dash (—) marks a rate that can't be calculated or is left out. Rates per 100k show a dash for agencies with no jurisdiction population of their own, such as transit and campus police, and for agencies that reported no violent crime. Solve rates show a dash for agencies that reported no violent crime or no solved crimes. Solve-rate change also shows a dash when the agency lacks full reporting in `r agency_base_year` or `r agency_year`, or reported no violent crime or no solved crimes in `r agency_base_year`.]{.small-n-note}
 
 ### By offense
 
@@ -585,13 +573,7 @@ agency_offense_rows <- srs_solved_by_agency_and_offense_to_table |>
   arrange(desc(population))
 
 agency_offense_rows |>
-  select(
-    agency_name, county, population,
-    n_reported_rate_aggravated_assault, solved_rate_aggravated_assault,
-    n_reported_rate_homicide, solved_rate_homicide,
-    n_reported_rate_rape, solved_rate_rape,
-    n_reported_rate_robbery, solved_rate_robbery
-  ) |>
+  select(agency_name, county, population, all_of(offense_column_names())) |>
   mutate(across(starts_with("solved_rate_"), \(x) replace(x, is.nan(x), NA))) |>
   reactable_template(
     sort_col = list("population" = "desc"),
@@ -599,7 +581,7 @@ agency_offense_rows |>
     columns = c(
       list(
         agency_name = sticky_name_column(
-          "Agency", footer = paste(state_abbr_params, "state total"), html = TRUE,
+          "Agency", footer = state_total_label(state_abbr_params), html = TRUE,
           cell = agency_name_cell(agency_offense_rows$data_flag)
         ),
         county = colDef(name = "County", minWidth = table_widths$county),
