@@ -255,6 +255,28 @@ offense_rate_benchmark <- function(rows, year) {
     set_names(janitor::make_clean_names)
 }
 
+### violent crime rate per 100k and solve rate in year `to`, with changes since `from`
+### rates is violent_totals() output; solves defaults to rates, and the US page
+### passes us_solve_trend() output; hidden solve rates are NA
+### rate_change is in percent and solve_change in percentage points
+total_rate_benchmark <- function(rates, from, to, solves = rates) {
+  one_row <- function(df, y) {
+    row <- df[df$year == y, ]
+    if (nrow(row) != 1) stop("Expected one ", y, " row, found ", nrow(row), call. = FALSE)
+    row
+  }
+  solve_rate <- function(y) {
+    row <- one_row(solves, y)
+    if (isTRUE(row[["hide_total_solve"]])) NA_real_ else row$pct_solved
+  }
+  list(
+    rate_100k = one_row(rates, to)$incidents_reported_rate_total * 1e5,
+    rate_change = pct_change_between(rates$incidents_reported_rate_total, rates$year, from, to) * 100,
+    solve_rate = solve_rate(to),
+    solve_change = (solve_rate(to) - solve_rate(from)) * 100
+  )
+}
+
 ### one state's solve rate by offense in one year, named by snake_case offense
 ### rates come from the state estimates the charts use; screened offenses are NA
 state_solve_benchmark <- function(srs, state, year) {

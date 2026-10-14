@@ -79,6 +79,31 @@ test_that("offense rate benchmark gives each offense's rate per 100k in one year
   expect_error(offense_rate_benchmark(violent_by_offense(srs, 2015), 2019), "No 2019")
 })
 
+test_that("total rate benchmark gives the latest rates and their changes", {
+  rates <- tibble(
+    year = c(2019, 2025),
+    incidents_reported_rate_total = c(0.004, 0.003),
+    pct_solved = c(0.40, 0.45),
+    hide_total_solve = FALSE
+  )
+  total <- total_rate_benchmark(rates, 2019, 2025)
+  expect_equal(total$rate_100k, 300)
+  expect_equal(total$rate_change, -25)
+  expect_equal(total$solve_rate, 0.45)
+  expect_equal(total$solve_change, 5)
+
+  ### solves from another source, as the US page passes the pooled solve trend
+  solves <- tibble(year = c(2019, 2025), pct_solved = c(0.5, 0.52))
+  expect_equal(total_rate_benchmark(rates, 2019, 2025, solves)$solve_change, 2)
+
+  ### hidden solve rates show as missing
+  hidden <- mutate(rates, hide_total_solve = year == 2025)
+  expect_true(is.na(total_rate_benchmark(hidden, 2019, 2025)$solve_rate))
+  expect_true(is.na(total_rate_benchmark(hidden, 2019, 2025)$solve_change))
+
+  expect_error(total_rate_benchmark(rates, 2018, 2025), "2018")
+})
+
 test_that("violent rows keep violent offenses from first_year on", {
   srs <- prep_srs_state(bind_rows(raw_srs(), mutate(raw_srs(), year = 2014)))
 

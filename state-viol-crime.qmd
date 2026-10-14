@@ -513,6 +513,8 @@ Please note that rates calculated for agencies with smaller jurisdiction populat
 agency_rows <- srs_solved_by_agency_to_table |>
   arrange(desc(population))
 
+state_total <- total_rate_benchmark(srs_by_cat_state, agency_base_year, agency_year)
+
 agency_rows |>
   select(agency_name,
          county,
@@ -531,20 +533,26 @@ agency_rows |>
     ),
     columns = list(
       agency_name = sticky_name_column(
-        "Agency", html = TRUE, cell = agency_name_cell(agency_rows$data_flag)
+        "Agency", footer = paste(state_abbr_params, "state rate"), html = TRUE,
+        cell = agency_name_cell(agency_rows$data_flag)
       ),
       county = county_column("agency-table"),
       population = colDef(name = "Population", minWidth = table_widths$population),
-      n_reported_rate = colDef(name = "Per 100k", cell = rate_100k_cell),
+      n_reported_rate = colDef(
+        name = "Per 100k", cell = rate_100k_cell,
+        footer = rate_100k_cell(state_total$rate_100k)
+      ),
       n_reported = colDef(name = "Incidents"),
       solved_rate = colDef(
         name = "Solve rate",
         html = TRUE,
+        footer = format_solve_rate(state_total$solve_rate),
         cell = small_n_cell(agency_rows$n_reported, format_solve_rate)
       ),
       solved_rate_change = colDef(
         name = "Solve rate (points)",
         html = TRUE,
+        footer = format_signed(state_total$solve_change),
         ### a change is as shaky as the smaller of its two years
         cell = small_n_cell(pmin(agency_rows$n_reported, agency_rows$n_reported_base), format_signed)
       )
