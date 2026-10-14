@@ -155,6 +155,23 @@ change_map_bounds <- function(values) {
   c(-extent, extent)
 }
 
+### colorAxis dataClasses from the breaks between classes, one color per class
+### breaks sit at the low end of each class, so 45 falls in "45–55%"
+map_data_classes <- function(breaks, colors, suffix = "") {
+  stopifnot(length(colors) == length(breaks) + 1)
+  n <- length(breaks)
+  names <- c(
+    paste0("Under ", breaks[1], suffix),
+    paste0(breaks[-n], "–", breaks[-1], suffix),
+    paste0(breaks[n], suffix, " or more")
+  )
+  from <- c(NA, breaks)
+  to <- c(breaks, NA)
+  lapply(seq_along(colors), \(i) {
+    Filter(Negate(is.na), list(from = from[i], to = to[i], color = colors[i], name = names[i]))
+  })
+}
+
 ### spec$tooltip names the tooltip_* column this map shows
 state_map_chart <- function(data, map, spec) {
   if (!is.null(spec$tooltip)) {
@@ -176,12 +193,8 @@ state_map_chart <- function(data, map, spec) {
       ),
       accessibility = list(point = list(valueDescriptionFormat = spec$accessibility))
     ) |>
-    hc_title(text = spec$title, align = "left",
-             style = list(fontFamily = header_font, color = "#005FAD",
-                          fontSize = "24px", fontWeight = "bold")) |>
-    hc_subtitle(text = spec$subtitle, align = "left",
-                style = list(fontFamily = default_fonts, fontSize = "16px",
-                             color = "#666666")) |>
+    hc_title(text = spec$title) |>
+    hc_subtitle(text = spec$subtitle) |>
     hc_colorAxis(
       min = if (is.null(bounds)) 0 else bounds[1],
       max = if (is.null(bounds)) NULL else bounds[2],

@@ -10,7 +10,6 @@ library(csgjcr)
 library(highcharter)
 library(htmlwidgets)
 library(reactable)
-library(reactablefmtr)
 
 source("R/utils.R")
 source("R/page-data.R")
@@ -88,10 +87,10 @@ srs_solved_by_agency_to_table <- agency_table_all |>
 srs_solved_by_agency_and_offense_to_table <- read_rds("data/agency_offense_table.rds") |>
   filter(state_abbr == state_abbr_params)
 
-### pages without solve-rate data drop "and arrests" from the title
+### pages without solve-rate data drop "and solve rates" from the title
 doc_title <- if_else(
   show_solved,
-  paste(state, "data on violent crime and arrests"),
+  paste(state, "data on violent crime and solve rates"),
   paste(state, "data on violent crime")
 )
 
@@ -170,7 +169,7 @@ In `r latest_year`, `r format_rate_100k(state_total$rate_100k)` violent crime in
 
 The crime rate in `r state_name_text` in `r latest_year` was `r us_state_rate_text_crime` the United States average.
 
-Data regarding crime and solve rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr). Violent crime includes homicide, aggravated assault, robbery, and rape. Crime rates are calculated by dividing the number of estimated incidents by the total population for a given geography. For more information, see the data sources and methodology section below.
+Data regarding crime and solve rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr). Violent crime includes homicide, aggravated assault, robbery, and rape. Crime rates are calculated by dividing the number of estimated incidents by the total population for a given geography. For more information, see the [data sources and methodology](#methodology) section below.
 
 ::: {.panel-tabset}
 
@@ -323,7 +322,7 @@ total_agencies <- comma(n_distinct(srs_solved_by_agency_to_table$ori))
 
 In `r latest_year`, `r solved_rate_latest_text` of violent crimes reported to police in `r state_name_text` were solved. This is `r change_text_clear` the solve rate in `r base_year`.
 
-Solve rates are the number of reported crimes cleared by arrest or by exceptional means divided by the number of reported crimes. For more information, see the data sources and methodology section below.
+Solve rates are the number of reported crimes cleared by arrest or by exceptional means divided by the number of reported crimes. For more information, see the [data sources and methodology](#methodology) section below.
 
 ::: {.panel-tabset}
 
@@ -415,9 +414,8 @@ map_name <- paste0("countries/us/us-", tolower(state_abbr_params), "-all")
 srs_solved_by_county_to_map_tooltip <- local_county_features(map_name) |>
   left_join(srs_solved_by_county_to_map, by = "county_fips") |>
   ### counties with fewer than 25 reported incidents are grayed out on the map
-  mutate(solved_rate_map = ifelse(n_reported < 25, NA, solved_rate)) |>
-  ### convert solve rate from decimal to whole number -- for map legend
-  mutate(solved_rate_map = solved_rate_map * 100) |>
+  ### whole percents, so each county's class matches its tooltip
+  mutate(solved_rate_map = ifelse(n_reported < 25, NA, half_up(solved_rate * 100, 1))) |>
   mutate(tooltip = case_when(
     n_reported >= 25 & !is.na(n_reported) ~ paste0(
       "<b>", county_label, " – ", agency_year, "</b><br>",
@@ -439,41 +437,38 @@ srs_solved_by_county_to_map_tooltip <- local_county_features(map_name) |>
     )
   )
 
-### pull only state geo that we want for each param iteration
 hcmap_local(
   map_name,
   data = srs_solved_by_county_to_map_tooltip,
   value = "solved_rate_map",
   joinBy = c("fips", "county_fips"),
+  name = "Solve rate",
   nullColor = "#E8E8E8",
   nullInteraction = TRUE,
   borderWidth = 0.45,
   borderColor = "black",
   accessibility = list(
       point = list(
-        valueDescriptionFormat = "county: {point.county_label}, solve rate: {point.value:.1f}%"
+        valueDescriptionFormat = "county: {point.county_label}, solve rate: {point.value:.0f}%"
         )
       )) |>
-  hc_title(
-    text = paste("Violent crime solve rate,", agency_year),
-    align = "left",
-    style = list(fontFamily = header_font, color = "#005FAD",
-                              fontSize = "24px", fontWeight = "bold")
-    ) |>
-  hc_colorAxis(endOnTick = TRUE,
-               startOnTick = TRUE,
-               stops = color_stops(length(rate_colors), rate_colors),
-               labels = list(format = "{value:.0f}%",
-                             style = list(fontSize = "12px",
-                                          fontFamily = default_fonts))) |>
-  hc_legend(align = "center",
-            horizontalAlign = "bottom",
-            layout = "horizontal",
-            symbolHeight = 25,
-            symbolWidth = 315,
-            x = 0,
-            y = 0
-            ) |>
+  ### an empty series gives the gray counties a legend entry
+  hc_add_series(
+    type = "map",
+    name = "Fewer than 25 incidents or no data",
+    data = list(),
+    color = "#E8E8E8",
+    borderColor = "black",
+    borderWidth = 0.45,
+    colorAxis = FALSE,
+    events = list(legendItemClick = JS("function() { return false; }")),
+    accessibility = list(enabled = FALSE)
+  ) |>
+  hc_title(text = paste("Violent crime solve rate,", agency_year)) |>
+  hc_caption(text = paste("FBI UCR Program, agency crime and clearance data,", agency_year)) |>
+  hc_colorAxis(dataClasses = map_data_classes(county_map_breaks, county_map_colors, "%")) |>
+  hc_legend(align = "center", verticalAlign = "bottom", layout = "horizontal",
+            symbolRadius = 0, symbolHeight = 14, symbolWidth = 14) |>
      hc_tooltip(
         style = list(fontFamily = default_fonts),
         formatter = JS("function() {
@@ -615,9 +610,14 @@ min_year_resources <- min(asslgf_clean$year)
 
 pct_change_spending <- with(asslgf_clean, pct_change_between(n_inflation_adjusted_latest_year_dollars, year, base_year, max_year_resources))
 
-### chart years, and percent change since base_year for officers per violent crime text
+### chart years, and percent changes since base_year for the officer text
 max_year_resources_staff_per_offense <- max(ucr_employee_data_by_state_clean$year)
 min_year_resources_staff_per_offense <- min(ucr_employee_data_by_state_clean$year)
+
+pct_change_staffing <- with(
+  ucr_employee_data_by_state_clean,
+  pct_change_between(officer_pop_rate_per_10k, year, base_year, max_year_resources_staff_per_offense)
+)
 
 pct_change_staffing_per_violent_offense <- with(
   ucr_employee_data_by_state_clean,
@@ -641,19 +641,14 @@ staffing_cause_text <- if (is_about_same(pct_change_staffing_per_violent_offense
 
 ```
 
-Spending on law enforcement in `r state_name_text` `r change_by(pct_change_spending)` from `r base_year` to `r max_year_resources`, adjusting for inflation. Expenditures include state and local spending on local police departments, sheriffs’ offices, and state police agencies such as highway patrols and other state investigative law enforcement agencies.
-
-Law enforcement resources also refer to the state’s staffing per 10,000 residents and per 1,000 violent crimes. These factors may show the level of policing a community receives, potentially influencing both crime and solve rates.
-
-Additionally, the number of officers per 1k violent crimes in `r state_name_text` has `r change_by(pct_change_staffing_per_violent_offense)` from `r base_year` to `r max_year_resources_staff_per_offense`.`r staffing_cause_text`
-
-Law enforcement staffing can impact how agencies allocate resources to solve violent crime. For example, severe staff shortages can reduce investigative personnel or increase the number of cases that individual officers are managing.
+Spending and staffing show the level of policing a community receives, which may affect both crime and solve rates. Severe staff shortages, for example, can reduce investigative personnel or increase the number of cases each officer manages.
 
 ::: {.panel-tabset}
 
 
 ### Expenditures
 
+Spending on law enforcement in `r state_name_text` `r change_by(pct_change_spending)` from `r base_year` to `r max_year_resources`, adjusting for inflation. Expenditures include state and local spending on police departments, sheriffs’ offices, and state agencies such as highway patrols.
 
 ```{r}
 spending_trend <- asslgf_clean |>
@@ -679,6 +674,7 @@ trend_chart(
 
 ### Officers per capita
 
+The number of officers per 10,000 residents in `r state_name_text` has `r change_by(pct_change_staffing)` from `r base_year` to `r max_year_resources_staff_per_offense`.
 
 ```{r}
 officer_trend <- ucr_employee_data_by_state_clean |>
@@ -702,6 +698,7 @@ officer_trend |>
 
 ### Officers per violent offense
 
+The number of officers per 1,000 violent crimes in `r state_name_text` has `r change_by(pct_change_staffing_per_violent_offense)` from `r base_year` to `r max_year_resources_staff_per_offense`.`r staffing_cause_text`
 
 ```{r}
 officer_trend |>
@@ -725,7 +722,7 @@ officer_trend |>
 ## Exploration of homicide solve rates in `r state_name_text`
 
 
-Explore homicide solve rates by available victim demographics and case characteristics for `r state_name_text` and other states in the [`r csg_region_full`](https://www.csg.org/regional-offices). Grouping states by region allows policymakers to compare their state to others that may be similar. Solve rates are included by race and ethnicity, gender, age, weapon type, and number of victims. For more information, see the data sources and methodology below.
+Explore homicide solve rates by available victim demographics and case characteristics for `r state_name_text` and other states in the [`r csg_region_full`](https://www.csg.org/regional-offices). Grouping states by region allows policymakers to compare their state to others that may be similar. Solve rates are included by race and ethnicity, gender, age, weapon type, and number of victims. For more information, see the [data sources and methodology](#methodology) section below.
 
 
 ```{r}
@@ -776,7 +773,7 @@ shr_panel_chart(shr_panels$victims, shr_state_region, shr_years, series = "group
 
 
 
-::: {.callout-note icon=false collapse=true}
+::: {#methodology .callout-note icon=false collapse=true}
 
 ## Data sources and methodology
 

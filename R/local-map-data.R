@@ -97,5 +97,5 @@ hcmap_local <- function(map, data, value, joinBy, ..., root = "maps") {
       ...
     ) |>
     highcharter::hc_colorAxis(auxpar = NULL) |>
-    highcharter::hc_credits(enabled = TRUE)
+    highcharter::hc_credits(enabled = FALSE)
 }

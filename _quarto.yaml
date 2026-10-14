@@ -11,6 +11,17 @@ format:
     include-in-header:
       text: |
         <link rel="preload" as="image" href="https://csg-state-violent-crime.netlify.app/img/csgjc-logo.png">
+    # links to the methodology open its collapsed callout
+    include-after-body:
+      text: |
+        <script>
+        document.querySelectorAll('a[href="#methodology"]').forEach((link) => {
+          link.addEventListener("click", () => {
+            const body = document.querySelector("#methodology .callout-collapse");
+            if (body) bootstrap.Collapse.getOrCreateInstance(body, { toggle: false }).show();
+          });
+        });
+        </script>
 
 mainfont: "GT-America"
 linkcolor: "#00355a"

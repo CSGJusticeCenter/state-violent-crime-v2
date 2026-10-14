@@ -17,6 +17,14 @@ test_that("offense colors come from the offense palette", {
   expect_equal(offense_color("Aggravated assault"), jr_pal[5])
 })
 
+test_that("map data classes leave the end classes open and label each class", {
+  classes <- map_data_classes(c(35, 45), c("a", "b", "c"), "%")
+  expect_equal(classes[[1]], list(to = 35, color = "a", name = "Under 35%"))
+  expect_equal(classes[[2]], list(from = 35, to = 45, color = "b", name = "35–45%"))
+  expect_equal(classes[[3]], list(from = 45, color = "c", name = "45% or more"))
+  expect_error(map_data_classes(c(35, 45), c("a", "b")))
+})
+
 test_that("change maps center their scale on zero", {
   expect_equal(change_map_bounds(c(-4, 2)), c(-4, 4))
   expect_equal(change_map_bounds(c(NA, -2, 5)), c(-5, 5))

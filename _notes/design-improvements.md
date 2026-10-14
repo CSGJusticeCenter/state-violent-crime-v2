@@ -14,6 +14,8 @@ Chart, table and page improvements from the October 2026 design audit. All fit t
 | Zero-baseline y-axes | Declined |
 | Table cleanup (2.1–2.4, fonts in 2.6), PR #28 | Done |
 | County filter and 25 rows per page (2.5) | Declined (search bar covers county; keep 10 rows) |
+| County map (1.2), package drop (2.6), methodology links (3.3), titles (3.4), resources text (3.5) | Done |
+| CSV and data-table export (1.5) | Declined (data will be published elsewhere) |
 | Everything else below | Open |
 
 ## 1. Charts
