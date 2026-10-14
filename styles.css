@@ -1,6 +1,3 @@
-
-@import url('https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@600&display=swap');
-
 /* add gt america font */
 @font-face{
     font-family:"GT-America";
@@ -117,6 +114,14 @@ h4 {
    to the output wrapper; the table keeps its own scrollbar */
 .Reactable {
   overflow-x: clip;
+}
+
+.county-filter {
+  width: 100%;
+  padding: 0.15em 0.25em;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  font: inherit;
 }
 
 .rt-align-right {

@@ -12,7 +12,9 @@ Chart, table and page improvements from the October 2026 design audit. All fit t
 | Spline to straight lines | Declined (keep splines) |
 | Show gaps for hidden years in trend lines | Declined |
 | Zero-baseline y-axes | Declined |
-| Everything below | Open |
+| Table headers, groups, footer row, dashes, alignment, filter and paging (2.1–2.5) | Done |
+| GT America with tabular figures in tables; Google Fonts import dropped (2.6) | Done |
+| Everything else below | Open |
 
 ## 1. Charts
 
@@ -80,8 +82,6 @@ Chart, table and page improvements from the October 2026 design audit. All fit t
 
 ### 2.6 Fonts and packages
 
-- Use GT America in tables and drop the Google Fonts import.
-  - `reactable_template()` asks for Source Sans Pro at weight 400; `styles.css` loads only 600.
 - Use `reactablefmtr` (e.g., `data_bars()` on solve rate or population) or drop it. Both pages load it and neither calls it.
 
 ## 3. Page structure and copy

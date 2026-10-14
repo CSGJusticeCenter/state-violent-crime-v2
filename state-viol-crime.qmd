@@ -523,26 +523,27 @@ agency_rows |>
          solved_rate_change) |>
   reactable_template(
     sort_col = list("population" = "desc"),
+    elementId = "agency-table",
+    columnGroups = list(
+      colGroup(name = paste("Violent crime,", agency_year),
+               columns = c("n_reported_rate", "n_reported", "solved_rate")),
+      colGroup(name = paste("Change since", agency_base_year), columns = "solved_rate_change")
+    ),
     columns = list(
-      ### a right border sets off the sticky column
-      agency_name = colDef(
-        name = "Agency", minWidth = 200, sticky = "left", html = TRUE,
-        cell = agency_name_cell(agency_rows$data_flag),
-        style = list(borderRight = "1px solid #eee"),
-        headerStyle = list(borderRight = "1px solid #eee")
+      agency_name = sticky_name_column(
+        "Agency", html = TRUE, cell = agency_name_cell(agency_rows$data_flag)
       ),
-      county = colDef(name = "County", minWidth = 100),
-      population = colDef(name = "Jurisdiction Population", minWidth = 100),
-      n_reported = colDef(name = paste0("Violent Incidents Reported (", agency_year, ")")),
-      n_reported_rate = colDef(name = paste0("Violent Incidents per 100k (", agency_year, ")"),
-                               cell = rate_100k_cell),
+      county = county_column("agency-table"),
+      population = colDef(name = "Population", minWidth = table_widths$population),
+      n_reported_rate = colDef(name = "Per 100k", cell = rate_100k_cell),
+      n_reported = colDef(name = "Incidents"),
       solved_rate = colDef(
-        name = paste0("Solve Rate (", agency_year, ")"),
+        name = "Solve rate",
         html = TRUE,
         cell = small_n_cell(agency_rows$n_reported, format_solve_rate)
       ),
       solved_rate_change = colDef(
-        name = paste0("Percentage point change in solve rate (", agency_base_year, " to ", agency_year, ")"),
+        name = "Solve rate (points)",
         html = TRUE,
         ### a change is as shaky as the smaller of its two years
         cell = small_n_cell(pmin(agency_rows$n_reported, agency_rows$n_reported_base), format_signed)
@@ -550,6 +551,8 @@ agency_rows |>
     )
   )
 ```
+
+[A dash (—) marks a rate that is left out because the agency reported no violent crime or no solved crimes. Solve-rate change also shows a dash when the agency lacks full reporting in `r agency_base_year` or `r agency_year`.]{.small-n-note}
 
 ### By offense
 
@@ -561,13 +564,6 @@ agency_rows |>
 
 ```{r}
 ### each agency is compared with the state solve rate for the offense
-solve_rate_layout <- list(
-  aggravated_assault = list(offense = "Aggravated Assault", min_width = 100),
-  homicide = list(offense = "Homicide", min_width = 100, align = "center"),
-  rape = list(offense = "Rape", min_width = 100, align = "left"),
-  robbery = list(offense = "Robbery", min_width = 100)
-)
-
 agency_offense_rows <- srs_solved_by_agency_and_offense_to_table |>
   filter(population > 0) |>
   arrange(desc(population))
@@ -583,41 +579,23 @@ agency_offense_rows |>
   mutate(across(starts_with("solved_rate_"), \(x) replace(x, is.nan(x), NA))) |>
   reactable_template(
     sort_col = list("population" = "desc"),
+    elementId = "agency-offense-table",
+    columnGroups = offense_column_groups(),
     columns = c(
       list(
-        ### a right border sets off the sticky column
-        agency_name = colDef(
-          name = "Agency", minWidth = 200, sticky = "left", html = TRUE,
-          cell = agency_name_cell(agency_offense_rows$data_flag),
-          style = list(borderRight = "1px solid #eee"),
-          headerStyle = list(borderRight = "1px solid #eee")
+        agency_name = sticky_name_column(
+          "Agency", footer = paste(state_abbr_params, "state rate"), html = TRUE,
+          cell = agency_name_cell(agency_offense_rows$data_flag)
         ),
-        county = colDef(name = "County", minWidth = 108),
-        population = colDef(name = "Jurisdiction Population", minWidth = 110),
-        n_reported_rate_aggravated_assault = colDef(
-          name = "Aggravated Assault Incidents per 100k",
-          cell = rate_100k_cell, minWidth = 100
-        ),
-        n_reported_rate_homicide = colDef(
-          name = "Homicide Incidents per 100k",
-          cell = homicide_rate_100k_cell, align = "center"
-        ),
-        n_reported_rate_rape = colDef(
-          name = "Rape Incidents per 100k",
-          cell = rate_100k_cell
-        ),
-        n_reported_rate_robbery = colDef(
-          name = "Robbery Incidents per 100k",
-          cell = rate_100k_cell
-        )
+        county = county_column("agency-offense-table"),
+        population = colDef(name = "Population", minWidth = table_widths$population)
       ),
-      solve_rate_columns(
-        state_solved_rate, paste(state_abbr_params, "State Rate"), solve_rate_layout,
-        counts = agency_offense_rows
-      )
+      offense_columns(state_solved_rate, counts = agency_offense_rows)
     )
   )
 ```
+
+[A dash (—) marks a rate that is left out because the agency reported no incidents of that offense, no violent crime or no solved crimes.]{.small-n-note}
 
 :::
 

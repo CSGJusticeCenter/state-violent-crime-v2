@@ -468,29 +468,33 @@ srs_state_to_map |>
   ) |>
   reactable_template(
     sort_col = list("state_name" = "asc"),
+    columnGroups = list(
+      colGroup(name = paste("Violent crime,", latest_year),
+               columns = c("viol_crime_rate_100k_latest", "n_reported_latest", "solved_rate_latest")),
+      colGroup(name = paste("Change since", base_year),
+               columns = c("viol_crime_rate_percent_change", "solved_rate_percent_point_change"))
+    ),
     columns = list(
-      state_name = colDef(name = "State"),
-      viol_crime_rate_100k_latest = colDef(
-        name = paste0("Violent Incidents per 100k (", latest_year, ")"),
-        cell = rate_100k_cell
-      ),
-      n_reported_latest = colDef(name = paste0("Violent Incidents Reported (", latest_year, ")")), 
-      viol_crime_rate_percent_change = colDef(
-        name = paste0("Percent change in violent crime rate (", base_year, " to ", latest_year, ")"),
-        cell = add_plus_sign_percent_change
-        ),
+      state_name = sticky_name_column("State"),
+      viol_crime_rate_100k_latest = colDef(name = "Per 100k", cell = rate_100k_cell),
+      n_reported_latest = colDef(name = "Incidents"),
       solved_rate_latest = colDef(
-        name = paste0("Solve Rate (", latest_year, ")"),
+        name = "Solve rate",
         format = colFormat(suffix = "%", digits = 0)
-        ),
+      ),
+      viol_crime_rate_percent_change = colDef(
+        name = "Crime rate",
+        cell = add_plus_sign_percent_change
+      ),
       solved_rate_percent_point_change = colDef(
-        name = paste0("Percentage point change in solve rate (", base_year, " to ", latest_year, ")"),
-        cell = add_plus_sign_percent_point_change,
-        )
+        name = "Solve rate (points)",
+        cell = add_plus_sign_percent_point_change
       )
     )
-
+  )
 ```
+
+[A dash (—) marks a solve rate left out because the state did not report reliable clearance data.]{.small-n-note}
 
 
 
@@ -527,45 +531,19 @@ srs_state_by_offense_latest <- srs_state_new |>
 ### leaving out the states excluded from solve rates
 us_solved_rate_latest <- us_solve_benchmark(srs_state_new, latest_year)
 
-solve_rate_layout <- list(
-  aggravated_assault = list(offense = "Aggravated Assault"),
-  homicide = list(offense = "Homicide", align = "center"),
-  rape = list(offense = "Rape", min_width = 155, align = "left"),
-  robbery = list(offense = "Robbery")
-)
-
 srs_state_by_offense_latest |>
+  select(state_name, all_of(names(offense_columns(us_solved_rate_latest)))) |>
   reactable_template(
     sort_col = list("state_name" = "asc"),
+    columnGroups = offense_column_groups(),
     columns = c(
-      list(
-        ### a right border sets off the sticky column
-        state_name = colDef(
-          name = "State", minWidth = 250, sticky = "left",
-          style = list(borderRight = "1px solid #eee"),
-          headerStyle = list(borderRight = "1px solid #eee")
-        ),
-        n_reported_rate_aggravated_assault = colDef(
-          name = "Aggravated Assault Incidents per 100k",
-          cell = rate_100k_cell, minWidth = 120
-        ),
-        n_reported_rate_homicide = colDef(
-          name = "Homicide Incidents per 100k",
-          cell = homicide_rate_100k_cell, align = "center"
-        ),
-        n_reported_rate_rape = colDef(
-          name = "Rape Incidents per 100k",
-          cell = rate_100k_cell
-        ),
-        n_reported_rate_robbery = colDef(
-          name = "Robbery Incidents per 100k",
-          cell = rate_100k_cell
-        )
-      ),
-      solve_rate_columns(us_solved_rate_latest, "U.S. Rate", solve_rate_layout)
+      list(state_name = sticky_name_column("State", footer = "U.S. rate")),
+      offense_columns(us_solved_rate_latest)
     )
   )
 ```
+
+[A dash (—) marks a solve rate left out because the state did not report reliable clearance data.]{.small-n-note}
 
 :::
 

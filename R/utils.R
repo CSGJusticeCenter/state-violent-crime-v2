@@ -36,10 +36,17 @@ format_rate_100k <- function(x, homicide = FALSE) {
   ifelse(is.na(x), "", out)
 }
 
+### table cells show missing values as a dash, explained in a note under each table
+na_text <- "—"
+
 ### reactable cell functions for rate columns, so tables match tooltips
 ### reactable also passes the row index, which these ignore
-rate_100k_cell <- function(value, ...) format_rate_100k(value)
-homicide_rate_100k_cell <- function(value, ...) format_rate_100k(value, homicide = TRUE)
+rate_100k_cell <- function(value, ...) {
+  if (is.na(value)) na_text else format_rate_100k(value)
+}
+homicide_rate_100k_cell <- function(value, ...) {
+  if (is.na(value)) na_text else format_rate_100k(value, homicide = TRUE)
+}
 
 # define justice reinvestment color palette
 jr_pal <- c("#4095B1", "#273C4C", "#50A25D", "#E17619", "#E25449", "#779F38", "#AFABAB")
@@ -417,9 +424,9 @@ solved_count_text <- function(solved, reported) {
 }
 
 ### gray cell text for a rate from few incidents, with words that tell screen
-### readers why it's gray; blank text stays blank
+### readers why it's gray; blank and missing text stay as they are
 small_n_text <- function(text, min_reported = min_rate_reported, title = NULL) {
-  if (text == "") return(text)
+  if (text %in% c("", na_text)) return(text)
   paste0(
     '<span class="small-n-note"', title_attr(title), ">", text,
     '<span class="visually-hidden"> (fewer than ', min_reported, " incidents)</span></span>"
@@ -455,9 +462,9 @@ agency_name_cell <- function(flags) {
 ### whole percent for a solve rate, with halves rounded up (0.625 is 63)
 solve_rate_percent <- function(x) half_up(x * 100, 1)
 
-### solve rate as table text, e.g., "63%", or "" when missing
+### solve rate as table text, e.g., "63%", or a dash when missing
 format_solve_rate <- function(x) {
-  if (is.na(x)) "" else paste0(solve_rate_percent(x), "%")
+  if (is.na(x)) na_text else paste0(solve_rate_percent(x), "%")
 }
 
 ### "above" or "below" for a solve rate against a comparison rate, or NA
@@ -468,21 +475,18 @@ solve_rate_side <- function(value, rate) {
 }
 
 ### solve rate column with each rate in a pill tinted against a comparison rate
-### label names that rate in the header, e.g., "(U.S. Rate: 47%)"
-### rates without a comparison show as plain text
+### the comparison rate shows in the footer; rates without one show as plain text
 ### reported and solved hold each row's counts in the table's data order; with
 ### them, cells show the counts on hover, and rates from fewer than
 ### min_reported incidents show as gray text without a pill
 ### index is unused without reported, so tests can call cell(value)
-solve_rate_column <- function(offense, rate, label, min_width = 120, align = NULL,
-                              reported = NULL, solved = NULL,
+solve_rate_column <- function(rate, reported = NULL, solved = NULL,
                               min_reported = min_rate_reported) {
   sr_text <- c(above = "at or above, ", below = "below, ")
   colDef(
-    name = paste0(offense, " Solve Rate<br><br>(", label, ": ", format_solve_rate(rate), ")"),
+    name = "Solve rate",
     html = TRUE,
-    minWidth = min_width,
-    align = align,
+    footer = format_solve_rate(rate),
     cell = function(value, index) {
       text <- format_solve_rate(value)
       n <- if (is.null(reported)) NA else reported[index]
@@ -500,19 +504,83 @@ solve_rate_legend <- function(side, text) {
   paste(solve_rate_pill(name, side), text)
 }
 
-### solve_rate_column() for each offense in layout, named solved_rate_<offense>
-### rates is named by offense; layout gives each column's header and options
+### violent offenses in table column order, named by snake_case offense
+table_offenses <- c(
+  aggravated_assault = "Aggravated assault",
+  homicide = "Homicide",
+  rape = "Rape",
+  robbery = "Robbery"
+)
+
+### per-100k and solve rate columns for each offense, in pairs
+### columns are n_reported_rate_<offense> and solved_rate_<offense>
+### rates is named by offense and holds the comparison solve rates
 ### counts, when given, is the table's data with n_reported_<offense> and
 ### n_solved_<offense> columns
-solve_rate_columns <- function(rates, label, layout, counts = NULL) {
-  purrr::imap(layout, \(options, offense) {
-    rlang::exec(
-      solve_rate_column, !!!options, rate = rates[[offense]], label = label,
-      reported = counts[[paste0("n_reported_", offense)]],
-      solved = counts[[paste0("n_solved_", offense)]]
-    )
+offense_columns <- function(rates, offenses = table_offenses, counts = NULL) {
+  columns <- purrr::imap(offenses, \(label, offense) {
+    rate_cell <- if (offense == "homicide") homicide_rate_100k_cell else rate_100k_cell
+    list(
+      colDef(name = "Per 100k", cell = rate_cell),
+      solve_rate_column(
+        rates[[offense]],
+        reported = counts[[paste0("n_reported_", offense)]],
+        solved = counts[[paste0("n_solved_", offense)]]
+      )
+    ) |>
+      rlang::set_names(paste0(c("n_reported_rate_", "solved_rate_"), offense))
+  })
+  purrr::list_flatten(unname(columns))
+}
+
+### one header group per offense over its offense_columns() pair
+offense_column_groups <- function(offenses = table_offenses) {
+  purrr::imap(offenses, \(label, offense) {
+    colGroup(name = label, columns = paste0(c("n_reported_rate_", "solved_rate_"), offense))
   }) |>
-    rlang::set_names(paste0("solved_rate_", names(layout)))
+    unname()
+}
+
+### minimum column widths, in pixels, shared by every table
+table_widths <- list(name = 200, county = 130, population = 120, number = 100)
+
+### first column with the row names, kept in view while the table scrolls
+### footer labels the comparison row, e.g., "U.S. rate"
+### a right border sets off the sticky column
+sticky_name_column <- function(name, footer = NULL, ...) {
+  border <- list(borderRight = "1px solid #eee")
+  colDef(
+    name = name, footer = footer, minWidth = table_widths$name, sticky = "left",
+    style = border, headerStyle = border, footerStyle = border, ...
+  )
+}
+
+### county column with a select filter that keeps rows from one county
+### multi-county agencies list counties as "Bronx, Kings", and match each one
+### table_id is the table's elementId, which the filter's JavaScript needs
+county_column <- function(table_id) {
+  colDef(
+    name = "County",
+    minWidth = table_widths$county,
+    filterable = TRUE,
+    filterMethod = JS(
+      "(rows, columnId, value) => rows.filter(row =>
+        (row.values[columnId] || '').split(', ').includes(value))"
+    ),
+    filterInput = function(values, name) {
+      counties <- sort(unique(unlist(strsplit(stats::na.omit(values), ", ", fixed = TRUE))))
+      htmltools::tags$select(
+        onchange = sprintf(
+          "Reactable.setFilter('%s', '%s', event.target.value || undefined)",
+          table_id, name
+        ),
+        `aria-label` = "Filter by county",
+        class = "county-filter",
+        htmltools::tags$option(value = "", "All counties"),
+        lapply(counties, htmltools::tags$option)
+      )
+    }
+  )
 }
 
 offense_pal <- tibble(
@@ -522,29 +590,41 @@ offense_pal <- tibble(
 
 offense_color <- function(offense) offense_pal$color[offense_pal$crime == offense]
 
+### fonts and header styles live in the theme, so column styles add to them
+### tabular figures give every digit the same width, so numbers line up in columns
+reactable_theme <- reactableTheme(
+  style = list(fontFamily = paste(default_fonts, collapse = ", "),
+               fontVariantNumeric = "tabular-nums"),
+  headerStyle = list(fontWeight = 700),
+  groupHeaderStyle = list(fontWeight = 700),
+  footerStyle = list(fontWeight = 700)
+)
+
 reactable_template <- function(df, sort_col = "rate", ...) {
   reactable(
     df,
     highlight = TRUE,
     searchable = TRUE,
     defaultSorted = sort_col,
+    defaultPageSize = 25,
     showPageSizeOptions	= TRUE,
     pageSizeOptions = c(10, 25, 100),
+    theme = reactable_theme,
     defaultColDef = colDef(
+      minWidth = table_widths$number,
       vAlign = "center",
-      format = colFormat(digits = 0, separators = TRUE),
-      headerStyle = list(fontWeight = 700, fontFamily = default_fonts,
-                         fontVariant = "all-petite-caps"),
-      style = list(fontWeight = 400, fontFamily = "Source Sans Pro")
+      headerVAlign = "bottom",
+      na = na_text,
+      format = colFormat(digits = 0, separators = TRUE)
     ),
     ...
   )
 }
 
 ### signed whole number for table cells, e.g., "+3", "-5" or "0"
-### missing values render as blank cells
+### missing values show as a dash
 format_signed <- function(value, suffix = "") {
-  if (is.na(value)) return("")
+  if (is.na(value)) return(na_text)
   rounded <- half_up(value, 1)
   sign <- if (rounded > 0) "+" else ""
   paste0(sign, rounded, suffix)
