@@ -538,7 +538,10 @@ srs_state_by_offense_latest |>
     columnGroups = offense_column_groups(),
     columns = c(
       list(state_name = sticky_name_column("State", footer = "U.S. rate")),
-      offense_columns(us_solved_rate_latest)
+      offense_columns(
+        us_solved_rate_latest,
+        crime_rates = offense_rate_benchmark(srs_us, latest_year)
+      )
     )
   )
 ```

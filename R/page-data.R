@@ -244,6 +244,17 @@ us_solve_benchmark <- function(srs, year, exclude = states_to_exclude_from_solve
     set_names(janitor::make_clean_names)
 }
 
+### crime rate per 100k residents by offense in one year, named by snake_case offense
+### rows is violent_by_offense() output for one state or the US
+offense_rate_benchmark <- function(rows, year) {
+  rows <- filter(rows, year == !!year)
+  if (nrow(rows) == 0) stop("No ", year, " crime rates by offense", call. = FALSE)
+  rows |>
+    mutate(rate_100k = incidents_reported_rate_total * 1e5) |>
+    pull(rate_100k, name = group) |>
+    set_names(janitor::make_clean_names)
+}
+
 ### one state's solve rate by offense in one year, named by snake_case offense
 ### rates come from the state estimates the charts use; screened offenses are NA
 state_solve_benchmark <- function(srs, state, year) {

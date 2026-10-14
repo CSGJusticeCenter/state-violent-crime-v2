@@ -112,7 +112,7 @@ test_that("solve rate text colors reach 4.5:1 contrast on their pill fills", {
 
 test_that("offense columns pair each offense's rate with its solve rate", {
   offenses <- c(homicide = "Homicide", rape = "Rape")
-  columns <- offense_columns(c(rape = 0.3, homicide = 0.68), offenses)
+  columns <- offense_columns(c(rape = 0.3, homicide = 0.68), offenses = offenses)
   expect_named(columns, c("n_reported_rate_homicide", "solved_rate_homicide",
                           "n_reported_rate_rape", "solved_rate_rape"))
   expect_equal(columns$solved_rate_homicide$footer, "68%")
@@ -121,6 +121,13 @@ test_that("offense columns pair each offense's rate with its solve rate", {
   expect_equal(columns$n_reported_rate_rape$cell(4.05), "4")
   expect_equal(columns$n_reported_rate_rape$cell(NA_real_), na_text)
   expect_null(columns$solved_rate_rape$align)
+  expect_null(columns$n_reported_rate_rape$footer)
+
+  ### crime rate footers use each offense's cell format, and a missing offense shows a dash
+  crime_rates <- c(homicide = 4.05, robbery = 62.2)
+  columns <- offense_columns(c(rape = 0.3, homicide = 0.68), crime_rates, offenses = offenses)
+  expect_equal(columns$n_reported_rate_homicide$footer, "4.1")
+  expect_equal(columns$n_reported_rate_rape$footer, na_text)
 
   groups <- offense_column_groups(offenses)
   expect_equal(purrr::map_chr(groups, "name"), c("Homicide", "Rape"))
@@ -345,7 +352,7 @@ test_that("solve rates from few incidents show gray without a pill", {
 
 test_that("solve rate columns take counts from the table data", {
   counts <- tibble(n_reported_rape = c(4, 40), n_solved_rape = c(1, 20))
-  columns <- offense_columns(c(rape = 0.3), c(rape = "Rape"), counts = counts)
+  columns <- offense_columns(c(rape = 0.3), offenses = c(rape = "Rape"), counts = counts)
   expect_match(columns$solved_rate_rape$cell(0.25, 1), "small-n-note", fixed = TRUE)
   expect_match(columns$solved_rate_rape$cell(0.5, 2), "20 of 40", fixed = TRUE)
 })

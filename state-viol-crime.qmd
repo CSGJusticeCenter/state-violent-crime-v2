@@ -590,7 +590,11 @@ agency_offense_rows |>
         county = county_column("agency-offense-table"),
         population = colDef(name = "Population", minWidth = table_widths$population)
       ),
-      offense_columns(state_solved_rate, counts = agency_offense_rows)
+      offense_columns(
+        state_solved_rate,
+        crime_rates = offense_rate_benchmark(srs_state, agency_year),
+        counts = agency_offense_rows
+      )
     )
   )
 ```

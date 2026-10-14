@@ -515,13 +515,17 @@ table_offenses <- c(
 ### per-100k and solve rate columns for each offense, in pairs
 ### columns are n_reported_rate_<offense> and solved_rate_<offense>
 ### rates is named by offense and holds the comparison solve rates
+### crime_rates, when given, is named by offense and holds the comparison
+### rates per 100k, which show in the footer beside the solve rates
 ### counts, when given, is the table's data with n_reported_<offense> and
 ### n_solved_<offense> columns
-offense_columns <- function(rates, offenses = table_offenses, counts = NULL) {
+offense_columns <- function(rates, crime_rates = NULL, offenses = table_offenses,
+                            counts = NULL) {
   columns <- purrr::imap(offenses, \(label, offense) {
     rate_cell <- if (offense == "homicide") homicide_rate_100k_cell else rate_100k_cell
+    footer <- if (!is.null(crime_rates)) rate_cell(unname(crime_rates[offense]))
     list(
-      colDef(name = "Per 100k", cell = rate_cell),
+      colDef(name = "Per 100k", cell = rate_cell, footer = footer),
       solve_rate_column(
         rates[[offense]],
         reported = counts[[paste0("n_reported_", offense)]],
@@ -606,7 +610,6 @@ reactable_template <- function(df, sort_col = "rate", ...) {
     highlight = TRUE,
     searchable = TRUE,
     defaultSorted = sort_col,
-    defaultPageSize = 25,
     showPageSizeOptions	= TRUE,
     pageSizeOptions = c(10, 25, 100),
     theme = reactable_theme,

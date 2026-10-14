@@ -69,6 +69,16 @@ test_that("violent offenses keep state rows and pool US rows", {
   expect_equal(us$pct_solved, c(12 / 20, 72 / 80))
 })
 
+test_that("offense rate benchmark gives each offense's rate per 100k in one year", {
+  srs <- prep_srs_state(raw_srs())
+
+  ### US: homicide 20 and robbery 80 incidents among 4,000 residents
+  us <- offense_rate_benchmark(violent_by_offense(srs, 2015), 2025)
+  expect_equal(us, c(homicide = 500, robbery = 2000))
+
+  expect_error(offense_rate_benchmark(violent_by_offense(srs, 2015), 2019), "No 2019")
+})
+
 test_that("violent rows keep violent offenses from first_year on", {
   srs <- prep_srs_state(bind_rows(raw_srs(), mutate(raw_srs(), year = 2014)))
 
