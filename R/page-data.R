@@ -57,7 +57,8 @@ inflation_index_path <- "data/annual-index-value_annual-percent-change_2025.xls"
 change_colors <- c("#00475d", "#007392", "#9ed4ef", "#FFFFFF", "#EDB799", "#D25E2D", "#7B3014")
 rate_colors <- c("#d4e9f8", "#9ed4ef", "#007392", "#00475d")
 
-### this order sets the offense column order in the agency tables
+### violent offenses in the order of the agency data columns and data exports
+### page tables order offenses by table_offenses in R/utils.R
 violent_offenses <- c("Homicide", "Rape", "Robbery", "Aggravated assault")
 
 ### one row per state, year and offense with reported, unsolved and cleared counts
@@ -242,6 +243,43 @@ us_solve_benchmark <- function(srs, year, exclude = states_to_exclude_from_solve
     filter(year == !!year) |>
     pull(pct_solved, name = group) |>
     set_names(janitor::make_clean_names)
+}
+
+### crime rate per 100k residents by offense in one year, named by snake_case offense
+### rows is violent_by_offense() output for one state or the US
+offense_rate_benchmark <- function(rows, year) {
+  rows <- filter(rows, year == !!year)
+  if (nrow(rows) == 0) stop("No ", year, " crime rates by offense", call. = FALSE)
+  rows |>
+    mutate(rate_100k = incidents_reported_rate_total * 1e5) |>
+    pull(rate_100k, name = group) |>
+    set_names(janitor::make_clean_names)
+}
+
+### population, violent crime incidents, rate per 100k and solve rate in year
+### `to`, with changes since `from`
+### rates is violent_totals() output; solves defaults to rates, and the US page
+### passes us_solve_trend() output; hidden solve rates are NA
+### rate_change is in percent and solve_change in percentage points
+total_rate_benchmark <- function(rates, from, to, solves = rates) {
+  one_row <- function(df, y) {
+    row <- df[df$year == y, ]
+    if (nrow(row) != 1) stop("Expected one ", y, " row, found ", nrow(row), call. = FALSE)
+    row
+  }
+  solve_rate <- function(y) {
+    row <- one_row(solves, y)
+    if (isTRUE(row[["hide_total_solve"]])) NA_real_ else row$pct_solved
+  }
+  latest <- one_row(rates, to)
+  list(
+    population = latest$pop_total,
+    incidents = latest$incidents_reported,
+    rate_100k = latest$incidents_reported_rate_total * 1e5,
+    rate_change = pct_change_between(rates$incidents_reported_rate_total, rates$year, from, to) * 100,
+    solve_rate = solve_rate(to),
+    solve_change = (solve_rate(to) - solve_rate(from)) * 100
+  )
 }
 
 ### one state's solve rate by offense in one year, named by snake_case offense

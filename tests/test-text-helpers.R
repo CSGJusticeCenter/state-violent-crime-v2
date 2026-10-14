@@ -29,15 +29,15 @@ test_that("rate cell functions ignore the row index reactable passes", {
   expect_equal(homicide_rate_100k_cell(0, 1), "0")
 })
 
-test_that("signed cells show a sign, round, and leave missing values blank", {
+test_that("signed cells show a sign, round, and show missing values as a dash", {
   expect_equal(add_plus_sign_percent_point_change(3.4), "+3")
   expect_equal(add_plus_sign_percent_point_change(-5.6), "-6")
   expect_equal(add_plus_sign_percent_point_change(0.3), "0")
   expect_equal(add_plus_sign_percent_point_change(-0.3), "0")
-  expect_equal(add_plus_sign_percent_point_change(NA_real_), "")
+  expect_equal(add_plus_sign_percent_point_change(NA_real_), na_text)
   expect_equal(add_plus_sign_percent_point_change(2.5), "+3")
   expect_equal(add_plus_sign_percent_change(12), "+12%")
-  expect_equal(add_plus_sign_percent_change(NA_real_), "")
+  expect_equal(add_plus_sign_percent_change(NA_real_), na_text)
 })
 
 test_that("change phrases describe direction, size and units", {

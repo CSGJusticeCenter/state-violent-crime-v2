@@ -12,7 +12,10 @@ Chart, table and page improvements from the October 2026 design audit. All fit t
 | Spline to straight lines | Declined (keep splines) |
 | Show gaps for hidden years in trend lines | Declined |
 | Zero-baseline y-axes | Declined |
-| Everything below | Open |
+| Table headers, groups, state and U.S. total rows, dashes and alignment (2.1–2.4) | Done |
+| County filter and 25 rows per page (2.5) | Declined (search bar covers county; keep 10 rows) |
+| GT America with tabular figures in tables; Google Fonts import dropped (2.6) | Done |
+| Everything else below | Open |
 
 ## 1. Charts
 
@@ -63,7 +66,7 @@ Chart, table and page improvements from the October 2026 design audit. All fit t
 
 ### 2.2 Benchmark row
 
-- Move the state or U.S. rate out of each solve-rate header into a `footer` row labeled "State total."
+- Move the state or U.S. rate out of each solve-rate header into a `footer` row of state or U.S. totals from the same estimates as the charts and text.
 
 ### 2.3 Missing values
 
@@ -80,8 +83,6 @@ Chart, table and page improvements from the October 2026 design audit. All fit t
 
 ### 2.6 Fonts and packages
 
-- Use GT America in tables and drop the Google Fonts import.
-  - `reactable_template()` asks for Source Sans Pro at weight 400; `styles.css` loads only 600.
 - Use `reactablefmtr` (e.g., `data_bars()` on solve rate or population) or drop it. Both pages load it and neither calls it.
 
 ## 3. Page structure and copy

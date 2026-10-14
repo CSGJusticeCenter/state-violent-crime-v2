@@ -22,13 +22,14 @@ test_that("change maps center their scale on zero", {
   expect_equal(change_map_bounds(c(NA, -2, 5)), c(-5, 5))
 })
 
-test_that("solve rate column tints pills against its rate and labels it", {
-  definition <- solve_rate_column("Homicide", 0.5, "U.S. Rate")
-  expect_equal(definition$name, "Homicide Solve Rate<br><br>(U.S. Rate: 50%)")
+test_that("solve rate column tints pills against its rate and shows it in the footer", {
+  definition <- solve_rate_column(0.5)
+  expect_equal(definition$name, "Solve rate")
+  expect_equal(definition$footer, "50%")
   expect_equal(definition$cell(0.6), solve_rate_pill("60%", "above", "at or above, "))
   expect_equal(definition$cell(0.5), solve_rate_pill("50%", "above", "at or above, "))
   expect_equal(definition$cell(0.4), solve_rate_pill("40%", "below", "below, "))
-  expect_equal(definition$cell(NA_real_), "")
+  expect_equal(definition$cell(NA_real_), na_text)
 })
 
 test_that("solve rate pill styles by side and hides screen reader words", {
@@ -62,29 +63,35 @@ test_that("solve rates compare at the whole percents the table shows", {
   expect_true(is.na(solve_rate_side(NA_real_, 0.36)))
   expect_true(is.na(solve_rate_side(0.36, NA_real_)))
 
-  definition <- solve_rate_column("Robbery", 0.362, "U.S. Rate")
-  expect_equal(definition$name, "Robbery Solve Rate<br><br>(U.S. Rate: 36%)")
+  definition <- solve_rate_column(0.362)
+  expect_equal(definition$footer, "36%")
   expect_match(definition$cell(0.357), solve_rate_fills[["above"]], fixed = TRUE)
 })
 
-test_that("solve rate cells and headers round halves up the same way", {
+test_that("solve rate cells, footers and page text round halves up the same way", {
+  for (x in c(0.625, 0.125, 0.355, 0.3549, 1.25)) {
+    expect_equal(solve_rate_text(x), sub("%", " percent", format_solve_rate(x), fixed = TRUE))
+  }
+  expect_error(solve_rate_text(NA_real_), "finite")
+
   expect_equal(format_solve_rate(0.625), "63%")
   expect_equal(format_solve_rate(0.125), "13%")
   expect_equal(format_solve_rate(0.355), "36%")
   expect_equal(format_solve_rate(0.3549), "35%")
   expect_equal(format_solve_rate(1.25), "125%")
-  expect_equal(format_solve_rate(NA_real_), "")
+  expect_equal(format_solve_rate(NA_real_), na_text)
 
   # Evansville PD homicide, 5 of 8, against Indiana's 63 percent
   expect_equal(solve_rate_side(5 / 8, 0.633), "above")
-  definition <- solve_rate_column("Homicide", 0.633, "IN State Rate")
+  definition <- solve_rate_column(0.633)
   expect_equal(definition$cell(5 / 8), solve_rate_pill("63%", "above", "at or above, "))
-  expect_equal(definition$name, "Homicide Solve Rate<br><br>(IN State Rate: 63%)")
+  expect_equal(definition$footer, "63%")
 })
 
 test_that("solve rate column shows plain text when its rate is missing", {
-  definition <- solve_rate_column("Rape", NA_real_, "NY State Rate")
+  definition <- solve_rate_column(NA_real_)
   expect_equal(definition$cell(0.4), "40%")
+  expect_equal(definition$footer, na_text)
 })
 
 test_that("solve rate legend shows the color name in the table's pill", {
@@ -108,17 +115,64 @@ test_that("solve rate text colors reach 4.5:1 contrast on their pill fills", {
   expect_true(all(contrast >= 4.5))
 })
 
-test_that("solve rate columns map each offense to its rate and layout", {
-  layout <- list(
-    homicide = list(offense = "Homicide", align = "center"),
-    rape = list(offense = "Rape", min_width = 155)
-  )
-  columns <- solve_rate_columns(c(rape = 0.3, homicide = 0.68), "NY State Rate", layout)
-  expect_named(columns, c("solved_rate_homicide", "solved_rate_rape"))
-  expect_equal(columns$solved_rate_homicide$name, "Homicide Solve Rate<br><br>(NY State Rate: 68%)")
-  expect_equal(columns$solved_rate_homicide$align, "center")
-  expect_equal(columns$solved_rate_rape$minWidth, 155)
+test_that("offense columns pair each offense's rate with its solve rate", {
+  offenses <- c(homicide = "Homicide", rape = "Rape")
+  columns <- offense_columns(c(rape = 0.3, homicide = 0.68), offenses = offenses)
+  expect_named(columns, c("n_reported_rate_homicide", "solved_rate_homicide",
+                          "n_reported_rate_rape", "solved_rate_rape"))
+  expect_equal(columns$solved_rate_homicide$footer, "68%")
   expect_equal(columns$solved_rate_rape$cell(0.2), solve_rate_pill("20%", "below", "below, "))
+  expect_equal(columns$n_reported_rate_homicide$cell(4.05), "4.1")
+  expect_equal(columns$n_reported_rate_rape$cell(4.05), "4")
+  expect_equal(columns$n_reported_rate_rape$cell(NA_real_), na_text)
+  expect_null(columns$solved_rate_rape$align)
+  expect_null(columns$n_reported_rate_rape$footer)
+
+  ### crime rate footers use each offense's cell format, and a missing offense shows a dash
+  crime_rates <- c(homicide = 4.05, robbery = 62.2)
+  columns <- offense_columns(c(rape = 0.3, homicide = 0.68), crime_rates, offenses = offenses)
+  expect_equal(columns$n_reported_rate_homicide$footer, "4.1")
+  expect_equal(columns$n_reported_rate_rape$footer, na_text)
+
+  groups <- offense_column_groups(offenses)
+  expect_equal(purrr::map_chr(groups, "name"), c("Homicide", "Rape"))
+  expect_equal(unlist(groups[[2]]$columns), c("n_reported_rate_rape", "solved_rate_rape"))
+})
+
+test_that("sticky name column keeps its border on the header and footer", {
+  definition <- sticky_name_column("Agency", footer = "NY state total")
+  expect_equal(definition$footer, "NY state total")
+  expect_equal(definition$minWidth, table_widths$name)
+  expect_equal(definition$headerStyle, definition$style)
+  expect_equal(definition$footerStyle, definition$style)
+})
+
+test_that("total rows name states, except DC, which isn't a state", {
+  expect_equal(state_total_label("NY"), "NY state total")
+  expect_equal(state_total_label("DC"), "DC total")
+})
+
+test_that("offense column names follow the table offense order in pairs", {
+  expect_equal(
+    offense_column_names(c(rape = "Rape", homicide = "Homicide")),
+    c("n_reported_rate_rape", "solved_rate_rape", "n_reported_rate_homicide", "solved_rate_homicide")
+  )
+  expect_equal(names(offense_columns(c(aggravated_assault = 0.5, homicide = 0.6, rape = 0.3, robbery = 0.4))),
+               offense_column_names())
+  expect_equal(unlist(lapply(offense_column_groups(), `[[`, "columns")), offense_column_names())
+})
+
+test_that("missing values show a dash that screen readers hear as not available", {
+  expect_match(na_text, '<span aria-hidden="true">—</span>', fixed = TRUE)
+  expect_match(na_text, '<span class="visually-hidden">not available</span>', fixed = TRUE)
+})
+
+test_that("default cells format numbers, escape text and mark missing values", {
+  expect_equal(default_cell(1234567), "1,234,567")
+  expect_equal(default_cell(2.5), "3")
+  expect_equal(as.character(default_cell("Kings & Queens")), "Kings &amp; Queens")
+  expect_equal(default_cell(NA_real_), na_text)
+  expect_equal(default_cell(NA_character_), na_text)
 })
 
 test_that("offense trend uses the selected offense and its own rate range", {
@@ -308,8 +362,7 @@ test_that("hollow year markers stop without a series color", {
 })
 
 test_that("solve rates from few incidents show gray without a pill", {
-  definition <- solve_rate_column("Homicide", 0.5, "NY State Rate",
-                                  reported = c(9, 10), solved = c(9, 3))
+  definition <- solve_rate_column(0.5, reported = c(9, 10), solved = c(9, 3))
   small <- definition$cell(1, 1)
   expect_no_match(small, "solve-rate-pill")
   expect_match(small, 'class="small-n-note"', fixed = TRUE)
@@ -322,9 +375,8 @@ test_that("solve rates from few incidents show gray without a pill", {
 })
 
 test_that("solve rate columns take counts from the table data", {
-  layout <- list(rape = list(offense = "Rape"))
   counts <- tibble(n_reported_rape = c(4, 40), n_solved_rape = c(1, 20))
-  columns <- solve_rate_columns(c(rape = 0.3), "NY State Rate", layout, counts = counts)
+  columns <- offense_columns(c(rape = 0.3), offenses = c(rape = "Rape"), counts = counts)
   expect_match(columns$solved_rate_rape$cell(0.25, 1), "small-n-note", fixed = TRUE)
   expect_match(columns$solved_rate_rape$cell(0.5, 2), "20 of 40", fixed = TRUE)
 })
@@ -335,7 +387,7 @@ test_that("small-n cells gray rows under the minimum and tell screen readers why
   expect_match(cell(0.5, 1), "visually-hidden\"> (fewer than 10 incidents)", fixed = TRUE)
   expect_equal(cell(0.5, 2), "50%")
   expect_equal(cell(0.5, 3), "50%")
-  expect_equal(cell(NA, 1), "")
+  expect_equal(cell(NA, 1), na_text)
 })
 
 test_that("reactable cell functions see rows in data order, not display order", {
