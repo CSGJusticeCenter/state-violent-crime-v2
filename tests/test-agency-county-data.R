@@ -157,3 +157,54 @@ test_that("repairs stop when an offense is missing", {
 test_that("repairs stop when the agency is missing", {
   expect_error(repair_agency_clearances(clearance_raw, agency_repairs("GONE")), "missing from the agency file: GONE 2022")
 })
+
+test_that("agencies with implausible zeros are flagged", {
+  expect_equal(
+    agency_data_flag(
+      reported = c(0, 0, 10, 9, 10),
+      cleared = c(0, 0, 0, 0, 1),
+      population = c(10000, 9999, 500, 500, 500)
+    ),
+    c("no_violent_crime", NA, "no_clearances", NA, NA)
+  )
+  expect_true(is.na(agency_data_flag(0, 0, NA)))
+})
+
+flag_raw <- bind_rows(
+  agency("OK", 2025, 20, 10, "36001"),
+  agency("NOCLR", 2025, 20, 0, "36001"),
+  agency("NOCLR", 2019, 20, 10, "36001"),
+  agency("ZERO", 2025, 0, 0, "36001", pop = 50000),
+  agency("BASE0", 2025, 20, 10, "36001"),
+  agency("BASE0", 2019, 20, 0, "36001")
+)
+flag_built <- build_agency_county_data(flag_raw, 2025, 2019)
+
+test_that("flagged agencies stay in the tables without their rates", {
+  at <- flag_built$agency_table
+  expect_equal(at$data_flag[match(c("OK", "NOCLR", "ZERO"), at$ori)], c(NA, "no_clearances", "no_violent_crime"))
+  expect_true(is.na(at$solved_rate[at$ori == "NOCLR"]))
+  expect_true(is.na(at$solved_rate_change[at$ori == "NOCLR"]))
+  expect_equal(at$n_reported_rate[at$ori == "NOCLR"], 2000)
+  expect_true(is.na(at$n_reported_rate[at$ori == "ZERO"]))
+
+  ao <- flag_built$agency_offense_table
+  expect_true(is.na(ao$solved_rate_homicide[ao$ori == "NOCLR"]))
+  expect_equal(ao$n_reported_homicide[ao$ori == "NOCLR"], 20)
+  expect_true(is.na(ao$n_reported_rate_homicide[ao$ori == "ZERO"]))
+})
+
+test_that("a base year with no clearances blanks the solve rate change", {
+  at <- flag_built$agency_table
+  expect_equal(at$solved_rate[at$ori == "BASE0"], 0.5)
+  expect_equal(at$n_reported_base[at$ori == "BASE0"], 20)
+  expect_true(is.na(at$n_reported_base[at$ori == "OK"]))
+  expect_true(is.na(at$solved_rate_change[at$ori == "BASE0"]))
+})
+
+test_that("flagged agencies stay off the map", {
+  county <- flag_built$county_map
+  expect_equal(county$n_agencies, 2L)
+  expect_equal(county$n_reported, 40)
+  expect_equal(county$pop_covered, 2000)
+})

@@ -4,6 +4,7 @@ library(reactable)
 library(tidyverse)
 
 source("../R/utils.R")
+source("../R/page-data.R")
 
 test_that("chart bounds expand the data and respect a zero floor", {
   expect_equal(chart_bounds(c(10, 20), expansion = 0.5), c(5, 25))
@@ -147,7 +148,7 @@ shr_weapons <- function() {
     geo_abbr = rep(c("US", "AA", "BB"), each = 6), group_cat = "weapon", year = 2023,
     group = rep(rep(c("Gun", "Knife", "Other"), each = 2), 3),
     indicator = rep(c("Incidents reported", "Incidents cleared"), 9),
-    n = rep(c(10, 5, 4, 3, 2, 1), 3)
+    n = rep(c(100, 50, 40, 30, 20, 10), 3)
   )
 }
 
@@ -304,4 +305,97 @@ test_that("hollow year markers use a series' own color first", {
 test_that("hollow year markers stop without a series color", {
   df <- tibble(year = c(2020, 2021), y = 1:2)
   expect_error(hchart(df, "spline", hcaes(year, y)) |> hc_hollow_year(2021), "needs a color")
+})
+
+test_that("solve rates from few incidents show gray without a pill", {
+  definition <- solve_rate_column("Homicide", 0.5, "NY State Rate",
+                                  reported = c(9, 10), solved = c(9, 3))
+  small <- definition$cell(1, 1)
+  expect_no_match(small, "solve-rate-pill")
+  expect_match(small, 'class="small-n-note"', fixed = TRUE)
+  expect_match(small, "fewer than 10 incidents", fixed = TRUE)
+  expect_match(small, 'title="9 of 9 incidents solved"', fixed = TRUE)
+  expect_equal(
+    definition$cell(0.3, 2),
+    solve_rate_pill("30%", "below", "below, ", "3 of 10 incidents solved")
+  )
+})
+
+test_that("solve rate columns take counts from the table data", {
+  layout <- list(rape = list(offense = "Rape"))
+  counts <- tibble(n_reported_rape = c(4, 40), n_solved_rape = c(1, 20))
+  columns <- solve_rate_columns(c(rape = 0.3), "NY State Rate", layout, counts = counts)
+  expect_match(columns$solved_rate_rape$cell(0.25, 1), "small-n-note", fixed = TRUE)
+  expect_match(columns$solved_rate_rape$cell(0.5, 2), "20 of 40", fixed = TRUE)
+})
+
+test_that("small-n cells gray rows under the minimum and tell screen readers why", {
+  cell <- small_n_cell(c(9, 10, NA), format_solve_rate, min_reported = 10)
+  expect_match(cell(0.5, 1), 'class="small-n-note"', fixed = TRUE)
+  expect_match(cell(0.5, 1), "visually-hidden\"> (fewer than 10 incidents)", fixed = TRUE)
+  expect_equal(cell(0.5, 2), "50%")
+  expect_equal(cell(0.5, 3), "50%")
+  expect_equal(cell(NA, 1), "")
+})
+
+test_that("reactable cell functions see rows in data order, not display order", {
+  rows <- tibble(agency = c("b", "a", "c"), pop = c(1, 3, 2), n = c(5, 50, 9))
+  table <- reactable(
+    rows, defaultSorted = list(pop = "desc"),
+    columns = list(agency = colDef(cell = function(value, index) paste(value, rows$n[index])))
+  )
+  cells <- unlist(table$x$tag$attribs$columns[[1]]$cell)
+  expect_equal(cells, c("b 5", "a 50", "c 9"))
+})
+
+test_that("solve count text needs one count of each kind", {
+  expect_equal(solved_count_text(3, 10), "3 of 10 incidents solved")
+  expect_null(solved_count_text(NA, 10))
+  expect_null(solved_count_text(numeric(0), numeric(0)))
+})
+
+test_that("flagged agencies get a note under their escaped name", {
+  cell <- agency_name_cell(c(NA, "no_clearances"))
+  expect_equal(cell("A & B Police", 1), "A &amp; B Police")
+  expect_match(cell("C Police", 2), "C Police<br>.*Reported no solved crimes")
+  expect_equal(cell(NA, 1), "")
+})
+
+test_that("SHR ranking ignores hidden bars and puts fully hidden groups last", {
+  data <- tibble(
+    group_for_plot = c("State", "Region", "State", "Region", "State"),
+    group = c("Small", "Small", "Gun", "Gun", "Tiny"),
+    `Incidents reported` = c(4, 40, 50, 50, 2),
+    `Incidents cleared` = c(4, 10, 25, 25, 2),
+    clearance_rate = c(NA, 25, 50, 50, NA)
+  )
+  expect_equal(shr_category_order(data, list(sort_desc = TRUE)), c("Gun", "Small", "Tiny"))
+})
+
+test_that("SHR captions name hidden bars and skip the note when none are hidden", {
+  spec <- list(category = "x", title = "T", note = "N")
+  shown <- function(category) {
+    tibble(group = c("A", "B"), `Incidents reported` = c(20, 30),
+           `Incidents cleared` = c(10, 15), clearance_rate = c(50, 50), tooltip = c("a", "b"))
+  }
+  chart <- shr_panel_chart(spec, shown, "2022-2025")
+  expect_no_match(chart$x$hc_opts$caption$text, "Not shown", fixed = TRUE)
+
+  hidden <- function(category) mutate(shown(category), `Incidents reported` = c(4, 30),
+                                      `Incidents cleared` = c(1, 15), clearance_rate = c(NA, 50))
+  chart <- shr_panel_chart(spec, hidden, "2022-2025")
+  expect_match(chart$x$hc_opts$caption$text, "Not shown, fewer than 10 homicides: A, 1 of 4 solved", fixed = TRUE)
+  expect_equal(length(chart$x$hc_opts$series[[1]]$data), 1)
+})
+
+test_that("national SHR groups with few homicides are blanked", {
+  data <- tibble(
+    geo_abbr = "US", group_cat = "weapon", year = 2023,
+    group = rep(c("Gun", "Rare"), each = 2),
+    indicator = rep(c("Incidents reported", "Incidents cleared"), 2),
+    n = c(100, 50, 5, 2)
+  )
+  actual <- function_shr_grouping_for_national_plot(data, "weapon", 2022)
+  expect_true(is.na(actual$clearance_rate[actual$group == "Rare"]))
+  expect_equal(actual$clearance_rate[actual$group == "Gun"], 50)
 })

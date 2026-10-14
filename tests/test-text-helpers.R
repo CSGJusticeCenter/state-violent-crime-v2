@@ -73,6 +73,12 @@ test_that("text helpers stop on missing or empty input", {
   expect_error(change_by(Inf), "one finite change value")
 })
 
-test_that("percent change runs from the first to the last year", {
-  expect_equal(pct_change_first_last(c(120, 100, 150), c(2025, 2015, 2020)), 0.2)
+test_that("percent change runs between two named years", {
+  expect_equal(pct_change_between(c(120, 100, 150), c(2025, 2015, 2020), 2015, 2025), 0.2)
+  expect_equal(pct_change_between(c(120, 100, 150), c(2025, 2015, 2020), 2020, 2025), -0.2)
+})
+
+test_that("percent change stops when a year is missing or repeated", {
+  expect_error(pct_change_between(c(5, 6), c(2024, 2025), 2019, 2025), "one 2019 value")
+  expect_error(pct_change_between(c(5, 6, 7), c(2019, 2019, 2025), 2019, 2025), "found 2")
 })

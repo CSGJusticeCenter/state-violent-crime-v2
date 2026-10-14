@@ -4,6 +4,7 @@ library(reactable)
 library(tidyverse)
 
 source("../R/utils.R")
+source("../R/page-data.R")
 
 test_that("state SHR panels pool recent incidents and compare with other regional states", {
   data <- tibble(
@@ -36,4 +37,18 @@ test_that("state SHR panels omit groups with no reported incidents", {
 
   actual <- function_shr_grouping_for_state_plot(data, "weapon", "AA", "BB", 2022)
   expect_equal(nrow(actual), 0L)
+})
+
+test_that("state SHR groups with few homicides lose their bar", {
+  data <- tibble(
+    year = 2022, geo_abbr = rep(c("AA", "AA", "BB", "BB"), 2), group_cat = "victim_race_eth",
+    group = rep(c("Small", "Large"), each = 4),
+    indicator = rep(c("Incidents reported", "Incidents cleared"), 4),
+    n = c(9, 3, 50, 25, 40, 20, 50, 30)
+  )
+
+  actual <- function_shr_grouping_for_state_plot(data, "victim_race_eth", "AA", "BB", 2022)
+  expect_true(is.na(filter(actual, group_for_plot == "AA", group == "Small")$clearance_rate))
+  expect_equal(filter(actual, group_for_plot == "AA", group == "Large")$clearance_rate, 50)
+  expect_match(filter(actual, group_for_plot == "AA", group == "Large")$tooltip, "Homicides solved: 20 of 40", fixed = TRUE)
 })
