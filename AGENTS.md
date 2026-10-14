@@ -40,7 +40,15 @@ quarto::quarto_render("index.qmd", output_file = "index.html", quiet = TRUE)
 - Multi-county agencies use the county with the largest share of the agency's place or county subdivision population (PEP 2025), falling back to the largest listed county. `county_fips_all` keeps every county.
 - NYC boroughs merge into one map feature (`36NYC`) at load time in `R/local-map-data.R`. No other city is merged.
 - Highcharts maps lack AK 02063 and VA 51678, so those agencies appear in tables but not on the map.
-- Solve-rate change compares each agency with itself against base year 2019. It's blank when the agency lacks full reporting in both years.
+- Solve-rate change compares each agency with itself against base year 2019. It shows a dash unless the agency has full reporting in both years.
+
+## Table rules
+
+- Build tables with `reactable_template()`. Its default cell shows missing values as `na_text`, a dash that screen readers hear as "not available", and sorts them last. Use cell functions, not `colFormat()` or `na`, which can't render that HTML.
+- Each table's note lists every reason a cell shows a dash. Update the note when a new reason appears.
+- Footer rows hold state or U.S. totals from the state estimates, not sums of agency rows. Page text and footers read the same `total_rate_benchmark()` values, so they always match.
+- State pages stop rendering when the agency year differs from the latest estimate year, since the footers and text would then disagree.
+- Offense column order comes from `table_offenses` in `R/utils.R`. Select table data with `offense_column_names()`.
 
 ## Conventions
 

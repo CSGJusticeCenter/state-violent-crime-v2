@@ -12,9 +12,8 @@ Chart, table and page improvements from the October 2026 design audit. All fit t
 | Spline to straight lines | Declined (keep splines) |
 | Show gaps for hidden years in trend lines | Declined |
 | Zero-baseline y-axes | Declined |
-| Table headers, groups, state and U.S. total rows, dashes and alignment (2.1–2.4) | Done |
+| Table cleanup (2.1–2.4, fonts in 2.6), PR #28 | Done |
 | County filter and 25 rows per page (2.5) | Declined (search bar covers county; keep 10 rows) |
-| GT America with tabular figures in tables; Google Fonts import dropped (2.6) | Done |
 | Everything else below | Open |
 
 ## 1. Charts
@@ -57,31 +56,21 @@ Chart, table and page improvements from the October 2026 design audit. All fit t
 
 ## 2. Tables
 
-### 2.1 Headers
+### 2.1–2.5 Done in PR #28
 
-- Use one case style. Headers mix Title Case and sentence case, and "Agency" is styled differently.
-- Group columns with reactable `columnGroups`.
-  - Overall table: "2025" over rate, incidents and solve rate; "Change since 2019" over the change column.
-  - By-offense table: one group per offense with "Per 100k" and "Solve rate." Roughly halves header height and drops the `<br><br>` in `solve_rate_column()`.
+| Change | Result |
+| --- | --- |
+| Headers | Sentence case and bold, styled by `reactable_theme` |
+| Column groups | "Violent crime, 2025" and "Change since 2019"; one group per offense over "Per 100k" and "Solve rate" |
+| Total rows | "NY state total", "DC total" and "U.S. total" footers with population, incidents, rates and changes from the state estimates |
+| Page text | Reads the same `total_rate_benchmark()` values as the footers |
+| Missing values | Dash read as "not available", sorted last, explained under each table |
+| Alignment and widths | Numbers right-aligned; shared widths in `table_widths` |
+| Fonts | GT America with tabular figures; Google Fonts import dropped |
+| County filter | Built, then removed; the search bar matches counties |
+| Page size | Kept at 10 rows |
 
-### 2.2 Benchmark row
-
-- Move the state or U.S. rate out of each solve-rate header into a `footer` row of state or U.S. totals from the same estimates as the charts and text.
-
-### 2.3 Missing values
-
-- Show "—" instead of blank cells, with a note under the table.
-
-### 2.4 Alignment
-
-- Right-align every number column. Homicide is centered and rape is left-aligned in `solve_rate_layout`.
-
-### 2.5 Filtering and paging
-
-- Add `filterable = TRUE` on County, or a select filter. NY has over 400 agencies across 40+ pages.
-- Default to 25 rows per page.
-
-### 2.6 Fonts and packages
+### 2.6 Packages
 
 - Use `reactablefmtr` (e.g., `data_bars()` on solve rate or population) or drop it. Both pages load it and neither calls it.
 
