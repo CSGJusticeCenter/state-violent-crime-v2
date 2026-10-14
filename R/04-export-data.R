@@ -64,5 +64,5 @@ state <- bind_rows(
   format_export()
 
 dir.create(export_dir, showWarnings = FALSE)
-write_csv(us, file.path(export_dir, "violent-crime-solve-rates-us.csv"), na = "")
-write_csv(state, file.path(export_dir, "violent-crime-solve-rates-states.csv"), na = "")
+write_csv(us, file.path(export_dir, "violent-crime-backlog-us.csv"), na = "")
+write_csv(state, file.path(export_dir, "violent-crime-backlog-states.csv"), na = "")
