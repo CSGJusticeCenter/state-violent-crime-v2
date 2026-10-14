@@ -328,3 +328,14 @@ test_that("screened state-years drop from totals and offense trend rows", {
   expect_false("hide_total_solve" %in% names(us))
   expect_false(any(screened_out(us)))
 })
+
+test_that("state benchmarks use the state estimates and blank screened offenses", {
+  srs <- prep_srs_state(raw_srs())
+  benchmark <- state_solve_benchmark(srs, "State A", 2025)
+  expect_named(benchmark, c("homicide", "robbery"))
+  expect_equal(unname(benchmark), c(6 / 10, 36 / 40))
+
+  screened <- mutate(srs, hide_offense_solve = group == "Robbery")
+  expect_true(is.na(state_solve_benchmark(screened, "State A", 2025)[["robbery"]]))
+  expect_error(state_solve_benchmark(srs, "State A", 2030), "No 2030 solve rates")
+})

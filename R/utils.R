@@ -356,7 +356,10 @@ shr_panel_chart <- function(spec, prep, years, series = NULL) {
     data <- dplyr::arrange(data, group)
   }
 
-  caption <- paste(c(spec$note, shr_source(years)), collapse = "<br>")
+  small_note <- if (anyNA(data$clearance_rate)) {
+    paste0("Groups with fewer than ", min_rate_reported, " homicides are not shown")
+  }
+  caption <- paste(c(spec$note, small_note, shr_source(years)), collapse = "<br>")
   shr_rate_chart(data, spec$title, years, caption, categories = categories, series = series)
 }
 
@@ -368,15 +371,53 @@ solve_rate_colors <- c(above = "#15607A", below = "#9A4A0A")
 solve_rate_fills <- c(above = "#FFFFFF", below = "#FBE8DA")
 
 ### text in a pill styled for one side of the comparison rate
-### sr_text adds words that only screen readers announce
-solve_rate_pill <- function(text, side, sr_text = NULL) {
+### sr_text adds words that only screen readers announce; title shows on hover
+solve_rate_pill <- function(text, side, sr_text = NULL, title = NULL) {
   paste0(
     '<span class="solve-rate-pill solve-rate-pill-', side,
     '" style="color:', solve_rate_colors[[side]],
-    ";background-color:", solve_rate_fills[[side]], '">',
+    ";background-color:", solve_rate_fills[[side]], '"',
+    title_attr(title), ">",
     if (!is.null(sr_text)) paste0('<span class="visually-hidden">', sr_text, "</span>"),
     text, "</span>"
   )
+}
+
+### HTML title attribute, or "" when title is NULL
+title_attr <- function(title) {
+  if (is.null(title)) "" else paste0(' title="', htmltools::htmlEscape(title, attribute = TRUE), '"')
+}
+
+### "5 of 8 incidents solved" for a solve-rate cell's hover text, or NULL
+solved_count_text <- function(solved, reported) {
+  if (is.na(solved) || is.na(reported)) return(NULL)
+  paste(comma(solved), "of", comma(reported), "incidents solved")
+}
+
+### reactable class function that grays cells in rows with few incidents
+### a class, unlike a style, keeps the table's default cell style
+### reported holds each row's incident count in the table's data order
+small_n_class <- function(reported, min_reported = min_rate_reported) {
+  function(value, index) {
+    if (isTRUE(reported[index] < min_reported)) "small-n-note"
+  }
+}
+
+### notes under agency names, keyed by data_flag from R/agency-county-data.R
+agency_flag_notes <- c(
+  no_clearances = "Reported no solved crimes",
+  no_violent_crime = "Reported no violent crime"
+)
+
+### agency name cell with a gray note under flagged agencies
+### flags holds each row's data_flag in the table's data order
+agency_name_cell <- function(flags) {
+  function(value, index) {
+    name <- htmltools::htmlEscape(value)
+    flag <- flags[index]
+    if (is.na(flag)) return(name)
+    paste0(name, '<br><span class="agency-flag">', agency_flag_notes[[flag]], "</span>")
+  }
 }
 
 ### whole percent for a solve rate, with halves rounded up (0.625 is 63)
@@ -397,17 +438,27 @@ solve_rate_side <- function(value, rate) {
 ### solve rate column with each rate in a pill tinted against a comparison rate
 ### label names that rate in the header, e.g., "(U.S. Rate: 47%)"
 ### rates without a comparison show as plain text
-solve_rate_column <- function(offense, rate, label, min_width = 120, align = NULL) {
+### reported and solved hold each row's counts in the table's data order; with
+### them, cells show the counts on hover, and rates from fewer than
+### min_reported incidents show as gray text without a pill
+solve_rate_column <- function(offense, rate, label, min_width = 120, align = NULL,
+                              reported = NULL, solved = NULL,
+                              min_reported = min_rate_reported) {
   sr_text <- c(above = "at or above, ", below = "below, ")
   colDef(
     name = paste0(offense, " Solve Rate<br><br>(", label, ": ", format_solve_rate(rate), ")"),
     html = TRUE,
     minWidth = min_width,
     align = align,
-    cell = function(value) {
-      side <- solve_rate_side(value, rate)
+    cell = function(value, index = NULL) {
       text <- format_solve_rate(value)
-      if (is.na(side)) text else solve_rate_pill(text, side, sr_text[[side]])
+      n <- if (is.null(reported)) NA else reported[index]
+      title <- if (is.na(value) || is.null(solved)) NULL else solved_count_text(solved[index], n)
+      if (isTRUE(n < min_reported)) {
+        return(paste0('<span class="small-n-note"', title_attr(title), ">", text, "</span>"))
+      }
+      side <- solve_rate_side(value, rate)
+      if (is.na(side)) text else solve_rate_pill(text, side, sr_text[[side]], title)
     }
   )
 }
@@ -420,9 +471,15 @@ solve_rate_legend <- function(side, text) {
 
 ### solve_rate_column() for each offense in layout, named solved_rate_<offense>
 ### rates is named by offense; layout gives each column's header and options
-solve_rate_columns <- function(rates, label, layout) {
+### counts, when given, is the table's data with n_reported_<offense> and
+### n_solved_<offense> columns
+solve_rate_columns <- function(rates, label, layout, counts = NULL) {
   purrr::imap(layout, \(options, offense) {
-    rlang::exec(solve_rate_column, !!!options, rate = rates[[offense]], label = label)
+    rlang::exec(
+      solve_rate_column, !!!options, rate = rates[[offense]], label = label,
+      reported = counts[[paste0("n_reported_", offense)]],
+      solved = counts[[paste0("n_solved_", offense)]]
+    )
   }) |>
     rlang::set_names(paste0("solved_rate_", names(layout)))
 }
@@ -529,14 +586,26 @@ function_shr_grouping_for_national_plot <- function(df, cat, first_year){
     summarize(n = sum(n), .by = c(group, indicator)) |>
     pivot_wider(names_from = indicator, values_from = n) |>
     mutate(
-      clearance_rate = `Incidents cleared` / `Incidents reported`,
-      tooltip = paste0(
-        "<b>","United States","–",group,"</b><br>",
-        "Solve Rate: ", percent(clearance_rate,
-                                        accuracy = 1)),
-      clearance_rate = clearance_rate*100
-    )
+      clearance_rate = `Incidents cleared` / `Incidents reported` * 100,
+      tooltip = shr_tooltip("United States", group, clearance_rate,
+                            `Incidents cleared`, `Incidents reported`)
+    ) |>
+    hide_small_shr_groups()
 
+}
+
+### SHR bar tooltip with the solve rate and the counts behind it
+shr_tooltip <- function(label, group, rate, cleared, reported) {
+  paste0(
+    "<b>", label, " – ", group, "</b><br>",
+    "Solve rate: ", percent(rate / 100, accuracy = 1), "<br>",
+    "Homicides solved: ", comma(cleared), " of ", comma(reported)
+  )
+}
+
+### blank solve rates from fewer than min_reported homicides, so their bars drop
+hide_small_shr_groups <- function(data, min_reported = min_rate_reported) {
+  mutate(data, clearance_rate = if_else(`Incidents reported` < min_reported, NA_real_, clearance_rate))
 }
 
 function_shr_grouping_for_state_plot <- function(df, cat, state_abbr,
@@ -558,10 +627,9 @@ function_shr_grouping_for_state_plot <- function(df, cat, state_abbr,
     mutate(
       group_for_plot = factor(group_for_plot, levels = c(state_label, region_label)),
       clearance_rate = `Incidents cleared` / `Incidents reported` * 100,
-      tooltip = paste0(
-        "<b>", group_for_plot, " – ", group, "</b><br>",
-        "Solve Rate: ", percent(clearance_rate / 100, accuracy = 1)
-      )
+      tooltip = shr_tooltip(group_for_plot, group, clearance_rate,
+                            `Incidents cleared`, `Incidents reported`)
     ) |>
+    hide_small_shr_groups() |>
     arrange(group_for_plot, group)
 }

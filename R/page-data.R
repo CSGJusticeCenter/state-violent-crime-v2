@@ -26,6 +26,15 @@ min_screen_reported <- 10
 clearance_screen_path <- "data/clearance_screen.rds"
 clearance_repairs_path <- "data/clearance_repairs.rds"
 
+### agencies serving at least min_pop_no_violent_crime residents that report no
+### violent crime, or reporting at least min_screen_reported violent offenses and
+### no clearances, are flagged as incomplete in the agency tables and left off the map
+min_pop_no_violent_crime <- 10000
+
+### solve rates from fewer than min_rate_reported incidents show in gray in the
+### agency tables and drop from the homicide panels
+min_rate_reported <- 10
+
 ### repaired offenses the pages show. The others count toward the violent crime
 ### total but have no solve rate of their own
 repaired_offenses_shown <- c("Robbery", "Aggravated assault")
@@ -231,6 +240,18 @@ us_solve_benchmark <- function(srs, year, exclude = states_to_exclude_from_solve
   solve_rate_pool(srs, exclude, by_offense = TRUE) |>
     violent_by_offense(year) |>
     filter(year == !!year) |>
+    pull(pct_solved, name = group) |>
+    set_names(janitor::make_clean_names)
+}
+
+### one state's solve rate by offense in one year, named by snake_case offense
+### rates come from the state estimates the charts use; screened offenses are NA
+state_solve_benchmark <- function(srs, state, year) {
+  rows <- filter(srs, crime_cat == "Violent", state_name == state, year == !!year)
+  if (nrow(rows) == 0) stop("No ", year, " solve rates for ", state, call. = FALSE)
+  rows |>
+    add_solve_rates() |>
+    mutate(pct_solved = if_else(screened_out(rows), NA_real_, pct_solved)) |>
     pull(pct_solved, name = group) |>
     set_names(janitor::make_clean_names)
 }

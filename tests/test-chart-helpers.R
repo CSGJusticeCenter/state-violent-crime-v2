@@ -4,6 +4,7 @@ library(reactable)
 library(tidyverse)
 
 source("../R/utils.R")
+source("../R/page-data.R")
 
 test_that("chart bounds expand the data and respect a zero floor", {
   expect_equal(chart_bounds(c(10, 20), expansion = 0.5), c(5, 25))
@@ -147,7 +148,7 @@ shr_weapons <- function() {
     geo_abbr = rep(c("US", "AA", "BB"), each = 6), group_cat = "weapon", year = 2023,
     group = rep(rep(c("Gun", "Knife", "Other"), each = 2), 3),
     indicator = rep(c("Incidents reported", "Incidents cleared"), 9),
-    n = rep(c(10, 5, 4, 3, 2, 1), 3)
+    n = rep(c(100, 50, 40, 30, 20, 10), 3)
   )
 }
 
@@ -304,4 +305,38 @@ test_that("hollow year markers use a series' own color first", {
 test_that("hollow year markers stop without a series color", {
   df <- tibble(year = c(2020, 2021), y = 1:2)
   expect_error(hchart(df, "spline", hcaes(year, y)) |> hc_hollow_year(2021), "needs a color")
+})
+
+test_that("solve rates from few incidents show gray without a pill", {
+  definition <- solve_rate_column("Homicide", 0.5, "NY State Rate",
+                                  reported = c(9, 10), solved = c(9, 3))
+  small <- definition$cell(1, 1)
+  expect_no_match(small, "solve-rate-pill")
+  expect_match(small, 'class="small-n-note"', fixed = TRUE)
+  expect_match(small, 'title="9 of 9 incidents solved"', fixed = TRUE)
+  expect_equal(
+    definition$cell(0.3, 2),
+    solve_rate_pill("30%", "below", "below, ", "3 of 10 incidents solved")
+  )
+})
+
+test_that("solve rate columns take counts from the table data", {
+  layout <- list(rape = list(offense = "Rape"))
+  counts <- tibble(n_reported_rape = c(4, 40), n_solved_rape = c(1, 20))
+  columns <- solve_rate_columns(c(rape = 0.3), "NY State Rate", layout, counts = counts)
+  expect_match(columns$solved_rate_rape$cell(0.25, 1), "small-n-note", fixed = TRUE)
+  expect_match(columns$solved_rate_rape$cell(0.5, 2), "20 of 40", fixed = TRUE)
+})
+
+test_that("small-n class marks only rows under the minimum", {
+  class_fn <- small_n_class(c(9, 10, NA), min_reported = 10)
+  expect_equal(class_fn(0.5, 1), "small-n-note")
+  expect_null(class_fn(0.5, 2))
+  expect_null(class_fn(0.5, 3))
+})
+
+test_that("flagged agencies get a note under their escaped name", {
+  cell <- agency_name_cell(c(NA, "no_clearances"))
+  expect_equal(cell("A & B Police", 1), "A &amp; B Police")
+  expect_match(cell("C Police", 2), "C Police<br>.*Reported no solved crimes")
 })

@@ -68,13 +68,28 @@ county_names_from_fips <- function(fips_all, lookup) {
   }, character(1), USE.NAMES = FALSE)
 }
 
+# Flag agency-years whose counts suggest incomplete reporting.
+# "no_violent_crime" marks agencies serving min_pop_no_violent_crime or more
+# residents that report no violent crime. "no_clearances" marks agencies that
+# report min_screen_reported or more violent offenses and clear none.
+agency_data_flag <- function(reported, cleared, population) {
+  case_when(
+    reported == 0 & coalesce(population, 0) >= min_pop_no_violent_crime ~ "no_violent_crime",
+    reported >= min_screen_reported & cleared == 0 ~ "no_clearances",
+    .default = NA_character_
+  )
+}
+
 # Build the three objects the state pages read.
 #
 # county_map: one row per primary county, with the five NYC boroughs merged
-#   into nyc_fips. Statewide, tribal and county-less agencies have NA FIPS
-#   and stay off the map.
+#   into nyc_fips. Statewide, tribal, county-less and flagged agencies stay
+#   off the map.
 # agency_table: one row per agency, with change in solve rate since base_year.
-# agency_offense_table: one row per agency, with counts and rates by offense.
+#   data_flag comes from agency_data_flag(). Flagged agencies have no crime
+#   rate (no_violent_crime) or no solve rates (no_clearances) in either year.
+# agency_offense_table: one row per agency, with counts and rates by offense,
+#   blanked the same way for flagged agencies.
 build_agency_county_data <- function(raw, agency_year, base_year) {
   counts <- agency_offense_counts(raw, c(base_year, agency_year)) |>
     check_agency_offense_counts()
@@ -89,7 +104,10 @@ build_agency_county_data <- function(raw, agency_year, base_year) {
       n_solved = sum(cleared),
       .groups = "drop"
     ) |>
-    mutate(solved_rate = if_else(n_reported > 0, n_solved / n_reported, NA_real_))
+    mutate(
+      data_flag = agency_data_flag(n_reported, n_solved, population),
+      solved_rate = if_else(n_reported > 0 & is.na(data_flag), n_solved / n_reported, NA_real_)
+    )
 
   base_rates <- agency_total |>
     filter(year == base_year) |>
@@ -106,7 +124,8 @@ build_agency_county_data <- function(raw, agency_year, base_year) {
         is.na(county_fips_all) ~ "None",
         TRUE ~ county_names_from_fips(county_fips_all, lookup)
       ),
-      n_reported_rate = if_else(population > 0, n_reported / population * 1e5, NA_real_),
+      n_reported_rate = if_else(population > 0 & !data_flag %in% "no_violent_crime",
+                                n_reported / population * 1e5, NA_real_),
       solved_rate_change = (solved_rate - solved_rate_base) * 100,
       agency_year = agency_year,
       base_year = base_year
@@ -114,11 +133,11 @@ build_agency_county_data <- function(raw, agency_year, base_year) {
     select(
       state_name, state_abbr, ori, agency_name, county, county_fips, county_fips_all,
       county_method, population, n_reported, n_reported_rate, n_solved, solved_rate,
-      solved_rate_change, agency_year, base_year
+      solved_rate_change, data_flag, agency_year, base_year
     )
 
   county_map <- current |>
-    filter(!is.na(county_fips)) |>
+    filter(!is.na(county_fips), is.na(data_flag)) |>
     mutate(county_fips = if_else(county_fips %in% nyc_borough_fips, nyc_fips, county_fips)) |>
     group_by(state_name, state_abbr, county_fips) |>
     summarize(
@@ -151,11 +170,15 @@ build_agency_county_data <- function(raw, agency_year, base_year) {
       names_expand = TRUE
     ) |>
     left_join(
-      agency_table |> select(ori, county, population),
+      agency_table |> select(ori, county, population, data_flag),
       by = "ori"
     ) |>
-    mutate(agency_year = agency_year) |>
-    relocate(county, population, .after = county_fips)
+    mutate(
+      across(starts_with("solved_rate_"), \(x) if_else(is.na(data_flag), x, NA_real_)),
+      across(starts_with("n_reported_rate_"), \(x) if_else(data_flag %in% "no_violent_crime", NA_real_, x)),
+      agency_year = agency_year
+    ) |>
+    relocate(county, population, data_flag, .after = county_fips)
 
   list(
     county_map = county_map,

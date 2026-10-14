@@ -103,6 +103,16 @@ h4 {
   }
 }
 
+/* gray for flagged agencies and rates from few incidents; 4.5:1 on white */
+.agency-flag {
+  font-size: 0.85em;
+  color: #767676;
+}
+
+.small-n-note {
+  color: #767676;
+}
+
 /* sticky columns give wide tables phantom width, which adds a second scrollbar
    to the output wrapper; the table keeps its own scrollbar */
 .Reactable {

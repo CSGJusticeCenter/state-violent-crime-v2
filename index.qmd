@@ -581,22 +581,25 @@ Data regarding crime and solve rates come from the FBI's [Uniform Crime Reportin
 State and local expenditures include spending on police, sheriffs, and highway patrols. The charts below also include staffing per 10,000 residents and per 1,000 violent crimes. These factors may show the level of policing a community receives, potentially influencing both crime and solve rates and providing insight into how law enforcement resources impact violent crime.
 
 ```{r}
-### years and percent changes for the resource text
+### chart years, and percent changes since base_year for the resource text
 exp_min_year <- min(asslgf_clean_national$year)
 exp_max_year <- max(asslgf_clean_national$year)
 
 pct_change_spending <- asslgf_clean_national |>
+  filter(year %in% c(base_year, exp_max_year)) |>
   summarize(change = pct_change_first_last(n_inflation_adjusted_latest_year_dollars, year)) |>
   pull(change)
 
 lee_min_year <- min(ucr_employee_data_national_clean$year)
 lee_max_year <- max(ucr_employee_data_national_clean$year)
 
-pct_change_staffing <- ucr_employee_data_national_clean |>
+officers_since_base <- filter(ucr_employee_data_national_clean, year %in% c(base_year, lee_max_year))
+
+pct_change_staffing <- officers_since_base |>
   summarize(change = pct_change_first_last(officer_pop_rate_per_10k, year)) |>
   pull(change)
 
-pct_change_staffing_per_violent_offense <- ucr_employee_data_national_clean |>
+pct_change_staffing_per_violent_offense <- officers_since_base |>
   summarize(change = pct_change_first_last(officer_per_violent_offense_1k, year)) |>
   pull(change)
 ```
@@ -605,7 +608,7 @@ pct_change_staffing_per_violent_offense <- ucr_employee_data_national_clean |>
 
 ### State and local expenditures
 
-Overall, state and local spending on law enforcement across the United States `r change_by(pct_change_spending)` from `r exp_min_year` to `r exp_max_year`, adjusting for inflation.
+Overall, state and local spending on law enforcement across the United States `r change_by(pct_change_spending)` from `r base_year` to `r exp_max_year`, adjusting for inflation.
 
 ```{r}
 spending_trend <- asslgf_clean_national |>
@@ -630,7 +633,7 @@ trend_chart(
 
 ### Officers per capita
 
-The number of officers per 10,000 residents in jurisdictions across the United States has `r change_by(pct_change_staffing)` from `r lee_min_year` to `r lee_max_year`.
+The number of officers per 10,000 residents in jurisdictions across the United States has `r change_by(pct_change_staffing)` from `r base_year` to `r lee_max_year`.
 
 ```{r}
 ucr_employee_data_national_clean |>
@@ -648,7 +651,7 @@ ucr_employee_data_national_clean |>
 
 ### Officers per violent offense
 
-The number of officers per 1,000 violent crimes in jurisdictions across the United States has `r change_by(pct_change_staffing_per_violent_offense)` from `r lee_min_year` to `r lee_max_year`.
+The number of officers per 1,000 violent crimes in jurisdictions across the United States has `r change_by(pct_change_staffing_per_violent_offense)` from `r base_year` to `r lee_max_year`.
 
 ```{r}
 ucr_employee_data_national_clean |>
