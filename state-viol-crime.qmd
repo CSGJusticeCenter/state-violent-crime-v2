@@ -34,13 +34,11 @@ nypd_note <- if (state == "New York") {
   paste(
     "", "In 2022, the New York City Police Department (NYPD) reported crimes to the FBI but no clearances.",
     "For that year, New York's solve rates for all violent crime, aggravated assault, and robbery use the",
-    "clearance rates the NYPD published in its",
-    "[quarterly clearance reports](https://www.nyc.gov/site/nypd/stats/reports-analysis/clearance.page){target=\"_parent\"}",
-    "in place of its FBI clearances. The annual rates average the four quarterly reports. In 2019 and 2020,",
-    "these reports matched the NYPD's FBI clearance rates for aggravated assault and robbery within half a",
-    "percentage point. They did not match as closely for homicide and rape, so New York's 2022 homicide and",
-    "rape solve rates are omitted. New York's solve rate for all violent crime still includes its 2022",
-    "homicides and rapes, using the NYPD's reported clearance rates."
+    "average of the NYPD's four",
+    "[quarterly clearance reports](https://www.nyc.gov/site/nypd/stats/reports-analysis/clearance.page){target=\"_parent\"}.",
+    "In 2019 and 2020, those reports matched the NYPD's FBI clearance rates within half a percentage point",
+    "for aggravated assault and robbery but not for homicide and rape. New York's 2022 homicide and rape",
+    "solve rates are therefore omitted."
   )
 } else {
   ""
@@ -786,18 +784,16 @@ shr_panel_chart(shr_panels$victims, shr_state_region, shr_years, series = "group
 
 ## Data sources and methodology
 
-Data regarding crime and solve rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr){target="_parent"}. Statewide counts of reported violent crime between `r first_year` and `r latest_year` are derived from the Summary Reporting System (SRS) and the National Incident-Based Reporting System (NIBRS). The FBI estimates reported crime for each state from agency-level reports, accounting for agencies that did not report, and publishes these estimates on its [Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/downloads){target="_parent"}. Statewide solve rates apply each state's clearance rate among agencies that reported to the FBI to the FBI's state estimates of reported crime. The county and agency sections use agency-level data from the Crime Data Explorer for `r agency_year`, which combines NIBRS and SRS reports converted to the SRS format.
+Data on crime and solve rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr){target="_parent"}. Statewide counts of reported violent crime from `r first_year` through `r latest_year` come from the Summary Reporting System (SRS) and the National Incident-Based Reporting System (NIBRS). The FBI estimates reported crime for each state from agency-level reports, accounting for agencies that did not report, and publishes these estimates on its [Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/downloads){target="_parent"}. State solve rates are calculated by dividing crimes cleared by crimes reported among agencies that reported to the FBI. Solved crimes are estimated by multiplying the state's solve rate by the FBI's estimate of its reported crimes. The county and agency sections use agency-level data from the Crime Data Explorer for `r agency_year`, which combines NIBRS and SRS reports converted to the SRS format.
 
-[Solve rates leave out any state and year in which agencies that reported at least `r min_screen_reported` violent crimes to the FBI but no clearances accounted for at least `r percent(max_no_clearance_share, suffix = " percent")` of the state's reported violent crimes.`r nypd_note`]{.content-visible when-meta="show-solved"}
+The FBI stopped collecting SRS data after 2020 and required agencies to report through NIBRS. Fewer agencies reported as a result, so `r low_coverage_solve_year` estimates are less reliable. Starting with 2022 data, the FBI again accepted SRS reports from agencies that could not submit NIBRS data. [Agencies covering `r percent(state_solve_coverage, 1, suffix = " percent")` of `r state_name_text`'s population reported in `r low_coverage_solve_year`. The solve rate charts show `r low_coverage_solve_year` only where reporting agencies covered at least `r percent(min_solve_coverage, suffix = " percent")` of the population, so they `r if_else(state_solve_coverage >= min_solve_coverage, "include", "omit")` `r low_coverage_solve_year` for `r state_name_text`. The U.S. solve rate includes `r low_coverage_solve_year`, when agencies covering `r percent(us_solve_coverage, 1, suffix = " percent")` of the U.S. population reported.]{.content-visible when-meta="show-solved"}
 
-The FBI stopped SRS data collection after data year 2020 and required law enforcement agencies to use NIBRS to report crime statistics to the FBI. This change decreased the number of agencies that submitted their crime data and thus reduced the reliability of state estimates in 2021. The FBI later allowed agencies unable to submit NIBRS data to submit SRS data again. Comparisons involving 2021 should be interpreted with caution.[ Agencies covering `r percent(state_solve_coverage, 1, suffix = " percent")` of `r state_name_text`'s population reported in 2021. The solve rate charts show 2021 only where reporting agencies covered at least `r percent(min_solve_coverage, suffix = " percent")` of the population, so they `r if_else(state_solve_coverage >= min_solve_coverage, "include", "omit")` 2021 for `r state_name_text`. The U.S. solve rate includes 2021, when agencies covering `r percent(us_solve_coverage, 1, suffix = " percent")` of the U.S. population reported, and pools the same states as other years, including states whose own 2021 solve rates are omitted.]{.content-visible when-meta="show-solved"}
-
-Statewide crime rates are calculated by dividing the number of estimated incidents by the total population of the state. Population data come from the U.S. Census Bureau [Population Estimates Program](https://www.census.gov/programs-surveys/popest.html){target="_parent"}.
+State crime rates are calculated by dividing estimated reported crimes by the state's total population. Population data come from the U.S. Census Bureau [Population Estimates Program](https://www.census.gov/programs-surveys/popest.html){target="_parent"}.
 
 {{< include _methodology-exceptional-clearance.qmd >}}
 
 ::: {.content-visible when-meta="show-solved"}
-The U.S. solve rate on the solve rate chart leaves out `r knitr::combine_words(states_to_exclude_from_solved_rate_viz)`, which did not report reliable clearance data. The U.S. counts of reported violent crime include every state, and the U.S. counts of solved violent crime apply the solve rate to those reported counts.
+The U.S. solve rate divides the total of estimated solved crimes across states by the total of estimated reported crimes. U.S. solve rates leave out `r knitr::combine_words(states_to_exclude_from_solved_rate_viz)`, which did not report reliable clearance data.`r nypd_note`
 :::
 
 Agency- and county-level violent crime and solve rate data presented above are restricted to agencies reporting data for all 12 months in `r agency_year`. The calculation of population covered by reporting agencies, as well as the number of reporting agencies by county, is also based on agencies with violent crime data for all 12 months. 
@@ -806,9 +802,9 @@ Each law enforcement agency appears on the map in exactly one county. Agencies b
 
 Counties with fewer than 25 reported violent incidents in `r agency_year` are excluded from the map, as calculations of solve rates are not reliable. 
 
-Data regarding state and local police protection expenditures were downloaded from the U.S. Census Bureau [Annual Survey of State and Local Government Finances](https://www.census.gov/programs-surveys/gov-finances.html){target="_parent"}. Expenditures are adjusted to `r max_year_resources` dollars using the Chained Consumer Price Index for All Urban Consumers.
+Data on law enforcement expenditures come from the U.S. Census Bureau [Annual Survey of State and Local Government Finances](https://www.census.gov/programs-surveys/gov-finances.html){target="_parent"}. Expenditures include police protection spending by the state government and all local governments in the state, such as counties and municipalities. Expenditures are in `r max_year_resources` dollars, adjusted with the Chained Consumer Price Index for All Urban Consumers (C-CPI-U), following the [Census Bureau's guidance](https://www.census.gov/topics/income-poverty/income/guidance/current-vs-constant-dollars.html){target="_parent"}.
 
-Officer employment analysis is restricted to sworn officers in state and local law enforcement agencies and uses the FBI's [Crime Data Explorer law enforcement employee data](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/downloads){target="_parent"}. Officers per capita use the population served by agencies that reported employee counts. Officers per violent crime divide that rate by the state violent crime rate from the FBI state estimates.
+Officer counts include sworn officers in state and local law enforcement agencies as of October 31 of each year, from the FBI's [Crime Data Explorer law enforcement employee data](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/downloads){target="_parent"}. Officers per capita uses the population served by agencies that reported employee counts. Officers per violent crime divides that rate by the state's violent crime rate from the FBI's state estimates.
 
 {{< include _methodology-shr.qmd >}}
 
