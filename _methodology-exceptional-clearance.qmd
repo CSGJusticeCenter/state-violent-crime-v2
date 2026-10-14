@@ -1,10 +1,8 @@
-Solve rates are the number of reported crimes cleared by arrest or by exceptional means divided by the number of reported crimes. A reported crime incident is [cleared by exceptional means](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019/topic-pages/clearances){target='_parent'} if a law enforcement agency is unable to arrest or formally charge a person with a crime, but the agency has met the following conditions:
+Solve rates are the number of reported crimes cleared by arrest or by exceptional means divided by the number of reported crimes. A crime is [cleared by exceptional means](https://ucr.fbi.gov/crime-in-the-u.s/2019/crime-in-the-u.s.-2019/topic-pages/clearances){target='_parent'} when an agency cannot arrest or charge the person who committed it but has done all of the following:
 
 a) Identified the person who committed the crime
-b) Gathered enough evidence to support an arrest, make a charge, and turn over the person to the court for prosecution
+b) Gathered enough evidence to support an arrest, make a charge, and turn the person over to the court for prosecution
 c) Identified the suspect’s exact location so that the person could be taken into custody immediately
-d) Encountered a circumstance outside the control of law enforcement that prohibits the agency from arresting, charging, and prosecuting the person
+d) Encountered a circumstance outside the agency’s control that prevents it from arresting, charging, and prosecuting the person
 
-Examples of exceptional clearances include the death of the person who committed the crime; the victim’s refusal to cooperate with the prosecution after the person who committed the crime has been identified; or the denial of extradition.
-
-Annual clearances can exceed newly reported incidents because cases reported in earlier years may be cleared. As a result, annual solve rates can exceed 100 percent.
+Examples include the death of the person who committed the crime, a victim who refuses to cooperate with prosecution, and a denied extradition. Agencies can also clear cases reported in earlier years, so a year’s solve rate can exceed 100 percent.
