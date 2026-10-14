@@ -116,14 +116,6 @@ h4 {
   overflow-x: clip;
 }
 
-.county-filter {
-  width: 100%;
-  padding: 0.15em 0.25em;
-  border: 1px solid #ccc;
-  border-radius: 3px;
-  font: inherit;
-}
-
 .rt-align-right {
   text-align-last: right !important;
   text-align: -webkit-right !important;

@@ -82,11 +82,15 @@ test_that("offense rate benchmark gives each offense's rate per 100k in one year
 test_that("total rate benchmark gives the latest rates and their changes", {
   rates <- tibble(
     year = c(2019, 2025),
+    pop_total = c(1e6, 2e6),
+    incidents_reported = c(4000, 6000),
     incidents_reported_rate_total = c(0.004, 0.003),
     pct_solved = c(0.40, 0.45),
     hide_total_solve = FALSE
   )
   total <- total_rate_benchmark(rates, 2019, 2025)
+  expect_equal(total$population, 2e6)
+  expect_equal(total$incidents, 6000)
   expect_equal(total$rate_100k, 300)
   expect_equal(total$rate_change, -25)
   expect_equal(total$solve_rate, 0.45)

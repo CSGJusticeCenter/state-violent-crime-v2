@@ -559,34 +559,6 @@ sticky_name_column <- function(name, footer = NULL, ...) {
   )
 }
 
-### county column with a select filter that keeps rows from one county
-### multi-county agencies list counties as "Bronx, Kings", and match each one
-### table_id is the table's elementId, which the filter's JavaScript needs
-county_column <- function(table_id) {
-  colDef(
-    name = "County",
-    minWidth = table_widths$county,
-    filterable = TRUE,
-    filterMethod = JS(
-      "(rows, columnId, value) => rows.filter(row =>
-        (row.values[columnId] || '').split(', ').includes(value))"
-    ),
-    filterInput = function(values, name) {
-      counties <- sort(unique(unlist(strsplit(stats::na.omit(values), ", ", fixed = TRUE))))
-      htmltools::tags$select(
-        onchange = sprintf(
-          "Reactable.setFilter('%s', '%s', event.target.value || undefined)",
-          table_id, name
-        ),
-        `aria-label` = "Filter by county",
-        class = "county-filter",
-        htmltools::tags$option(value = "", "All counties"),
-        lapply(counties, htmltools::tags$option)
-      )
-    }
-  )
-}
-
 offense_pal <- tibble(
   color = jr_pal[c(2,3,4,5)],
   crime = c("Homicide", "Robbery", "Rape", "Aggravated assault")

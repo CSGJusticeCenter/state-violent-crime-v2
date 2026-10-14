@@ -478,12 +478,12 @@ srs_state_to_map |>
                columns = c("viol_crime_rate_percent_change", "solved_rate_percent_point_change"))
     ),
     columns = list(
-      state_name = sticky_name_column("State", footer = "U.S. rate"),
+      state_name = sticky_name_column("State", footer = "U.S. total"),
       viol_crime_rate_100k_latest = colDef(
         name = "Per 100k", cell = rate_100k_cell,
         footer = rate_100k_cell(us_total$rate_100k)
       ),
-      n_reported_latest = colDef(name = "Incidents"),
+      n_reported_latest = colDef(name = "Incidents", footer = comma(us_total$incidents)),
       solved_rate_latest = colDef(
         name = "Solve rate",
         format = colFormat(suffix = "%", digits = 0),
@@ -546,7 +546,7 @@ srs_state_by_offense_latest |>
     sort_col = list("state_name" = "asc"),
     columnGroups = offense_column_groups(),
     columns = c(
-      list(state_name = sticky_name_column("State", footer = "U.S. rate")),
+      list(state_name = sticky_name_column("State", footer = "U.S. total")),
       offense_columns(
         us_solved_rate_latest,
         crime_rates = offense_rate_benchmark(srs_us, latest_year)

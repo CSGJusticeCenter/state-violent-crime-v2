@@ -142,15 +142,6 @@ test_that("sticky name column keeps its border on the header and footer", {
   expect_equal(definition$footerStyle, definition$style)
 })
 
-test_that("county filter lists each county once and targets its table", {
-  definition <- county_column("agency-table")
-  expect_true(definition$filterable)
-  input <- as.character(definition$filterInput(c("Kings", "Erie", "Bronx, Kings", NA), "county"))
-  expect_match(input, "Reactable.setFilter(&#39;agency-table&#39;, &#39;county&#39;", fixed = TRUE)
-  expect_equal(lengths(regmatches(input, gregexpr("<option", input))), 4)
-  expect_match(input, "All counties</option>\\s*<option>Bronx</option>\\s*<option>Erie</option>\\s*<option>Kings</option>")
-})
-
 test_that("offense trend uses the selected offense and its own rate range", {
   data <- tibble(
     year = c(2023, 2024, 2023, 2024),

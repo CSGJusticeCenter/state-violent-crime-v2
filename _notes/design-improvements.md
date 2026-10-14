@@ -12,8 +12,8 @@ Chart, table and page improvements from the October 2026 design audit. All fit t
 | Spline to straight lines | Declined (keep splines) |
 | Show gaps for hidden years in trend lines | Declined |
 | Zero-baseline y-axes | Declined |
-| Table headers, groups, footer row, dashes, alignment and county filter (2.1–2.5) | Done |
-| Default to 25 rows per page | Declined (keep 10) |
+| Table headers, groups, state and U.S. total rows, dashes and alignment (2.1–2.4) | Done |
+| County filter and 25 rows per page (2.5) | Declined (search bar covers county; keep 10 rows) |
 | GT America with tabular figures in tables; Google Fonts import dropped (2.6) | Done |
 | Everything else below | Open |
 
@@ -66,7 +66,7 @@ Chart, table and page improvements from the October 2026 design audit. All fit t
 
 ### 2.2 Benchmark row
 
-- Move the state or U.S. rate out of each solve-rate header into a `footer` row, with the state or U.S. crime rates beside the solve rates.
+- Move the state or U.S. rate out of each solve-rate header into a `footer` row of state or U.S. totals from the same estimates as the charts and text.
 
 ### 2.3 Missing values
 

@@ -255,7 +255,8 @@ offense_rate_benchmark <- function(rows, year) {
     set_names(janitor::make_clean_names)
 }
 
-### violent crime rate per 100k and solve rate in year `to`, with changes since `from`
+### population, violent crime incidents, rate per 100k and solve rate in year
+### `to`, with changes since `from`
 ### rates is violent_totals() output; solves defaults to rates, and the US page
 ### passes us_solve_trend() output; hidden solve rates are NA
 ### rate_change is in percent and solve_change in percentage points
@@ -269,8 +270,11 @@ total_rate_benchmark <- function(rates, from, to, solves = rates) {
     row <- one_row(solves, y)
     if (isTRUE(row[["hide_total_solve"]])) NA_real_ else row$pct_solved
   }
+  latest <- one_row(rates, to)
   list(
-    rate_100k = one_row(rates, to)$incidents_reported_rate_total * 1e5,
+    population = latest$pop_total,
+    incidents = latest$incidents_reported,
+    rate_100k = latest$incidents_reported_rate_total * 1e5,
     rate_change = pct_change_between(rates$incidents_reported_rate_total, rates$year, from, to) * 100,
     solve_rate = solve_rate(to),
     solve_change = (solve_rate(to) - solve_rate(from)) * 100
