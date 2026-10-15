@@ -284,7 +284,7 @@ trend_chart <- function(data, value, title, subtitle = NULL, caption, value_labe
   chart <- hc_setup(chart)
   if (compare) {
     chart <- compare_end_labels(chart, label_format) |>
-      hc_chart(marginRight = 100, events = list(render = end_labels))
+      hc_chart(marginRight = end_label_margin, events = list(render = end_labels))
   }
   if (!is.null(y_format)) chart <- hc_yAxis(chart, labels = list(format = y_format))
   if (!is.null(y_formatter)) chart <- hc_yAxis(chart, labels = list(formatter = JS(y_formatter)))
@@ -315,23 +315,31 @@ hc_hollow_year <- function(chart, year) {
 ### a series' custom options can set label (default its name), short (used on
 ### charts narrower than 500px), value (a format string for a second line) and
 ### color (default the series color, darkened so text stays readable)
-### labels start at each line's latest point; close labels push apart, and the
-### right margin widens to fit them
+### labels start at each line's latest point with a value; a value from before
+### the chart's last year names its year
+### close labels push apart, and the right margin widens to fit them
+### the accessibility module already names each series, so labels are hidden
+### from screen readers
 end_labels <- JS("
   function() {
     var chart = this, lineHeight = 14, pad = 3;
     var narrow = chart.chartWidth < 500;
+    var lastX = chart.xAxis[0].dataMax;
     (chart.endLabels || []).forEach(function(label) { label.destroy(); });
-    var items = chart.series.filter(function(s) { return s.visible && s.points.length; }).map(function(s) {
-      var p = s.points.reduce(function(a, b) { return b.x > a.x ? b : a; });
+    var items = chart.series.map(function(s) {
+      var points = s.visible ? s.points.filter(function(p) { return !p.isNull; }) : [];
+      if (!points.length) return null;
+      var p = points.reduce(function(a, b) { return b.x > a.x ? b : a; });
       var custom = s.options.custom || {};
       var lines = [(narrow && custom.short) || custom.label || s.name];
-      if (custom.value) lines.push(Highcharts.format(custom.value, { point: p, series: s }));
-      var y = p.plotY;
+      if (custom.value) {
+        var value = Highcharts.format(custom.value, { point: p, series: s });
+        lines.push(p.x < lastX ? value + ' (' + p.x + ')' : value);
+      }
       var height = lines.length * lineHeight;
       var color = custom.color || Highcharts.color(s.color).brighten(-0.2).get();
-      return { lines: lines, color: color, height: height, top: y - height / 2 };
-    }).sort(function(a, b) { return a.top - b.top; });
+      return { lines: lines, color: color, height: height, top: p.plotY - height / 2 };
+    }).filter(Boolean).sort(function(a, b) { return a.top - b.top; });
     items.forEach(function(item, i) {
       if (i > 0) item.top = Math.max(item.top, items[i - 1].top + items[i - 1].height + pad);
     });
@@ -342,6 +350,7 @@ end_labels <- JS("
       return chart.renderer
         .text(item.lines.join('<br>'), chart.plotLeft + chart.plotWidth + 8, chart.plotTop + item.top + 11)
         .css({ color: item.color, fontSize: '12px', fontWeight: 600, lineHeight: lineHeight + 'px' })
+        .attr({ 'aria-hidden': true })
         .add();
     });
     var width = Math.max.apply(null, chart.endLabels.map(function(label) { return label.getBBox().width; }).concat(0));
@@ -350,6 +359,9 @@ end_labels <- JS("
       chart.update({ chart: { marginRight: margin } });
     }
   }")
+
+### starting right margin for end labels, before end_labels measures them
+end_label_margin <- 110
 
 ### short end labels for state comparison charts on narrow screens
 state_short_names <- c(rlang::set_names(state.abb, state.name), "District of Columbia" = "DC")
@@ -379,7 +391,7 @@ offense_end_labels <- function(chart, value) {
   })
   chart |>
     hc_legend(enabled = FALSE) |>
-    hc_chart(marginRight = 120, events = list(render = end_labels))
+    hc_chart(marginRight = end_label_margin, events = list(render = end_labels))
 }
 
 ### stacked columns of offense rates per 100k, one column per year

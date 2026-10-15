@@ -254,7 +254,7 @@ offense_trend_chart(offense_rates, "Rape", state_name_text, compare = TRUE)
 offense_rates |>
   filter(state_name == state) |>
   offense_column_chart(
-    paste0("Violent crime in ", state_name_text, ", by offense"),
+    paste0("Violent crime in ", state_name_text, " by offense"),
     unique(offense_rates$color)
   )
 ```
@@ -353,7 +353,7 @@ offense_solve_rates |>
     ))
   ) |>
   hc_colors(unique(offense_solve_rates$color)) |>
-  hc_title(text = paste0("Violent crime solve rate in ", state_name_text, ", by offense")) |>
+  hc_title(text = paste0("Violent crime solve rate in ", state_name_text, " by offense")) |>
   hc_caption(text = "FBI UCR Program, state crime estimates and clearances") |>
   hc_setup() |>
   hc_yAxis(
