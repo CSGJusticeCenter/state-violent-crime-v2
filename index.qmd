@@ -711,6 +711,8 @@ The FBI stopped collecting SRS data after 2020 and required agencies to report t
 
 Crime rates are calculated by dividing estimated reported crimes by the total population. Population data come from the U.S. Census Bureau [Population Estimates Program](https://www.census.gov/programs-surveys/popest.html){target="_parent"}.
 
+Crime counts follow the FBI's hierarchy rule, which counts only the most serious offense in each incident. Homicide ranks highest, followed by rape, robbery, and aggravated assault. An incident that includes both a robbery and an aggravated assault, for example, counts as one robbery.
+
 {{< include _methodology-exceptional-clearance.qmd >}}
 
 U.S. solve rates leave out `r knitr::combine_words(states_to_exclude_from_solved_rate_viz)`, which did not report reliable clearance data. In 2022, the New York City Police Department (NYPD) reported crimes to the FBI but no clearances. For that year, New York's solve rates for all violent crime, aggravated assault, and robbery use the average of the NYPD's four [quarterly clearance reports](https://www.nyc.gov/site/nypd/stats/reports-analysis/clearance.page){target="_parent"}. In 2019 and 2020, those reports matched the NYPD's FBI clearance rates within half a percentage point for aggravated assault and robbery but not for homicide and rape. New York's 2022 homicide and rape solve rates are therefore omitted, and New York is left out of the 2022 U.S. homicide and rape solve rates.
