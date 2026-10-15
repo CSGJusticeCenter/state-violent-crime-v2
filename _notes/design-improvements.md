@@ -32,6 +32,8 @@ Chart, table and page improvements from the October 2026 design audit. All fit t
   - Mocked first with New Hampshire, Mississippi and DC. At 343px, a one-line "District of Columbia" left a 148px plot; abbreviations leave about 240px.
   - `end_labels` in `R/utils.R` draws the labels for line and area charts, pushes close labels apart and sizes the right margin to fit. `compare_end_labels()` sets each series' label, short name and value format.
   - Label text is each series color darkened, so orange and gray text stays readable.
+  - Values match the tooltip's rounding, except officers per violent offense, whose labels round to whole officers.
+  - The "By offense" solve-rate charts on both pages also use end labels, with "Agg. assault" on narrow charts (`offense_end_labels()`). Labels read each line's latest year, since those charts list points newest first. Close rates, such as Vermont's robbery and homicide at 64%, stack in line order.
 - Tooltips stay one point each. Shared tooltips were declined, since the counts matter more than the comparison.
 - Titles stay as they are.
 - Hollow 2021 markers stay unexplained on the chart. A caption note made the charts too busy.

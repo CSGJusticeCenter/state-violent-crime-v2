@@ -354,7 +354,7 @@ hc_hollow_year <- function(chart, year) {
 ### a series' custom options can set label (default its name), short (used on
 ### charts narrower than 500px), value (a format string for a second line) and
 ### color (default the series color, darkened so text stays readable)
-### lines start at their last point and stacked areas at the middle of their
+### lines start at their latest point and stacked areas at the middle of their
 ### band; close labels push apart, and the right margin widens to fit them
 end_labels <- JS("
   function() {
@@ -362,7 +362,7 @@ end_labels <- JS("
     var narrow = chart.chartWidth < 500;
     (chart.endLabels || []).forEach(function(label) { label.destroy(); });
     var items = chart.series.filter(function(s) { return s.visible && s.points.length; }).map(function(s) {
-      var p = s.points[s.points.length - 1];
+      var p = s.points.reduce(function(a, b) { return b.x > a.x ? b : a; });
       var custom = s.options.custom || {};
       var lines = [(narrow && custom.short) || custom.label || s.name];
       if (custom.value) lines.push(Highcharts.format(custom.value, { point: p, series: s }));
@@ -409,6 +409,19 @@ compare_end_labels <- function(chart, value) {
     series
   })
   chart
+}
+
+### end labels for one line per offense, with a short name for aggravated
+### assault on narrow charts; value is the format string for the second line
+offense_end_labels <- function(chart, value) {
+  chart$x$hc_opts$series <- lapply(chart$x$hc_opts$series, function(series) {
+    series$custom <- list(value = value)
+    if (series$name == "Aggravated assault") series$custom$short <- "Agg. assault"
+    series
+  })
+  chart |>
+    hc_legend(enabled = FALSE) |>
+    hc_chart(marginRight = 120, events = list(render = end_labels))
 }
 
 ### stacked area of offense rates per 100k, labeled at the right end

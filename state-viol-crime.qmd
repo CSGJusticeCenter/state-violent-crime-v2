@@ -378,6 +378,7 @@ offense_solve_rates |>
     endOnTick = FALSE,
     labels = list(format = "{value:,.0f}%")
   ) |>
+  offense_end_labels("{point.y:.0f}%") |>
   hc_hollow_year(low_coverage_solve_year)
 ```
 
@@ -698,7 +699,7 @@ officer_trend |>
     paste0("Officers per violent offense in ", state_name_text),
     paste0("Officers per 1k violent crimes, ", min_year_officers, "–", max_year_officers),
     "FBI UCR Program, law enforcement employee counts and state crime estimates",
-    value_label = "officers per 1,000 violent crimes",
+    value_label = "officers per 1,000 violent crimes", label_format = "{point.y:.0f}",
     expansion = axis_expansion_mult, compare = TRUE
   )
 ```

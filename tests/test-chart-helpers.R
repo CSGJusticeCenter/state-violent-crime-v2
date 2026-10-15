@@ -522,3 +522,15 @@ test_that("offense area chart stacks offenses and labels them in place of a lege
   expect_s3_class(opts$chart$events$render, "JS_EVAL")
   expect_s3_class(opts$chart$events$load, "JS_EVAL")
 })
+
+test_that("offense end labels replace the legend and shorten aggravated assault", {
+  df <- tibble(year = rep(c(2024, 2025), 2), y = 1:4,
+               group = rep(c("Aggravated assault", "Rape"), each = 2))
+  chart <- hchart(df, "spline", hcaes(year, y, group = group)) |>
+    offense_end_labels("{point.y:.0f}%")
+  opts <- chart$x$hc_opts
+  expect_false(opts$legend$enabled)
+  expect_equal(opts$series[[1]]$custom, list(value = "{point.y:.0f}%", short = "Agg. assault"))
+  expect_equal(opts$series[[2]]$custom, list(value = "{point.y:.0f}%"))
+  expect_s3_class(opts$chart$events$render, "JS_EVAL")
+})

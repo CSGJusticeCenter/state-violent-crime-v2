@@ -437,6 +437,7 @@ us_offense_solve_rates |>
     endOnTick = FALSE,
     labels = list(format = "{value:,.0f}%")
   ) |>
+  offense_end_labels("{point.y:.0f}%") |>
   hc_hollow_year(low_coverage_solve_year)
 ```
 
