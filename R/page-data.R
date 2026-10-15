@@ -57,6 +57,15 @@ inflation_index_path <- "data/annual-index-value_annual-percent-change_2025.xls"
 change_colors <- c("#00475d", "#007392", "#9ed4ef", "#FFFFFF", "#EDB799", "#D25E2D", "#7B3014")
 rate_colors <- c("#d4e9f8", "#9ed4ef", "#007392", "#00475d")
 
+### county map solve-rate classes, in whole percents
+### the breaks split 2025 counties with 25 or more incidents into groups of similar size
+county_map_breaks <- c(35, 45, 55, 65)
+county_map_colors <- c("#d4e9f8", "#9ed4ef", "#4fa6c8", "#007392", "#00475d")
+
+### counties without a rate are white, so they stand apart from every class
+county_map_null_color <- "#FFFFFF"
+county_map_border <- list(color = "black", width = 0.45)
+
 ### violent offenses in the order of the agency data columns and data exports
 ### page tables order offenses by table_offenses in R/utils.R
 violent_offenses <- c("Homicide", "Rape", "Robbery", "Aggravated assault")

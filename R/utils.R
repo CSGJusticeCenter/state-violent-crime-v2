@@ -67,7 +67,13 @@ hc_theme_jc <- hc_theme_merge(
                               fontSize = "24px")),
     subtitle = list(style = list(fontFamily = default_fonts, fontSize = "16px",
                                  color = "#666666")),
-    legend = list(align = "center", verticalAlign = "bottom"),
+    ### legend items only label the chart, so they don't look or act like buttons
+    legend = list(
+      align = "center", verticalAlign = "bottom",
+      itemStyle = list(cursor = "default"),
+      itemHoverStyle = list(color = "#333333", cursor = "default"),
+      accessibility = list(enabled = FALSE)
+    ),
     caption = list(align = "right"),
     plotOptions = list(
       series = list(states = list(inactive = list(opacity = 1))),
@@ -93,11 +99,22 @@ render_image_print <- JS("
 
 render_image_remove <- JS("function(){logo.element.remove();}")
 
+### cancel legend clicks, which would hide series or map color classes
+lock_legend <- JS("
+  function() {
+    this.legend.allItems.forEach(function(item) {
+      Highcharts.addEvent(item, 'legendItemClick', function(e) { e.preventDefault(); });
+    });
+  }")
+
 # define default setup for highcharter plots
 # add and configure exporting and accessibility modules
 # set justice center theme
 # set default tooltip text to be in input data column `tooltip`
 hc_setup <- function(x) {
+  ### describe every point to screen readers, even on maps with over 200 counties
+  x$x$hc_opts$accessibility$series$pointDescriptionEnabledThreshold <- FALSE
+
   hc_add_dependency(x, name = "modules/exporting.js") |>
     hc_add_dependency(name = "modules/offline-exporting.js") |>
     hc_add_dependency(name = "modules/accessibility.js") |>
@@ -134,6 +151,7 @@ hc_setup <- function(x) {
   ) |>
   hc_chart(
     events = list(
+      load = lock_legend,
       beforePrint = render_image_print,
       afterPrint = render_image_remove
     )
@@ -153,6 +171,23 @@ chart_bounds <- function(values, expansion = 0.5, floor = NULL, ceiling = NULL) 
 change_map_bounds <- function(values) {
   extent <- max(abs(values), na.rm = TRUE)
   c(-extent, extent)
+}
+
+### colorAxis dataClasses from the breaks between classes, one color per class
+### breaks sit at the low end of each class, so 45 falls in "45–55%"
+map_data_classes <- function(breaks, colors, suffix = "") {
+  stopifnot(length(colors) == length(breaks) + 1)
+  n <- length(breaks)
+  labels <- c(
+    paste0("Under ", breaks[1], suffix),
+    paste0(breaks[-n], "–", breaks[-1], suffix),
+    paste0(breaks[n], suffix, " or more")
+  )
+  from <- c(NA, breaks)
+  to <- c(breaks, NA)
+  lapply(seq_along(colors), \(i) {
+    Filter(Negate(is.na), list(from = from[i], to = to[i], color = colors[i], name = labels[i]))
+  })
 }
 
 ### spec$tooltip names the tooltip_* column this map shows
@@ -176,12 +211,8 @@ state_map_chart <- function(data, map, spec) {
       ),
       accessibility = list(point = list(valueDescriptionFormat = spec$accessibility))
     ) |>
-    hc_title(text = spec$title, align = "left",
-             style = list(fontFamily = header_font, color = "#005FAD",
-                          fontSize = "24px", fontWeight = "bold")) |>
-    hc_subtitle(text = spec$subtitle, align = "left",
-                style = list(fontFamily = default_fonts, fontSize = "16px",
-                             color = "#666666")) |>
+    hc_title(text = spec$title) |>
+    hc_subtitle(text = spec$subtitle) |>
     hc_colorAxis(
       min = if (is.null(bounds)) 0 else bounds[1],
       max = if (is.null(bounds)) NULL else bounds[2],
