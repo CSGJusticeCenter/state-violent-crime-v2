@@ -18,21 +18,28 @@ Chart, table and page improvements from the October 2026 design audit. All fit t
 | Legends as labels only, in all charts (1.5), PR #29 | Done |
 | CSV and data-table export menu items (1.5) | Declined (data will be published elsewhere) |
 | Review fixes on PR #29: white no-data counties, map screen-reader text, staffing prose, U.S. page title | Done |
+| Muted region bars (1.4), direct labels (1.1), bordered county map legend squares, in-page link scrolling (3.1) | Done on `design-trends-maps` |
+| Chart titles as findings, shared tooltips, hollow 2021 marker note, "By offense" stacked area (1.1); binned hex change maps (1.3); larger axis labels (1.5); in-page TOC (3.1) | Declined |
+| Summary row (3.2) | On hold, pending other edits |
 | Everything else below | Open |
 
 ## 1. Charts
 
 ### 1.1 Trend charts
 
-- Label lines at their last point ("New York 368", "U.S. 329") and drop the legend.
-- Set `tooltip = list(shared = TRUE)` on comparison charts so state and U.S. values appear together.
-- Write chart titles as findings. `change_phrase()` already produces "fell 4 percent since 2019."
-  - Current titles repeat the section heading above them.
-- Explain hollow 2021 markers in the caption.
-- Drop the "By offense" stacked column chart, or replace it with a share chart.
-  - Homicide is about 1% of each stack and can't be seen.
-  - Only the bottom segment can be compared across years.
-  - The four single-offense tabs already show each trend.
+- Direct labels: done. State comparison charts label each line's end with its name and latest value, and drop the legend.
+  - Full names on charts 500px or wider; state abbreviations below that, so phones keep the plot wide. The U.S. reads "U.S." at every width.
+  - Mocked first with New Hampshire, Mississippi and DC. At 343px, a one-line "District of Columbia" left a 148px plot; abbreviations leave about 240px.
+  - `end_labels` in `R/utils.R` draws the labels for line and area charts, pushes close labels apart and sizes the right margin to fit. `compare_end_labels()` sets each series' label, short name and value format.
+  - Label text is each series color darkened, so orange and gray text stays readable.
+  - Values match the tooltip's rounding, except officers per violent offense, whose labels round to whole officers.
+  - The "By offense" solve-rate charts on both pages also use end labels, with "Agg. assault" on narrow charts (`offense_end_labels()`). Labels read each line's latest year, since those charts list points newest first. Close rates, such as Vermont's robbery and homicide at 64%, stack in line order.
+- Tooltips stay one point each. Shared tooltips were declined, since the counts matter more than the comparison.
+- Titles stay as they are.
+- Hollow 2021 markers stay unexplained on the chart. A caption note made the charts too busy.
+- "By offense" stays stacked columns with a legend.
+  - Tried a stacked area chart with end labels, then went back, because each year is a separate count and an area implies a continuous quantity.
+  - Both pages draw it with `offense_column_chart()` in `R/utils.R`.
 
 ### 1.2 County map — done in PR #29
 
@@ -50,23 +57,22 @@ Chart, table and page improvements from the October 2026 design audit. All fit t
 | Credits | Off in `hcmap_local()` |
 | Title style | Comes from `hc_theme_jc`; the copies in the county map and `state_map_chart()` are gone |
 | Tooltip | The map's own tooltip formatter is gone, because `hc_setup()` replaced it anyway |
-| Legend symbols | Squares in place of dots |
+| Legend symbols | Squares in place of dots, with a dark border (`outline_legend_symbols`) so the white class shows |
 
-### 1.3 U.S. hex maps
+### 1.3 U.S. hex maps — declined
 
-- Cap the symmetric change scale at a high percentile, or bin it with `dataClasses`.
-  - The largest absolute value sets the scale now, so one outlier pales every other state.
+- The change maps keep continuous color ramps, scaled to the largest change in either direction.
+- Tried seven fixed classes (crime rate breaks at 5, 15 and 30 percent; solve rate at 2, 5 and 10 points), then went back to the ramps.
+- The largest change sets each scale (−41% crime, +16 points solved). States with similar changes get similar colors, which is intended.
 
-### 1.4 Homicide panels
+### 1.4 Homicide panels — done
 
-- Give the state series the strong color and the region series a muted gray.
-  - Region is dark navy and state is lighter teal now, so the comparison draws the eye.
-  - The trend charts already treat the U.S. this way.
+- State bars use the trend charts' state teal; region bars use gray `#8C8C8C` (3.4:1 on white). `shr_series_colors` in `R/utils.R`.
 
 ### 1.5 All charts
 
 - Add `"downloadCSV"` and `"viewData"` to the export menu with `modules/export-data.js`. Declined, since the data will be published elsewhere.
-- Make axis labels larger and darker.
+- Make axis labels larger and darker. Declined.
 - Legends label charts only. Done in PR #29.
   - A `load` event in `hc_setup()` cancels clicks on every legend item, so clicks can't hide series or map color classes.
   - Highcharts 10.2 has no chart-wide option for this, and the series option misses color classes.
@@ -97,9 +103,13 @@ Chart, table and page improvements from the October 2026 design audit. All fit t
 
 ### 3.1 Navigation
 
-- Turn on `toc: true` with `toc-location: body` for an in-page jump list that works inside the CSG site iframe.
+- In-page TOC: tried and declined.
+- In-page link scrolling: done.
+  - The CSG site embeds pages in a cross-origin iframe 6,000px tall. Pages fit inside it, so the iframe never scrolls, and Chrome won't let an anchor jump inside it scroll the parent page.
+  - The methodology links from PR #29 did nothing in the embed for this reason.
+  - A script in `_quarto.yaml` handles every in-page link with `scrollIntoView()`, which does scroll the parent. Tested in a local cross-origin harness that copies the CSG embed.
 
-### 3.2 Summary row
+### 3.2 Summary row — on hold
 
 - Add four stats under the state page title.
   - 2025 crime rate

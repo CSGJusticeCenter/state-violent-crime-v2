@@ -190,6 +190,14 @@ map_data_classes <- function(breaks, colors, suffix = "") {
   })
 }
 
+### dark border on every map legend square, so white and pale classes show on the white page
+outline_legend_symbols <- JS("
+  function() {
+    this.legend.allItems.forEach(function(item) {
+      if (item.legendSymbol) item.legendSymbol.attr({ stroke: '#333333', 'stroke-width': 1 });
+    });
+  }")
+
 ### spec$tooltip names the tooltip_* column this map shows
 state_map_chart <- function(data, map, spec) {
   if (!is.null(spec$tooltip)) {
@@ -241,11 +249,12 @@ state_map_chart <- function(data, map, spec) {
 
 ### spline trend by year, padded with chart_bounds()
 ### compare = TRUE draws one line per state_name, with the US dashed in gray,
-### and shows a legend
+### and labels each line's end with its name and label_format value in place
+### of a legend
 ### value_label and value_format describe each point to screen readers
 trend_chart <- function(data, value, title, subtitle = NULL, caption, value_label,
-                        value_format = "{point.y:.1f}", color = jr_pal[1],
-                        compare = FALSE, legend = compare, expansion = 0.5,
+                        value_format = "{point.y:.1f}", label_format = value_format,
+                        color = jr_pal[1], compare = FALSE, expansion = 0.5,
                         floor = 0, ceiling = NULL, y_format = NULL, y_formatter = NULL) {
   bounds <- chart_bounds(data[[value]], expansion = expansion, floor = floor, ceiling = ceiling)
   accessibility <- list(point = list(valueDescriptionFormat = paste0(
@@ -265,14 +274,18 @@ trend_chart <- function(data, value, title, subtitle = NULL, caption, value_labe
   chart <- chart |>
     hc_title(text = title) |>
     hc_caption(text = caption) |>
-    hc_yAxis(min = bounds[1], max = bounds[2], endOnTick = FALSE)
+    hc_yAxis(min = bounds[1], max = bounds[2], endOnTick = FALSE) |>
+    hc_legend(enabled = FALSE)
   if (!is.null(subtitle)) chart <- hc_subtitle(chart, text = subtitle)
-  if (!legend) chart <- hc_legend(chart, enabled = FALSE)
 
   ### label options merge into hc_setup()'s labels, so they go after it
   ### y_format replaces its format; y_formatter works alongside it because
   ### Highcharts uses formatter over format
   chart <- hc_setup(chart)
+  if (compare) {
+    chart <- compare_end_labels(chart, label_format) |>
+      hc_chart(marginRight = end_label_margin, events = list(render = end_labels))
+  }
   if (!is.null(y_format)) chart <- hc_yAxis(chart, labels = list(format = y_format))
   if (!is.null(y_formatter)) chart <- hc_yAxis(chart, labels = list(formatter = JS(y_formatter)))
   chart
@@ -298,17 +311,121 @@ hc_hollow_year <- function(chart, year) {
   chart
 }
 
-### reported rate trend for one offense
+### labels at the right end of each series in place of a legend
+### a series' custom options can set label (default its name), short (used on
+### charts narrower than 500px), value (a format string for a second line) and
+### color (default the series color, darkened so text stays readable)
+### labels start at each line's latest point with a value; a value from before
+### the chart's last year names its year
+### close labels push apart, and the right margin widens to fit them
+### the accessibility module already names each series, so labels are hidden
+### from screen readers
+end_labels <- JS("
+  function() {
+    var chart = this, lineHeight = 14, pad = 3;
+    var narrow = chart.chartWidth < 500;
+    var lastX = chart.xAxis[0].dataMax;
+    (chart.endLabels || []).forEach(function(label) { label.destroy(); });
+    var items = chart.series.map(function(s) {
+      var points = s.visible ? s.points.filter(function(p) { return !p.isNull; }) : [];
+      if (!points.length) return null;
+      var p = points.reduce(function(a, b) { return b.x > a.x ? b : a; });
+      var custom = s.options.custom || {};
+      var lines = [(narrow && custom.short) || custom.label || s.name];
+      if (custom.value) {
+        var value = Highcharts.format(custom.value, { point: p, series: s });
+        lines.push(p.x < lastX ? value + ' (' + p.x + ')' : value);
+      }
+      var height = lines.length * lineHeight;
+      var color = custom.color || Highcharts.color(s.color).brighten(-0.2).get();
+      return { lines: lines, color: color, height: height, top: p.plotY - height / 2 };
+    }).filter(Boolean).sort(function(a, b) { return a.top - b.top; });
+    items.forEach(function(item, i) {
+      if (i > 0) item.top = Math.max(item.top, items[i - 1].top + items[i - 1].height + pad);
+    });
+    var last = items[items.length - 1];
+    var overflow = last ? last.top + last.height - chart.plotHeight : 0;
+    if (overflow > 0) items.forEach(function(item) { item.top -= overflow; });
+    chart.endLabels = items.map(function(item) {
+      return chart.renderer
+        .text(item.lines.join('<br>'), chart.plotLeft + chart.plotWidth + 8, chart.plotTop + item.top + 11)
+        .css({ color: item.color, fontSize: '12px', fontWeight: 600, lineHeight: lineHeight + 'px' })
+        .attr({ 'aria-hidden': true })
+        .add();
+    });
+    var width = Math.max.apply(null, chart.endLabels.map(function(label) { return label.getBBox().width; }).concat(0));
+    var margin = Math.ceil(width) + 16;
+    if (Math.abs(margin - (chart.options.chart.marginRight || 0)) > 1) {
+      chart.update({ chart: { marginRight: margin } });
+    }
+  }")
+
+### starting right margin for end labels, before end_labels measures them
+end_label_margin <- 110
+
+### short end labels for state comparison charts on narrow screens
+state_short_names <- c(rlang::set_names(state.abb, state.name), "District of Columbia" = "DC")
+
+### custom options end_labels reads for a state and U.S. comparison; value is
+### the format string for each label's second line
+### the U.S. reads "U.S." at every width, in a gray dark enough for text
+compare_end_labels <- function(chart, value) {
+  chart$x$hc_opts$series <- lapply(chart$x$hc_opts$series, function(series) {
+    series$custom <- if (series$name == "United States") {
+      list(label = "U.S.", value = value, color = "#6F6B6B")
+    } else {
+      list(short = unname(state_short_names[series$name]), value = value)
+    }
+    series
+  })
+  chart
+}
+
+### end labels for one line per offense, with a short name for aggravated
+### assault on narrow charts; value is the format string for the second line
+offense_end_labels <- function(chart, value) {
+  chart$x$hc_opts$series <- lapply(chart$x$hc_opts$series, function(series) {
+    series$custom <- list(value = value)
+    if (series$name == "Aggravated assault") series$custom$short <- "Agg. assault"
+    series
+  })
+  chart |>
+    hc_legend(enabled = FALSE) |>
+    hc_chart(marginRight = end_label_margin, events = list(render = end_labels))
+}
+
+### stacked columns of offense rates per 100k, one column per year
 ### data needs rate_label, the rate as tooltips show it, for screen readers
-offense_trend_chart <- function(data, offense, title, subtitle, color,
+### colors follow the order of the group levels
+offense_column_chart <- function(data, title, colors,
+                                 caption = "FBI UCR Program, state crime estimates") {
+  hchart(data, "column", hcaes(year, incidents_reported_rate_total, group = group),
+         stacking = "normal", groupPadding = 0.05,
+         accessibility = list(point = list(
+           valueDescriptionFormat = "{point.series.name}, year: {point.x:.0f}, incidents per 100,000 residents: {point.rate_label}"
+         ))) |>
+    hc_colors(colors) |>
+    hc_title(text = title) |>
+    hc_subtitle(text = "Crime reported to police per 100,000 residents") |>
+    hc_caption(text = caption) |>
+    hc_legend(reversed = TRUE) |>
+    hc_setup()
+}
+
+### reported rate trend for one offense in place, e.g., "Robbery in New York",
+### subtitled "Robbery incidents reported to police per 100,000 residents" and
+### drawn in the offense's color
+### data needs rate_label, the rate as tooltips show it, for screen readers
+offense_trend_chart <- function(data, offense, place,
                                 caption = "FBI UCR Program, state crime estimates",
                                 compare = FALSE) {
   trend_chart(
     dplyr::filter(data, group == offense), "incidents_reported_rate_total",
-    title, subtitle, caption,
+    paste(offense, "in", place),
+    paste(offense, "incidents reported to police per 100,000 residents"), caption,
     value_label = paste(tolower(offense), "incidents per 100,000 residents"),
     value_format = "{point.rate_label}",
-    color = color, compare = compare
+    color = offense_color(offense), compare = compare
   )
 }
 
@@ -343,8 +460,13 @@ shr_source <- function(years) {
   paste0("FBI UCR Program, Supplementary Homicide Reports (", years, ")")
 }
 
+### state bars in the trend charts' state color, region bars in a muted gray
+### that keeps 3:1 contrast on white
+shr_series_colors <- c(jr_pal[1], "#8C8C8C")
+
 ### column chart of solve rates by group
-### series names a column that splits the bars into series shown in a legend
+### series names a column that splits the bars into series shown in a legend,
+### colored in order by shr_series_colors
 shr_rate_chart <- function(data, title, years, caption, categories = NULL, series = NULL) {
   chart <- if (is.null(series)) {
     hchart(data, "column", hcaes(group, clearance_rate),
@@ -355,7 +477,8 @@ shr_rate_chart <- function(data, title, years, caption, categories = NULL, serie
     hchart(data, "column", hcaes(group, clearance_rate, group = !!rlang::sym(series)),
            accessibility = list(point = list(
              valueDescriptionFormat = "{point.series.name}, {point.name}: solve rate {point.y:.1f}%"
-           )))
+           ))) |>
+      hc_colors(shr_series_colors)
   }
 
   chart <- chart |>

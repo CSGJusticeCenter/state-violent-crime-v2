@@ -227,64 +227,36 @@ offense_rates <- srs_state |>
 ## Homicide
 
 ```{r}
-offense_trend_chart(
-  offense_rates, "Homicide", paste0("Homicide in ", state_name_text),
-  "Homicide incidents reported to police per 100,000 residents",
-  offense_color("Homicide"), compare = TRUE
-)
+offense_trend_chart(offense_rates, "Homicide", state_name_text, compare = TRUE)
 ```
 
 ## Aggravated assault
 
 ```{r}
-offense_trend_chart(
-  offense_rates, "Aggravated assault", paste0("Aggravated assault in ", state_name_text),
-  "Incidents reported to police per 100,000 residents where aggravated assault was the most serious offense",
-  offense_color("Aggravated assault"), compare = TRUE
-)
+offense_trend_chart(offense_rates, "Aggravated assault", state_name_text, compare = TRUE)
 ```
 
 ## Robbery
 
 ```{r}
-offense_trend_chart(
-  offense_rates, "Robbery", paste0("Robbery in ", state_name_text),
-  "Incidents reported to police per 100,000 residents where robbery was the most serious offense",
-  offense_color("Robbery"), compare = TRUE
-)
+offense_trend_chart(offense_rates, "Robbery", state_name_text, compare = TRUE)
 ```
 
 ## Rape
 
 ```{r}
-offense_trend_chart(
-  offense_rates, "Rape", paste0("Rape in ", state_name_text),
-  "Incidents reported to police per 100,000 residents where rape was the most serious offense",
-  offense_color("Rape"), compare = TRUE
-)
+offense_trend_chart(offense_rates, "Rape", state_name_text, compare = TRUE)
 ```
 
 ## By offense
 
 ```{r}
-state_offense_rates <- filter(offense_rates, state_name == state)
-
-state_offense_rates |>
-  hchart(
-    "column",
-    stacking = "normal",
-    groupPadding = 0.05,
-    hcaes(year, incidents_reported_rate_total, group = group),
-    accessibility = list(point = list(
-      valueDescriptionFormat = "{point.series.name}, year: {point.x:.0f}, incidents per 100,000 residents: {point.rate_label}"
-    ))
-  ) |>
-  hc_colors(unique(offense_rates$color)) |>
-  hc_title(text = paste0("Violent crime in ", state_name_text, ", by offense")) |>
-  hc_subtitle(text = "Crime reported to police per 100,000 residents") |>
-  hc_caption(text = "FBI UCR Program, state crime estimates") |>
-  hc_legend(reversed = TRUE) |>
-  hc_setup()
+offense_rates |>
+  filter(state_name == state) |>
+  offense_column_chart(
+    paste0("Violent crime in ", state_name_text, " by offense"),
+    unique(offense_rates$color)
+  )
 ```
 
 :::
@@ -347,7 +319,7 @@ trend_chart(
   violent_solve_rates, "solve_rate_pct",
   paste0("Violent crime solve rate in ", state_name_text),
   caption = "FBI UCR Program, state crime estimates and clearances",
-  value_label = "solve rate", value_format = "{point.y:.1f}%",
+  value_label = "solve rate", value_format = "{point.y:.1f}%", label_format = "{point.y:.0f}%",
   compare = TRUE, expansion = axis_expansion_mult, y_format = "{value:,.0f}%"
 ) |>
   hc_hollow_year(low_coverage_solve_year)
@@ -381,7 +353,7 @@ offense_solve_rates |>
     ))
   ) |>
   hc_colors(unique(offense_solve_rates$color)) |>
-  hc_title(text = paste0("Violent crime solve rate in ", state_name_text, ", by offense")) |>
+  hc_title(text = paste0("Violent crime solve rate in ", state_name_text, " by offense")) |>
   hc_caption(text = "FBI UCR Program, state crime estimates and clearances") |>
   hc_setup() |>
   hc_yAxis(
@@ -390,6 +362,7 @@ offense_solve_rates |>
     endOnTick = FALSE,
     labels = list(format = "{value:,.0f}%")
   ) |>
+  offense_end_labels("{point.y:.0f}%") |>
   hc_hollow_year(low_coverage_solve_year)
 ```
 
@@ -475,7 +448,8 @@ hcmap_local(
   hc_colorAxis(dataClasses = map_data_classes(county_map_breaks, county_map_colors, "%")) |>
   hc_legend(align = "center", verticalAlign = "bottom", layout = "horizontal",
             symbolRadius = 0, symbolHeight = 14, symbolWidth = 14) |>
-  hc_setup()
+  hc_setup() |>
+  hc_chart(events = list(render = outline_legend_symbols))
 ```
 
 :::
@@ -709,7 +683,7 @@ officer_trend |>
     paste0("Officers per violent offense in ", state_name_text),
     paste0("Officers per 1k violent crimes, ", min_year_officers, "–", max_year_officers),
     "FBI UCR Program, law enforcement employee counts and state crime estimates",
-    value_label = "officers per 1,000 violent crimes",
+    value_label = "officers per 1,000 violent crimes", label_format = "{point.y:.0f}",
     expansion = axis_expansion_mult, compare = TRUE
   )
 ```
@@ -780,6 +754,8 @@ Data on crime and solve rates come from the FBI's [Uniform Crime Reporting Progr
 The FBI stopped collecting SRS data after 2020 and required agencies to report through NIBRS. Fewer agencies reported as a result, so `r low_coverage_solve_year` estimates are less reliable. Starting with 2022 data, the FBI again accepted SRS reports from agencies that could not submit NIBRS data. [Agencies covering `r percent(state_solve_coverage, 1, suffix = " percent")` of `r state_name_text`'s population reported in `r low_coverage_solve_year`. The solve rate charts show `r low_coverage_solve_year` only where reporting agencies covered at least `r percent(min_solve_coverage, suffix = " percent")` of the population, so they `r if_else(state_solve_coverage >= min_solve_coverage, "include", "omit")` `r low_coverage_solve_year` for `r state_name_text`. The U.S. solve rate includes `r low_coverage_solve_year`, when agencies covering `r percent(us_solve_coverage, 1, suffix = " percent")` of the U.S. population reported.]{.content-visible when-meta="show-solved"}
 
 State crime rates are calculated by dividing estimated reported crimes by the state's total population. Population data come from the U.S. Census Bureau [Population Estimates Program](https://www.census.gov/programs-surveys/popest.html){target="_parent"}.
+
+Crime counts follow the FBI's hierarchy rule, which counts only the most serious offense in each incident. Homicide ranks highest, followed by rape, robbery, and aggravated assault. An incident that includes both a robbery and an aggravated assault, for example, counts as one robbery.
 
 {{< include _methodology-exceptional-clearance.qmd >}}
 

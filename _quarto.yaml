@@ -12,6 +12,9 @@ format:
       text: |
         <link rel="preload" as="image" href="https://csg-state-violent-crime.netlify.app/img/csgjc-logo.png">
     # links to the methodology, and page loads at #methodology, open its collapsed callout
+    # in-page links scroll with scrollIntoView(), because the CSG site's iframe is
+    # taller than the page and on another domain, so a plain anchor jump scrolls nothing
+    # links whose hash doesn't decode to an element keep the default jump
     include-after-body:
       text: |
         <script>
@@ -22,8 +25,27 @@ format:
         const openMethodologyAtHash = () => {
           if (location.hash === "#methodology") openMethodology();
         };
-        document.querySelectorAll('a[href="#methodology"]').forEach((link) => {
-          link.addEventListener("click", openMethodology);
+        const scrollBehavior = matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+        const linkTarget = (link) => {
+          try {
+            return document.getElementById(decodeURIComponent(link.hash.slice(1)));
+          } catch {
+            return null;
+          }
+        };
+        document.querySelectorAll('a[href^="#"]:not([data-bs-toggle])').forEach((link) => {
+          const target = linkTarget(link);
+          if (!target) return;
+          link.addEventListener("click", (event) => {
+            event.preventDefault();
+            if (link.hash === "#methodology") openMethodology();
+            target.scrollIntoView({ behavior: scrollBehavior, block: "start" });
+
+            // focus the target so the next Tab continues from it, as a native jump would
+            if (!target.hasAttribute("tabindex")) target.setAttribute("tabindex", "-1");
+            target.focus({ preventScroll: true });
+            history.replaceState(null, "", link.hash);
+          });
         });
         window.addEventListener("hashchange", openMethodologyAtHash);
         openMethodologyAtHash();
