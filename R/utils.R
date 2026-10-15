@@ -216,14 +216,11 @@ map_data_classes <- function(breaks, colors, suffix = "") {
   })
 }
 
-### outline white legend squares, which would vanish on the white page
-outline_white_legend_symbols <- JS("
+### dark border on every map legend square, so white and pale classes show on the white page
+outline_legend_symbols <- JS("
   function() {
     this.legend.allItems.forEach(function(item) {
-      var symbol = item.legendSymbol;
-      if (symbol && /^#f{3}(f{3})?$/i.test(symbol.attr('fill'))) {
-        symbol.attr({ stroke: '#999999', 'stroke-width': 1 });
-      }
+      if (item.legendSymbol) item.legendSymbol.attr({ stroke: '#333333', 'stroke-width': 1 });
     });
   }")
 
@@ -275,7 +272,7 @@ state_map_chart <- function(data, map, spec) {
       hc_colorAxis(dataClasses = change_map_data_classes(spec$breaks, spec$colors, spec$suffix %||% "")) |>
       hc_legend(align = "center", verticalAlign = "bottom", layout = "horizontal",
                 symbolRadius = 0, symbolHeight = 14, symbolWidth = 14) |>
-      hc_chart(events = list(render = outline_white_legend_symbols))
+      hc_chart(events = list(render = outline_legend_symbols))
   } else {
     chart |>
       hc_colorAxis(
@@ -330,11 +327,9 @@ trend_chart <- function(data, value, title, subtitle = NULL, caption, value_labe
 
 ### hollow markers on every point in year, outlined in the series color
 ### series without their own color take it from the chart's hc_colors() palette
-### when any point is hollow, a note above the caption explains the markers
 hc_hollow_year <- function(chart, year) {
   series_list <- chart$x$hc_opts$series
   palette <- chart$x$hc_opts$colors
-  hollow <- FALSE
   chart$x$hc_opts$series <- lapply(seq_along(series_list), function(i) {
     series <- series_list[[i]]
     color <- series$color %||% palette[(i - 1) %% length(palette) + 1]
@@ -342,18 +337,62 @@ hc_hollow_year <- function(chart, year) {
     series$data <- lapply(series$data, function(point) {
       if (isTRUE(point$x == year)) {
         point$marker <- list(fillColor = "#FFFFFF", lineColor = color, lineWidth = 2)
-        hollow <<- TRUE
       }
       point
     })
     series
   })
-  if (hollow) {
-    note <- paste0("Hollow points mark ", year, ", when fewer agencies reported.")
-    caption <- chart$x$hc_opts$caption$text
-    chart$x$hc_opts$caption$text <- paste(c(note, caption), collapse = "<br>")
-  }
   chart
+}
+
+### labels at the right end of each series, in the series color, in place of a legend
+### stacked areas center each label on its band, and labels closer than 14px
+### push apart; the chart needs a marginRight wide enough for the longest label
+end_labels <- JS("
+  function() {
+    var chart = this, gap = 14;
+    (chart.endLabels || []).forEach(function(label) { label.destroy(); });
+    var items = chart.series.filter(function(s) { return s.visible && s.points.length; }).map(function(s) {
+      var p = s.points[s.points.length - 1];
+      var y = p.plotY;
+      if (s.type === 'area' && p.stackY !== undefined) {
+        y = (p.plotY + chart.yAxis[0].toPixels(p.stackY - p.y, true)) / 2;
+      }
+      return { series: s, y: y };
+    }).sort(function(a, b) { return a.y - b.y; });
+    items.forEach(function(item, i) {
+      if (i > 0) item.y = Math.max(item.y, items[i - 1].y + gap);
+    });
+    var overflow = items.length ? items[items.length - 1].y - chart.plotHeight : 0;
+    if (overflow > 0) items.forEach(function(item) { item.y -= overflow; });
+    chart.endLabels = items.map(function(item) {
+      return chart.renderer
+        .text(item.series.name, chart.plotLeft + chart.plotWidth + 8, chart.plotTop + item.y + 4)
+        .css({ color: item.series.color, fontSize: '12px', fontWeight: 600 })
+        .add();
+    });
+  }")
+
+### stacked area of offense rates per 100k, labeled at the right end
+### data needs rate_label, the rate as tooltips show it, for screen readers
+### colors follow the order of the group levels
+offense_area_chart <- function(data, title, colors,
+                               caption = "FBI UCR Program, state crime estimates") {
+  hchart(data, "area", hcaes(year, incidents_reported_rate_total, group = group),
+         stacking = "normal",
+         accessibility = list(point = list(
+           valueDescriptionFormat = "{point.series.name}, year: {point.x:.0f}, incidents per 100,000 residents: {point.rate_label}"
+         ))) |>
+    hc_colors(colors) |>
+    hc_title(text = title) |>
+    hc_subtitle(text = "Crime reported to police per 100,000 residents") |>
+    hc_caption(text = caption) |>
+    hc_legend(enabled = FALSE) |>
+    hc_plotOptions(area = list(lineWidth = 1, lineColor = "#FFFFFF", fillOpacity = 0.9,
+                               marker = list(enabled = FALSE))) |>
+    hc_chart(marginRight = 130) |>
+    hc_setup() |>
+    hc_chart(events = list(render = end_labels))
 }
 
 ### reported rate trend for one offense

@@ -358,22 +358,11 @@ offense_trend_chart(
 ## By offense
 
 ```{r}
-us_offense_rates |>
-  hchart(
-    "column",
-    stacking = "normal",
-    groupPadding = 0.05,
-    hcaes(year, incidents_reported_rate_total, group = group),
-    accessibility = list(point = list(
-      valueDescriptionFormat = "{point.series.name}, year: {point.x:.0f}, incidents per 100,000 residents: {point.rate_label}"
-    ))
-  ) |>
-  hc_colors(unique(us_offense_rates$color)) |>
-  hc_title(text = paste0("Violent crime in ", state_name_text, " by offense")) |>
-  hc_subtitle(text = "Crime reported to police per 100,000 residents") |>
-  hc_caption(text = "FBI UCR Program, state crime estimates") |>
-  hc_legend(reversed = TRUE) |>
-  hc_setup()
+offense_area_chart(
+  us_offense_rates,
+  paste0("Violent crime in ", state_name_text, " by offense"),
+  unique(us_offense_rates$color)
+)
 ```
 
 :::

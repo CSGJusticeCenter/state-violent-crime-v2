@@ -18,25 +18,24 @@ Chart, table and page improvements from the October 2026 design audit. All fit t
 | Legends as labels only, in all charts (1.5), PR #29 | Done |
 | CSV and data-table export menu items (1.5) | Declined (data will be published elsewhere) |
 | Review fixes on PR #29: white no-data counties, map screen-reader text, staffing prose, U.S. page title | Done |
-| Hollow 2021 marker note (1.1), binned hex change maps (1.3), muted region bars (1.4), in-page TOC (3.1) | Done on `design-trends-maps` |
-| Chart titles as findings (1.1), larger axis labels (1.5) | Declined (keep as is) |
+| Binned hex change maps (1.3), muted region bars (1.4), "By offense" stacked area (1.1), bordered map legend squares, in-page link scrolling (3.1) | Done on `design-trends-maps` |
+| Chart titles as findings, shared tooltips, hollow 2021 marker note (1.1); larger axis labels (1.5); in-page TOC (3.1) | Declined |
 | Summary row (3.2) | On hold, pending other edits |
-| Direct labels, shared tooltip, "By offense" chart (1.1) | Mocked, awaiting a decision |
+| Direct labels on trend lines (1.1) | Liked; long state names mocked at desktop and phone widths, awaiting a label style |
 | Everything else below | Open |
 
 ## 1. Charts
 
 ### 1.1 Trend charts
 
-- Label lines at their last point ("New York 368", "U.S. 329") and drop the legend.
-- Set `tooltip = list(shared = TRUE)` on comparison charts so state and U.S. values appear together.
-- Write chart titles as findings. `change_phrase()` already produces "fell 4 percent since 2019."
-  - Current titles repeat the section heading above them.
-- Explain hollow 2021 markers in the caption.
-- Drop the "By offense" stacked column chart, or replace it with a share chart.
-  - Homicide is about 1% of each stack and can't be seen.
-  - Only the bottom segment can be compared across years.
-  - The four single-offense tabs already show each trend.
+- Direct labels: label lines at their last point ("New York 368", "U.S. 328") and drop the legend. Open.
+  - Mocked with New Hampshire, Mississippi and DC. At 750px, labels take 75–125px. At 343px, a one-line "District of Columbia" leaves a 148px plot; wrapping long names leaves 203px; abbreviations leave 236px.
+- Tooltips stay one point each. Shared tooltips were declined, since the counts matter more than the comparison.
+- Titles stay as they are.
+- Hollow 2021 markers stay unexplained on the chart. A caption note made the charts too busy.
+- "By offense" is a stacked area chart: done.
+  - `offense_area_chart()` in `R/utils.R` replaces the stacked columns on both pages.
+  - `end_labels` labels each band at its right end, pushes close labels apart, and replaces the legend.
 
 ### 1.2 County map — done in PR #29
 
@@ -56,9 +55,6 @@ Chart, table and page improvements from the October 2026 design audit. All fit t
 | Tooltip | The map's own tooltip formatter is gone, because `hc_setup()` replaced it anyway |
 | Legend symbols | Squares in place of dots |
 
-- Hollow 2021 markers: done. `hc_hollow_year()` adds "Hollow points mark 2021, when fewer agencies reported." above the caption, only when a 2021 point is shown.
-- Mockups of direct labels, shared tooltips and "By offense" alternatives (stacked area, share columns, per-1,000 grid) use New York data.
-
 ### 1.3 U.S. hex maps — done
 
 | Change | Result |
@@ -68,7 +64,7 @@ Chart, table and page improvements from the October 2026 design audit. All fit t
 | Why | One state's change set the old scale (−41% crime, +16 points solved), so most states looked pale |
 | Rounding | `change_map_class()` rounds first, so -5 and +5 both leave the middle class and match the tooltip |
 | Labels | Signed whole numbers, e.g., "-29% to -15%" (`change_map_data_classes()`) |
-| Legend | Squares; the white middle class gets a gray outline |
+| Legend | Squares with a dark border (`outline_legend_symbols`), also on the county map |
 | Screen readers | Read `change_text`, e.g., "+5%" |
 
 ### 1.4 Homicide panels — done
@@ -107,12 +103,13 @@ Chart, table and page improvements from the October 2026 design audit. All fit t
 
 ## 3. Page structure and copy
 
-### 3.1 Navigation — done
+### 3.1 Navigation
 
-- `toc: true`, `toc-location: body`, `toc-depth: 2` in `_quarto.yaml`.
-- The CSG site embeds pages in a cross-origin iframe 6,000px tall. Pages fit inside it, so the iframe never scrolls, and Chrome won't let an anchor jump inside it scroll the parent page.
-- A script in `_quarto.yaml` handles every in-page link with `scrollIntoView()`, which does scroll the parent. Tested in a local cross-origin harness that copies the CSG embed.
-- The methodology links from PR #29 had the same problem in the embed and now use the same script.
+- In-page TOC: tried and declined.
+- In-page link scrolling: done.
+  - The CSG site embeds pages in a cross-origin iframe 6,000px tall. Pages fit inside it, so the iframe never scrolls, and Chrome won't let an anchor jump inside it scroll the parent page.
+  - The methodology links from PR #29 did nothing in the embed for this reason.
+  - A script in `_quarto.yaml` handles every in-page link with `scrollIntoView()`, which does scroll the parent. Tested in a local cross-origin harness that copies the CSG embed.
 
 ### 3.2 Summary row — on hold
 

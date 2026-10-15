@@ -6,17 +6,14 @@ format:
   html:
     footnotes-hover: false
     css: styles.css
-    # an in-page jump list, since the CSG site's iframe hides a sidebar
-    toc: true
-    toc-location: body
-    toc-depth: 2
+    toc: false
     # chart exports draw the logo from this URL, so the page loads it early
     include-in-header:
       text: |
         <link rel="preload" as="image" href="https://csg-state-violent-crime.netlify.app/img/csgjc-logo.png">
     # links to the methodology, and page loads at #methodology, open its collapsed callout
-    # in-page links scroll with scrollIntoView(), because the CSG site's
-    # cross-origin iframe is taller than the page and ignores anchor jumps
+    # in-page links scroll with scrollIntoView(), because the CSG site's iframe is
+    # taller than the page and on another domain, so a plain anchor jump scrolls nothing
     include-after-body:
       text: |
         <script>

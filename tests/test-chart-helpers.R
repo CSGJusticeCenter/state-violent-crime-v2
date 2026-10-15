@@ -387,17 +387,6 @@ test_that("hollow year markers use a series' own color first", {
   expect_equal(chart$x$hc_opts$series[[1]]$data[[2]]$marker$lineColor, "#333333")
 })
 
-test_that("hollow year markers add a caption note only when a point is hollow", {
-  df <- tibble(year = c(2020, 2021), y = 1:2)
-  chart <- hchart(df, "spline", hcaes(year, y), color = "#333333") |>
-    hc_caption(text = "Source")
-  expect_equal(
-    hc_hollow_year(chart, 2021)$x$hc_opts$caption$text,
-    "Hollow points mark 2021, when fewer agencies reported.<br>Source"
-  )
-  expect_equal(hc_hollow_year(chart, 2019)$x$hc_opts$caption$text, "Source")
-})
-
 test_that("hollow year markers stop without a series color", {
   df <- tibble(year = c(2020, 2021), y = 1:2)
   expect_error(hchart(df, "spline", hcaes(year, y)) |> hc_hollow_year(2021), "needs a color")
@@ -492,4 +481,23 @@ test_that("national SHR groups with few homicides are blanked", {
   actual <- function_shr_grouping_for_national_plot(data, "weapon", 2022)
   expect_true(is.na(actual$clearance_rate[actual$group == "Rare"]))
   expect_equal(actual$clearance_rate[actual$group == "Gun"], 50)
+})
+
+test_that("offense area chart stacks offenses and labels them in place of a legend", {
+  data <- tibble(
+    year = rep(c(2024, 2025), 2),
+    group = factor(rep(c("Homicide", "Robbery"), each = 2), levels = c("Homicide", "Robbery")),
+    incidents_reported_rate_total = c(5, 6, 90, 80),
+    rate_label = "x", tooltip = "t"
+  )
+  chart <- offense_area_chart(data, "By offense", c("#111111", "#222222"))
+  opts <- chart$x$hc_opts
+  expect_equal(vapply(opts$series, `[[`, character(1), "name"), c("Homicide", "Robbery"))
+  expect_equal(opts$series[[1]]$type, "area")
+  expect_equal(opts$colors, c("#111111", "#222222"))
+  expect_false(opts$legend$enabled)
+  expect_false(opts$plotOptions$area$marker$enabled)
+  expect_equal(opts$chart$marginRight, 130)
+  expect_s3_class(opts$chart$events$render, "JS_EVAL")
+  expect_s3_class(opts$chart$events$load, "JS_EVAL")
 })
