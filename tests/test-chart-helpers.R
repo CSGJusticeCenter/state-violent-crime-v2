@@ -484,23 +484,20 @@ test_that("national SHR groups with few homicides are blanked", {
   expect_equal(actual$clearance_rate[actual$group == "Gun"], 50)
 })
 
-test_that("offense area chart stacks offenses and labels them in place of a legend", {
+test_that("offense column chart stacks offenses by year with a reversed legend", {
   data <- tibble(
     year = rep(c(2024, 2025), 2),
     group = factor(rep(c("Homicide", "Robbery"), each = 2), levels = c("Homicide", "Robbery")),
     incidents_reported_rate_total = c(5, 6, 90, 80),
     rate_label = "x", tooltip = "t"
   )
-  chart <- offense_area_chart(data, "By offense", c("#111111", "#222222"))
+  chart <- offense_column_chart(data, "By offense", c("#111111", "#222222"))
   opts <- chart$x$hc_opts
   expect_equal(vapply(opts$series, `[[`, character(1), "name"), c("Homicide", "Robbery"))
-  expect_equal(opts$series[[1]]$type, "area")
+  expect_equal(opts$series[[1]]$type, "column")
+  expect_equal(opts$series[[1]]$stacking, "normal")
   expect_equal(opts$colors, c("#111111", "#222222"))
-  expect_false(opts$legend$enabled)
-  expect_false(opts$plotOptions$area$marker$enabled)
-  expect_equal(opts$chart$marginRight, 120)
-  expect_s3_class(opts$chart$events$render, "JS_EVAL")
-  expect_s3_class(opts$chart$events$load, "JS_EVAL")
+  expect_true(opts$legend$reversed)
 })
 
 test_that("offense end labels replace the legend and shorten aggravated assault", {

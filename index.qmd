@@ -343,7 +343,7 @@ offense_trend_chart(us_offense_rates, "Rape", state_name_text)
 ## By offense
 
 ```{r}
-offense_area_chart(
+offense_column_chart(
   us_offense_rates,
   paste0("Violent crime in ", state_name_text, " by offense"),
   unique(us_offense_rates$color)

@@ -253,7 +253,7 @@ offense_trend_chart(offense_rates, "Rape", state_name_text, compare = TRUE)
 ```{r}
 offense_rates |>
   filter(state_name == state) |>
-  offense_area_chart(
+  offense_column_chart(
     paste0("Violent crime in ", state_name_text, ", by offense"),
     unique(offense_rates$color)
   )

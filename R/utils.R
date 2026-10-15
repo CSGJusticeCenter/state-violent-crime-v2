@@ -315,8 +315,8 @@ hc_hollow_year <- function(chart, year) {
 ### a series' custom options can set label (default its name), short (used on
 ### charts narrower than 500px), value (a format string for a second line) and
 ### color (default the series color, darkened so text stays readable)
-### lines start at their latest point and stacked areas at the middle of their
-### band; close labels push apart, and the right margin widens to fit them
+### labels start at each line's latest point; close labels push apart, and the
+### right margin widens to fit them
 end_labels <- JS("
   function() {
     var chart = this, lineHeight = 14, pad = 3;
@@ -328,9 +328,6 @@ end_labels <- JS("
       var lines = [(narrow && custom.short) || custom.label || s.name];
       if (custom.value) lines.push(Highcharts.format(custom.value, { point: p, series: s }));
       var y = p.plotY;
-      if (s.type === 'area' && p.stackY !== undefined) {
-        y = (p.plotY + chart.yAxis[0].toPixels(p.stackY - p.y, true)) / 2;
-      }
       var height = lines.length * lineHeight;
       var color = custom.color || Highcharts.color(s.color).brighten(-0.2).get();
       return { lines: lines, color: color, height: height, top: y - height / 2 };
@@ -385,13 +382,13 @@ offense_end_labels <- function(chart, value) {
     hc_chart(marginRight = 120, events = list(render = end_labels))
 }
 
-### stacked area of offense rates per 100k, labeled at the right end
+### stacked columns of offense rates per 100k, one column per year
 ### data needs rate_label, the rate as tooltips show it, for screen readers
 ### colors follow the order of the group levels
-offense_area_chart <- function(data, title, colors,
-                               caption = "FBI UCR Program, state crime estimates") {
-  hchart(data, "area", hcaes(year, incidents_reported_rate_total, group = group),
-         stacking = "normal",
+offense_column_chart <- function(data, title, colors,
+                                 caption = "FBI UCR Program, state crime estimates") {
+  hchart(data, "column", hcaes(year, incidents_reported_rate_total, group = group),
+         stacking = "normal", groupPadding = 0.05,
          accessibility = list(point = list(
            valueDescriptionFormat = "{point.series.name}, year: {point.x:.0f}, incidents per 100,000 residents: {point.rate_label}"
          ))) |>
@@ -399,12 +396,8 @@ offense_area_chart <- function(data, title, colors,
     hc_title(text = title) |>
     hc_subtitle(text = "Crime reported to police per 100,000 residents") |>
     hc_caption(text = caption) |>
-    hc_legend(enabled = FALSE) |>
-    hc_plotOptions(area = list(lineWidth = 1, lineColor = "#FFFFFF", fillOpacity = 0.9,
-                               marker = list(enabled = FALSE))) |>
-    hc_chart(marginRight = 120) |>
-    hc_setup() |>
-    hc_chart(events = list(render = end_labels))
+    hc_legend(reversed = TRUE) |>
+    hc_setup()
 }
 
 ### reported rate trend for one offense in place, e.g., "Robbery in New York",
