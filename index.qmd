@@ -189,9 +189,8 @@ state_map_specs <- list(
     title = paste0("Change in violent crime, ", base_year, "–", latest_year),
     subtitle = "Percent change in crime reported to police per 100,000 residents",
     caption = "FBI UCR Program, state crime estimates",
-    colors = change_colors, label_format = "{value}%", legend_width = 250,
-    accessibility = "state: {point.state_name}, percent change: {point.value:.1f}",
-    symmetric = TRUE
+    colors = change_colors, breaks = crime_change_breaks, suffix = "%",
+    accessibility = "state: {point.state_name}, percent change: {point.change_text}"
   ),
   crime_rate = list(
     value = "viol_crime_rate_100k_latest", tooltip = "tooltip_crime_rate",
@@ -206,9 +205,9 @@ state_map_specs <- list(
     title = paste0("Change in percentage of violent crime solved, ", base_year, "–", latest_year),
     subtitle = paste0("Percentage point change in rate of solved violent crimes from ", base_year, " to ", latest_year),
     caption = "FBI UCR Program, state crime estimates and clearances",
-    colors = rev(change_colors), label_format = "{value}", legend_width = 300,
-    accessibility = "state: {point.state_name}, percentage point change: {point.value:.1f}",
-    symmetric = TRUE, null_interaction = TRUE
+    colors = rev(change_colors), breaks = solve_change_breaks,
+    accessibility = "state: {point.state_name}, percentage point change: {point.change_text}",
+    null_interaction = TRUE
   ),
   solve_rate = list(
     value = "solved_rate_latest", tooltip = "tooltip_solve_rate",

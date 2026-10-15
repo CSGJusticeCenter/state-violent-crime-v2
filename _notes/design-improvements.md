@@ -18,6 +18,10 @@ Chart, table and page improvements from the October 2026 design audit. All fit t
 | Legends as labels only, in all charts (1.5), PR #29 | Done |
 | CSV and data-table export menu items (1.5) | Declined (data will be published elsewhere) |
 | Review fixes on PR #29: white no-data counties, map screen-reader text, staffing prose, U.S. page title | Done |
+| Hollow 2021 marker note (1.1), binned hex change maps (1.3), muted region bars (1.4), in-page TOC (3.1) | Done on `design-trends-maps` |
+| Chart titles as findings (1.1), larger axis labels (1.5) | Declined (keep as is) |
+| Summary row (3.2) | On hold, pending other edits |
+| Direct labels, shared tooltip, "By offense" chart (1.1) | Mocked, awaiting a decision |
 | Everything else below | Open |
 
 ## 1. Charts
@@ -52,21 +56,29 @@ Chart, table and page improvements from the October 2026 design audit. All fit t
 | Tooltip | The map's own tooltip formatter is gone, because `hc_setup()` replaced it anyway |
 | Legend symbols | Squares in place of dots |
 
-### 1.3 U.S. hex maps
+- Hollow 2021 markers: done. `hc_hollow_year()` adds "Hollow points mark 2021, when fewer agencies reported." above the caption, only when a 2021 point is shown.
+- Mockups of direct labels, shared tooltips and "By offense" alternatives (stacked area, share columns, per-1,000 grid) use New York data.
 
-- Cap the symmetric change scale at a high percentile, or bin it with `dataClasses`.
-  - The largest absolute value sets the scale now, so one outlier pales every other state.
+### 1.3 U.S. hex maps — done
 
-### 1.4 Homicide panels
+| Change | Result |
+| --- | --- |
+| Classes | Seven fixed `dataClasses`, symmetric around zero |
+| Breaks | Crime rate 5, 15, 30 percent; solve rate 2, 5, 10 points (`crime_change_breaks`, `solve_change_breaks` in `R/page-data.R`) |
+| Why | One state's change set the old scale (−41% crime, +16 points solved), so most states looked pale |
+| Rounding | `change_map_class()` rounds first, so -5 and +5 both leave the middle class and match the tooltip |
+| Labels | Signed whole numbers, e.g., "-29% to -15%" (`change_map_data_classes()`) |
+| Legend | Squares; the white middle class gets a gray outline |
+| Screen readers | Read `change_text`, e.g., "+5%" |
 
-- Give the state series the strong color and the region series a muted gray.
-  - Region is dark navy and state is lighter teal now, so the comparison draws the eye.
-  - The trend charts already treat the U.S. this way.
+### 1.4 Homicide panels — done
+
+- State bars use the trend charts' state teal; region bars use gray `#8C8C8C` (3.4:1 on white). `shr_series_colors` in `R/utils.R`.
 
 ### 1.5 All charts
 
 - Add `"downloadCSV"` and `"viewData"` to the export menu with `modules/export-data.js`. Declined, since the data will be published elsewhere.
-- Make axis labels larger and darker.
+- Make axis labels larger and darker. Declined.
 - Legends label charts only. Done in PR #29.
   - A `load` event in `hc_setup()` cancels clicks on every legend item, so clicks can't hide series or map color classes.
   - Highcharts 10.2 has no chart-wide option for this, and the series option misses color classes.
@@ -95,11 +107,14 @@ Chart, table and page improvements from the October 2026 design audit. All fit t
 
 ## 3. Page structure and copy
 
-### 3.1 Navigation
+### 3.1 Navigation — done
 
-- Turn on `toc: true` with `toc-location: body` for an in-page jump list that works inside the CSG site iframe.
+- `toc: true`, `toc-location: body`, `toc-depth: 2` in `_quarto.yaml`.
+- The CSG site embeds pages in a cross-origin iframe 6,000px tall. Pages fit inside it, so the iframe never scrolls, and Chrome won't let an anchor jump inside it scroll the parent page.
+- A script in `_quarto.yaml` handles every in-page link with `scrollIntoView()`, which does scroll the parent. Tested in a local cross-origin harness that copies the CSG embed.
+- The methodology links from PR #29 had the same problem in the embed and now use the same script.
 
-### 3.2 Summary row
+### 3.2 Summary row — on hold
 
 - Add four stats under the state page title.
   - 2025 crime rate

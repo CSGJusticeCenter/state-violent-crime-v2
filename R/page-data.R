@@ -57,6 +57,11 @@ inflation_index_path <- "data/annual-index-value_annual-percent-change_2025.xls"
 change_colors <- c("#00475d", "#007392", "#9ed4ef", "#FFFFFF", "#EDB799", "#D25E2D", "#7B3014")
 rate_colors <- c("#d4e9f8", "#9ed4ef", "#007392", "#00475d")
 
+### U.S. change map classes, in whole percents and percentage points; fixed
+### breaks keep one state's outlier change from paling every other state
+crime_change_breaks <- c(5, 15, 30)
+solve_change_breaks <- c(2, 5, 10)
+
 ### county map solve-rate classes, in whole percents
 ### the breaks split 2025 counties with 25 or more incidents into groups of similar size
 county_map_breaks <- c(35, 45, 55, 65)
