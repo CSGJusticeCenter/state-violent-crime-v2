@@ -67,7 +67,13 @@ hc_theme_jc <- hc_theme_merge(
                               fontSize = "24px")),
     subtitle = list(style = list(fontFamily = default_fonts, fontSize = "16px",
                                  color = "#666666")),
-    legend = list(align = "center", verticalAlign = "bottom"),
+    ### legend items only label the chart, so they don't look or act like buttons
+    legend = list(
+      align = "center", verticalAlign = "bottom",
+      itemStyle = list(cursor = "default"),
+      itemHoverStyle = list(color = "#333333", cursor = "default"),
+      accessibility = list(enabled = FALSE)
+    ),
     caption = list(align = "right"),
     plotOptions = list(
       series = list(states = list(inactive = list(opacity = 1))),
@@ -92,6 +98,14 @@ render_image_print <- JS("
   }")
 
 render_image_remove <- JS("function(){logo.element.remove();}")
+
+### cancel legend clicks, which would hide series or map color classes
+lock_legend <- JS("
+  function() {
+    this.legend.allItems.forEach(function(item) {
+      Highcharts.addEvent(item, 'legendItemClick', function(e) { e.preventDefault(); });
+    });
+  }")
 
 # define default setup for highcharter plots
 # add and configure exporting and accessibility modules
@@ -134,6 +148,7 @@ hc_setup <- function(x) {
   ) |>
   hc_chart(
     events = list(
+      load = lock_legend,
       beforePrint = render_image_print,
       afterPrint = render_image_remove
     )

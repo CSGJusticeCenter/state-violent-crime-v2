@@ -461,7 +461,6 @@ hcmap_local(
     borderColor = "black",
     borderWidth = 0.45,
     colorAxis = FALSE,
-    events = list(legendItemClick = JS("function() { return false; }")),
     accessibility = list(enabled = FALSE)
   ) |>
   hc_title(text = paste("Violent crime solve rate,", agency_year)) |>
