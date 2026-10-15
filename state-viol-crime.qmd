@@ -335,7 +335,7 @@ trend_chart(
   violent_solve_rates, "solve_rate_pct",
   paste0("Violent crime solve rate in ", state_name_text),
   caption = "FBI UCR Program, state crime estimates and clearances",
-  value_label = "solve rate", value_format = "{point.y:.1f}%",
+  value_label = "solve rate", value_format = "{point.y:.1f}%", label_format = "{point.y:.0f}%",
   compare = TRUE, expansion = axis_expansion_mult, y_format = "{value:,.0f}%"
 ) |>
   hc_hollow_year(low_coverage_solve_year)

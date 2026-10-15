@@ -18,18 +18,20 @@ Chart, table and page improvements from the October 2026 design audit. All fit t
 | Legends as labels only, in all charts (1.5), PR #29 | Done |
 | CSV and data-table export menu items (1.5) | Declined (data will be published elsewhere) |
 | Review fixes on PR #29: white no-data counties, map screen-reader text, staffing prose, U.S. page title | Done |
-| Binned hex change maps (1.3), muted region bars (1.4), "By offense" stacked area (1.1), bordered map legend squares, in-page link scrolling (3.1) | Done on `design-trends-maps` |
+| Binned hex change maps (1.3), muted region bars (1.4), "By offense" stacked area and direct labels (1.1), bordered map legend squares, in-page link scrolling (3.1) | Done on `design-trends-maps` |
 | Chart titles as findings, shared tooltips, hollow 2021 marker note (1.1); larger axis labels (1.5); in-page TOC (3.1) | Declined |
 | Summary row (3.2) | On hold, pending other edits |
-| Direct labels on trend lines (1.1) | Liked; long state names mocked at desktop and phone widths, awaiting a label style |
 | Everything else below | Open |
 
 ## 1. Charts
 
 ### 1.1 Trend charts
 
-- Direct labels: label lines at their last point ("New York 368", "U.S. 328") and drop the legend. Open.
-  - Mocked with New Hampshire, Mississippi and DC. At 750px, labels take 75–125px. At 343px, a one-line "District of Columbia" leaves a 148px plot; wrapping long names leaves 203px; abbreviations leave 236px.
+- Direct labels: done. State comparison charts label each line's end with its name and latest value, and drop the legend.
+  - Full names on charts 500px or wider; state abbreviations below that, so phones keep the plot wide. The U.S. reads "U.S." at every width.
+  - Mocked first with New Hampshire, Mississippi and DC. At 343px, a one-line "District of Columbia" left a 148px plot; abbreviations leave about 240px.
+  - `end_labels` in `R/utils.R` draws the labels for line and area charts, pushes close labels apart and sizes the right margin to fit. `compare_end_labels()` sets each series' label, short name and value format.
+  - Label text is each series color darkened, so orange and gray text stays readable.
 - Tooltips stay one point each. Shared tooltips were declined, since the counts matter more than the comparison.
 - Titles stay as they are.
 - Hollow 2021 markers stay unexplained on the chart. A caption note made the charts too busy.

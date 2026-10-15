@@ -294,14 +294,35 @@ test_that("compare trend draws the state solid and the US dashed in gray", {
   expect_equal(vapply(series, `[[`, numeric(1), "opacity"), c(1, 0.75))
   expect_equal(chart$x$hc_opts$yAxis$min, 0)
   expect_equal(chart$x$hc_opts$yAxis$max, 40)
-  expect_null(chart$x$hc_opts$legend$enabled)
 })
 
-test_that("single trend hides its legend unless asked", {
+test_that("compare trend labels line ends in place of a legend", {
+  data <- tibble(
+    year = rep(c(2023, 2024), 2),
+    state_name = rep(c("United States", "New Hampshire"), each = 2),
+    rate = c(10, 12, 20, 30), tooltip = "t"
+  )
+  chart <- trend_chart(data, "rate", "Title", "Sub", "Source", "rate",
+                       value_format = "{point.y:.1f}%", label_format = "{point.y:.0f}%",
+                       compare = TRUE)
+  opts <- chart$x$hc_opts
+  expect_false(opts$legend$enabled)
+  expect_equal(opts$series[[1]]$custom, list(short = "NH", value = "{point.y:.0f}%"))
+  expect_equal(opts$series[[2]]$custom$label, "U.S.")
+  expect_s3_class(opts$chart$events$render, "JS_EVAL")
+  expect_s3_class(opts$chart$events$load, "JS_EVAL")
+})
+
+test_that("state short names cover every state and DC", {
+  expect_length(state_short_names, 51)
+  expect_equal(unname(state_short_names[c("District of Columbia", "Mississippi")]), c("DC", "MS"))
+})
+
+test_that("single trend has no legend or end labels", {
   data <- tibble(year = c(2023, 2024), rate = c(1, 2), tooltip = "t")
-  expect_false(trend_chart(data, "rate", "T", caption = "S", value_label = "rate")$x$hc_opts$legend$enabled)
-  expect_null(trend_chart(data, "rate", "T", caption = "S", value_label = "rate",
-                          legend = TRUE)$x$hc_opts$legend$enabled)
+  chart <- trend_chart(data, "rate", "T", caption = "S", value_label = "rate")
+  expect_false(chart$x$hc_opts$legend$enabled)
+  expect_null(chart$x$hc_opts$chart$events$render)
 })
 
 test_that("trend y formatter sits beside the default label format", {
@@ -497,7 +518,7 @@ test_that("offense area chart stacks offenses and labels them in place of a lege
   expect_equal(opts$colors, c("#111111", "#222222"))
   expect_false(opts$legend$enabled)
   expect_false(opts$plotOptions$area$marker$enabled)
-  expect_equal(opts$chart$marginRight, 130)
+  expect_equal(opts$chart$marginRight, 120)
   expect_s3_class(opts$chart$events$render, "JS_EVAL")
   expect_s3_class(opts$chart$events$load, "JS_EVAL")
 })
