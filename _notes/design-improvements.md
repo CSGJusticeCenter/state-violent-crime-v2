@@ -14,7 +14,8 @@ Chart, table and page improvements from the October 2026 design audit. All fit t
 | Zero-baseline y-axes | Declined |
 | Table cleanup (2.1–2.4, fonts in 2.6), PR #28 | Done |
 | County filter and 25 rows per page (2.5) | Declined (search bar covers county; keep 10 rows) |
-| County map (1.2), package drop (2.6), methodology links (3.3), titles (3.4), resources text (3.5) | Done |
+| County map (1.2), package drop (2.6), methodology links (3.3), titles (3.4), resources text (3.5), PR #29 | Done |
+| Legends as labels only (1.5), PR #29 | Done |
 | CSV and data-table export (1.5) | Declined (data will be published elsewhere) |
 | Everything else below | Open |
 
@@ -32,13 +33,19 @@ Chart, table and page improvements from the October 2026 design audit. All fit t
   - Only the bottom segment can be compared across years.
   - The four single-offense tabs already show each trend.
 
-### 1.2 County map
+### 1.2 County map — done in PR #29
 
-- Add a legend entry for gray counties: "Fewer than 25 incidents / no data."
-- Add the source caption. It's the only chart without one.
-- Turn off `credits`. The "Highcharts.com © USA Census Bureau" line appears only on maps.
-- Bin the color scale into 5 classes with `dataClasses` so readers can read values from the legend.
-- Move the hard-coded title style in `state-viol-crime.qmd` into the theme.
+| Change | Result |
+| --- | --- |
+| Color classes | Five fixed `dataClasses`: under 35%, 35–45%, 45–55%, 55–65%, 65% or more |
+| Breaks | Split the 1,890 mapped counties nationally into groups of similar size; the same in every state |
+| Settings | `county_map_breaks` and `county_map_colors` in `R/page-data.R`; `map_data_classes()` in `R/utils.R`, with a test |
+| Rounding | Solve rates round half up to whole percents before binning, so a county's class matches its tooltip |
+| Gray counties | Legend entry "Fewer than 25 incidents or no data", drawn by an empty map series |
+| Caption | "FBI UCR Program, agency crime and clearance data, [year]" |
+| Credits | Off in `hcmap_local()` |
+| Title style | Comes from `hc_theme_jc`; the copies in the county map and `state_map_chart()` are gone |
+| Legend symbols | Squares in place of dots |
 
 ### 1.3 U.S. hex maps
 
@@ -53,8 +60,12 @@ Chart, table and page improvements from the October 2026 design audit. All fit t
 
 ### 1.5 All charts
 
-- Add `"downloadCSV"` and `"viewData"` to the export menu with `modules/export-data.js`. A few lines in `hc_setup()`.
+- Add `"downloadCSV"` and `"viewData"` to the export menu with `modules/export-data.js`. Declined, since the data will be published elsewhere.
 - Make axis labels larger and darker.
+- Legends label charts only. Done in PR #29.
+  - A `load` event in `hc_setup()` cancels clicks on every legend item, so clicks can't hide series or map color classes.
+  - Highcharts 10.2 has no chart-wide option for this, and the series option misses color classes.
+  - The theme keeps the default cursor and hover color on legend items and turns off legend accessibility, so screen readers don't get show/hide buttons.
 
 ## 2. Tables
 
@@ -72,9 +83,10 @@ Chart, table and page improvements from the October 2026 design audit. All fit t
 | County filter | Built, then removed; the search bar matches counties |
 | Page size | Kept at 10 rows |
 
-### 2.6 Packages
+### 2.6 Packages — done in PR #29
 
-- Use `reactablefmtr` (e.g., `data_bars()` on solve rate or population) or drop it. Both pages load it and neither calls it.
+- Dropped `reactablefmtr` from both pages. Neither page called it.
+- `renv.lock` drops it and its dependencies: tippy, webshot2, chromote, websocket, AsioHeaders and zip.
 
 ## 3. Page structure and copy
 
@@ -91,19 +103,24 @@ Chart, table and page improvements from the October 2026 design audit. All fit t
   - Solve-rate change since 2019
 - A small CSS grid in `styles.css` is enough.
 
-### 3.3 Methodology links
+### 3.3 Methodology links — done in PR #29
 
-- Give the methodology callout an `#id` and link the five "see the data sources and methodology section below" mentions to it.
+- The methodology callout on both pages has the id `#methodology`.
+- All five "see the data sources and methodology section below" mentions link to it. The U.S. page's "data and methodology sections" now uses the same wording.
+- A script in `_quarto.yaml` (`include-after-body`) opens the collapsed callout when one of these links is clicked.
 
-### 3.4 Titles
+### 3.4 Titles — done in PR #29
 
-- Replace "and arrests" in state page titles. The pages measure clearances, which include exceptional clearances.
-- Switch the U.S. page H1 to sentence case to match other headings.
+- State page titles read "[State] data on violent crime and solve rates". Pages without solve-rate data still read "[State] data on violent crime".
+- The U.S. page H1 reads "Trends in violent crime and accountability".
 
-### 3.5 Resources section
+### 3.5 Resources section — done in PR #29
 
-- Cut the state page's four paragraphs to one short paragraph per tab, as the U.S. page does.
-  - The current text covers spending and officers per 1,000 crimes but not officers per capita.
+- A two-sentence intro sits above the tabs and covers why spending and staffing matter.
+- Each tab has one paragraph, as on the U.S. page.
+  - Expenditures: inflation-adjusted change since 2019 and what spending includes
+  - Officers per capita: new sentence on the change in officers per 10,000 residents since 2019 (`pct_change_staffing`)
+  - Officers per violent offense: change since 2019 and the likely cause
 
 ## 4. Not yet checked
 
