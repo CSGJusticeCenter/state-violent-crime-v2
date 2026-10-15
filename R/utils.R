@@ -112,6 +112,9 @@ lock_legend <- JS("
 # set justice center theme
 # set default tooltip text to be in input data column `tooltip`
 hc_setup <- function(x) {
+  ### describe every point to screen readers, even on maps with over 200 counties
+  x$x$hc_opts$accessibility$series$pointDescriptionEnabledThreshold <- FALSE
+
   hc_add_dependency(x, name = "modules/exporting.js") |>
     hc_add_dependency(name = "modules/offline-exporting.js") |>
     hc_add_dependency(name = "modules/accessibility.js") |>
@@ -175,7 +178,7 @@ change_map_bounds <- function(values) {
 map_data_classes <- function(breaks, colors, suffix = "") {
   stopifnot(length(colors) == length(breaks) + 1)
   n <- length(breaks)
-  names <- c(
+  labels <- c(
     paste0("Under ", breaks[1], suffix),
     paste0(breaks[-n], "–", breaks[-1], suffix),
     paste0(breaks[n], suffix, " or more")
@@ -183,7 +186,7 @@ map_data_classes <- function(breaks, colors, suffix = "") {
   from <- c(NA, breaks)
   to <- c(breaks, NA)
   lapply(seq_along(colors), \(i) {
-    Filter(Negate(is.na), list(from = from[i], to = to[i], color = colors[i], name = names[i]))
+    Filter(Negate(is.na), list(from = from[i], to = to[i], color = colors[i], name = labels[i]))
   })
 }
 

@@ -413,9 +413,15 @@ map_name <- paste0("countries/us/us-", tolower(state_abbr_params), "-all")
 
 srs_solved_by_county_to_map_tooltip <- local_county_features(map_name) |>
   left_join(srs_solved_by_county_to_map, by = "county_fips") |>
-  ### counties with fewer than 25 reported incidents are grayed out on the map
+  ### counties with fewer than 25 reported incidents show no rate on the map
   ### whole percents, so each county's class matches its tooltip
-  mutate(solved_rate_map = ifelse(n_reported < 25, NA, half_up(solved_rate * 100, 1))) |>
+  mutate(solved_rate_map = ifelse(n_reported < 25, NA, solve_rate_percent(solved_rate))) |>
+  ### screen readers hear this in place of the tooltip
+  mutate(rate_description = case_when(
+    !is.na(solved_rate_map) ~ paste0(solved_rate_map, "%"),
+    !is.na(n_reported) ~ "not shown, fewer than 25 incidents",
+    .default = "no agencies reported data"
+  )) |>
   mutate(tooltip = case_when(
     n_reported >= 25 & !is.na(n_reported) ~ paste0(
       "<b>", county_label, " – ", agency_year, "</b><br>",
@@ -443,23 +449,24 @@ hcmap_local(
   value = "solved_rate_map",
   joinBy = c("fips", "county_fips"),
   name = "Solve rate",
-  nullColor = "#E8E8E8",
+  nullColor = county_map_null_color,
   nullInteraction = TRUE,
-  borderWidth = 0.45,
-  borderColor = "black",
+  borderColor = county_map_border$color,
+  borderWidth = county_map_border$width,
   accessibility = list(
-      point = list(
-        valueDescriptionFormat = "county: {point.county_label}, solve rate: {point.value:.0f}%"
-        )
-      )) |>
-  ### an empty series gives the gray counties a legend entry
+    point = list(
+      valueDescriptionFormat = "county: {point.county_label}, solve rate: {point.rate_description}"
+    )
+  )
+) |>
+  ### an empty series gives the counties without a rate a legend entry
   hc_add_series(
     type = "map",
     name = "Fewer than 25 incidents or no data",
     data = list(),
-    color = "#E8E8E8",
-    borderColor = "black",
-    borderWidth = 0.45,
+    color = county_map_null_color,
+    borderColor = county_map_border$color,
+    borderWidth = county_map_border$width,
     colorAxis = FALSE,
     accessibility = list(enabled = FALSE)
   ) |>
@@ -468,14 +475,6 @@ hcmap_local(
   hc_colorAxis(dataClasses = map_data_classes(county_map_breaks, county_map_colors, "%")) |>
   hc_legend(align = "center", verticalAlign = "bottom", layout = "horizontal",
             symbolRadius = 0, symbolHeight = 14, symbolWidth = 14) |>
-     hc_tooltip(
-        style = list(fontFamily = default_fonts),
-        formatter = JS("function() {
-        return '<div style=\"background-color: #FFFFFF; opacity: 1; padding: 8px; border: none;\">' +
-        this.point.tooltip +
-        '</div>';}"),
-        useHTML = TRUE
-      ) |>
   hc_setup()
 ```
 
@@ -610,17 +609,17 @@ min_year_resources <- min(asslgf_clean$year)
 pct_change_spending <- with(asslgf_clean, pct_change_between(n_inflation_adjusted_latest_year_dollars, year, base_year, max_year_resources))
 
 ### chart years, and percent changes since base_year for the officer text
-max_year_resources_staff_per_offense <- max(ucr_employee_data_by_state_clean$year)
-min_year_resources_staff_per_offense <- min(ucr_employee_data_by_state_clean$year)
+max_year_officers <- max(ucr_employee_data_by_state_clean$year)
+min_year_officers <- min(ucr_employee_data_by_state_clean$year)
 
 pct_change_staffing <- with(
   ucr_employee_data_by_state_clean,
-  pct_change_between(officer_pop_rate_per_10k, year, base_year, max_year_resources_staff_per_offense)
+  pct_change_between(officer_pop_rate_per_10k, year, base_year, max_year_officers)
 )
 
 pct_change_staffing_per_violent_offense <- with(
   ucr_employee_data_by_state_clean,
-  pct_change_between(officer_per_violent_offense_1k, year, base_year, max_year_resources_staff_per_offense)
+  pct_change_between(officer_per_violent_offense_1k, year, base_year, max_year_officers)
 )
 
 ### the cause sentence is skipped when the rate stayed about the same
@@ -640,7 +639,7 @@ staffing_cause_text <- if (is_about_same(pct_change_staffing_per_violent_offense
 
 ```
 
-Spending and staffing show the level of policing a community receives, which may affect both crime and solve rates. Severe staff shortages, for example, can reduce investigative personnel or increase the number of cases each officer manages.
+Spending and staffing may show the level of policing a community receives, which can affect both crime and solve rates. Severe staff shortages, for example, can reduce investigative personnel or increase the number of cases each officer manages.
 
 ::: {.panel-tabset}
 
@@ -673,7 +672,7 @@ trend_chart(
 
 ### Officers per capita
 
-The number of officers per 10,000 residents in `r state_name_text` has `r change_by(pct_change_staffing)` from `r base_year` to `r max_year_resources_staff_per_offense`.
+The number of officers per 10,000 residents in `r state_name_text` `r change_by(pct_change_staffing)` from `r base_year` to `r max_year_officers`.
 
 ```{r}
 officer_trend <- ucr_employee_data_by_state_clean |>
@@ -687,7 +686,7 @@ officer_trend |>
   trend_chart(
     "officer_pop_rate_per_10k",
     paste0("Officers per capita in ", state_name_text),
-    paste0("Officers per 10k residents, ", min_year_resources_staff_per_offense, "–", max_year_resources_staff_per_offense),
+    paste0("Officers per 10k residents, ", min_year_officers, "–", max_year_officers),
     "FBI UCR Program, law enforcement employee counts",
     value_label = "officers per 10,000 residents",
     expansion = axis_expansion_mult * 2.5, compare = TRUE
@@ -697,7 +696,7 @@ officer_trend |>
 
 ### Officers per violent offense
 
-The number of officers per 1,000 violent crimes in `r state_name_text` has `r change_by(pct_change_staffing_per_violent_offense)` from `r base_year` to `r max_year_resources_staff_per_offense`.`r staffing_cause_text`
+The number of officers per 1,000 violent crimes in `r state_name_text` `r change_by(pct_change_staffing_per_violent_offense)` from `r base_year` to `r max_year_officers`.`r staffing_cause_text`
 
 ```{r}
 officer_trend |>
@@ -708,7 +707,7 @@ officer_trend |>
   trend_chart(
     "officer_per_violent_offense_1k",
     paste0("Officers per violent offense in ", state_name_text),
-    paste0("Officers per 1k violent crimes, ", min_year_resources_staff_per_offense, "–", max_year_resources_staff_per_offense),
+    paste0("Officers per 1k violent crimes, ", min_year_officers, "–", max_year_officers),
     "FBI UCR Program, law enforcement employee counts and state crime estimates",
     value_label = "officers per 1,000 violent crimes",
     expansion = axis_expansion_mult, compare = TRUE

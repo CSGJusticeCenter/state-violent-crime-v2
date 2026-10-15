@@ -15,8 +15,9 @@ Chart, table and page improvements from the October 2026 design audit. All fit t
 | Table cleanup (2.1–2.4, fonts in 2.6), PR #28 | Done |
 | County filter and 25 rows per page (2.5) | Declined (search bar covers county; keep 10 rows) |
 | County map (1.2), package drop (2.6), methodology links (3.3), titles (3.4), resources text (3.5), PR #29 | Done |
-| Legends as labels only (1.5), PR #29 | Done |
-| CSV and data-table export (1.5) | Declined (data will be published elsewhere) |
+| Legends as labels only, in all charts (1.5), PR #29 | Done |
+| CSV and data-table export menu items (1.5) | Declined (data will be published elsewhere) |
+| Review fixes on PR #29: white no-data counties, map screen-reader text, staffing prose, U.S. page title | Done |
 | Everything else below | Open |
 
 ## 1. Charts
@@ -38,13 +39,17 @@ Chart, table and page improvements from the October 2026 design audit. All fit t
 | Change | Result |
 | --- | --- |
 | Color classes | Five fixed `dataClasses`: under 35%, 35–45%, 45–55%, 55–65%, 65% or more |
-| Breaks | Split the 1,890 mapped counties nationally into groups of similar size; the same in every state |
-| Settings | `county_map_breaks` and `county_map_colors` in `R/page-data.R`; `map_data_classes()` in `R/utils.R`, with a test |
-| Rounding | Solve rates round half up to whole percents before binning, so a county's class matches its tooltip |
-| Gray counties | Legend entry "Fewer than 25 incidents or no data", drawn by an empty map series |
+| Breaks | Split the 1,890 counties with 25 or more incidents in 2025 into groups of similar size; the same in every state |
+| Settings | `county_map_breaks`, `county_map_colors`, `county_map_null_color` and `county_map_border` in `R/page-data.R`; `map_data_classes()` in `R/utils.R`, with a test |
+| Rounding | `solve_rate_percent()`, the same rounding as the tables, so a county's class matches its tooltip |
+| Counties without a rate | White with the black border. The old light gray was nearly identical to the lightest class (1.02:1 contrast) |
+| No-rate legend entry | "Fewer than 25 incidents or no data", drawn by an empty map series |
+| Screen readers | Each county reads its rate, "not shown, fewer than 25 incidents" or "no agencies reported data" |
+| Point descriptions | `hc_setup()` describes every point on all charts. Highcharts skips charts with more than 200 points by default, which silenced the Texas map |
 | Caption | "FBI UCR Program, agency crime and clearance data, [year]" |
 | Credits | Off in `hcmap_local()` |
 | Title style | Comes from `hc_theme_jc`; the copies in the county map and `state_map_chart()` are gone |
+| Tooltip | The map's own tooltip formatter is gone, because `hc_setup()` replaced it anyway |
 | Legend symbols | Squares in place of dots |
 
 ### 1.3 U.S. hex maps
@@ -107,16 +112,18 @@ Chart, table and page improvements from the October 2026 design audit. All fit t
 
 - The methodology callout on both pages has the id `#methodology`.
 - All five "see the data sources and methodology section below" mentions link to it. The U.S. page's "data and methodology sections" now uses the same wording.
-- A script in `_quarto.yaml` (`include-after-body`) opens the collapsed callout when one of these links is clicked.
+- A script in `_quarto.yaml` (`include-after-body`) opens the collapsed callout when one of these links is clicked, and when a page loads or navigates to `#methodology`.
 
 ### 3.4 Titles — done in PR #29
 
 - State page titles read "[State] data on violent crime and solve rates". Pages without solve-rate data still read "[State] data on violent crime".
 - The U.S. page H1 reads "Trends in violent crime and accountability".
+- The U.S. page `<title>` uses the same text through `pagetitle`. It read "index" before.
 
 ### 3.5 Resources section — done in PR #29
 
-- A two-sentence intro sits above the tabs and covers why spending and staffing matter.
+- A two-sentence intro sits above the tabs and says spending and staffing may show the level of policing.
+- Officer sentences on both pages use past tense ("decreased by 6 percent from 2019 to 2025") to match the spending sentence.
 - Each tab has one paragraph, as on the U.S. page.
   - Expenditures: inflation-adjusted change since 2019 and what spending includes
   - Officers per capita: new sentence on the change in officers per 10,000 residents since 2019 (`pct_change_staffing`)

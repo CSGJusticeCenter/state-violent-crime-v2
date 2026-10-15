@@ -1,3 +1,7 @@
+---
+pagetitle: "Trends in violent crime and accountability"
+---
+
 ```{r}
 library(tidyverse)
 library(scales)
@@ -610,7 +614,7 @@ trend_chart(
 
 ### Officers per capita
 
-The number of officers per 10,000 residents in jurisdictions across the United States has `r change_by(pct_change_staffing)` from `r base_year` to `r lee_max_year`.
+The number of officers per 10,000 residents in jurisdictions across the United States `r change_by(pct_change_staffing)` from `r base_year` to `r lee_max_year`.
 
 ```{r}
 ucr_employee_data_national_clean |>
@@ -628,7 +632,7 @@ ucr_employee_data_national_clean |>
 
 ### Officers per violent offense
 
-The number of officers per 1,000 violent crimes in jurisdictions across the United States has `r change_by(pct_change_staffing_per_violent_offense)` from `r base_year` to `r lee_max_year`.
+The number of officers per 1,000 violent crimes in jurisdictions across the United States `r change_by(pct_change_staffing_per_violent_offense)` from `r base_year` to `r lee_max_year`.
 
 ```{r}
 ucr_employee_data_national_clean |>

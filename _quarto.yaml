@@ -11,16 +11,22 @@ format:
     include-in-header:
       text: |
         <link rel="preload" as="image" href="https://csg-state-violent-crime.netlify.app/img/csgjc-logo.png">
-    # links to the methodology open its collapsed callout
+    # links to the methodology, and page loads at #methodology, open its collapsed callout
     include-after-body:
       text: |
         <script>
+        const openMethodology = () => {
+          const body = document.querySelector("#methodology .callout-collapse");
+          if (body) bootstrap.Collapse.getOrCreateInstance(body, { toggle: false }).show();
+        };
+        const openMethodologyAtHash = () => {
+          if (location.hash === "#methodology") openMethodology();
+        };
         document.querySelectorAll('a[href="#methodology"]').forEach((link) => {
-          link.addEventListener("click", () => {
-            const body = document.querySelector("#methodology .callout-collapse");
-            if (body) bootstrap.Collapse.getOrCreateInstance(body, { toggle: false }).show();
-          });
+          link.addEventListener("click", openMethodology);
         });
+        window.addEventListener("hashchange", openMethodologyAtHash);
+        openMethodologyAtHash();
         </script>
 
 mainfont: "GT-America"
