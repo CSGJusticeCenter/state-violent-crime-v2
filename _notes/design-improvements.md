@@ -18,8 +18,8 @@ Chart, table and page improvements from the October 2026 design audit. All fit t
 | Legends as labels only, in all charts (1.5), PR #29 | Done |
 | CSV and data-table export menu items (1.5) | Declined (data will be published elsewhere) |
 | Review fixes on PR #29: white no-data counties, map screen-reader text, staffing prose, U.S. page title | Done |
-| Binned hex change maps (1.3), muted region bars (1.4), "By offense" stacked area and direct labels (1.1), bordered map legend squares, in-page link scrolling (3.1) | Done on `design-trends-maps` |
-| Chart titles as findings, shared tooltips, hollow 2021 marker note (1.1); larger axis labels (1.5); in-page TOC (3.1) | Declined |
+| Muted region bars (1.4), "By offense" stacked area and direct labels (1.1), bordered county map legend squares, in-page link scrolling (3.1) | Done on `design-trends-maps` |
+| Chart titles as findings, shared tooltips, hollow 2021 marker note (1.1); binned hex change maps (1.3); larger axis labels (1.5); in-page TOC (3.1) | Declined |
 | Summary row (3.2) | On hold, pending other edits |
 | Everything else below | Open |
 
@@ -57,19 +57,13 @@ Chart, table and page improvements from the October 2026 design audit. All fit t
 | Credits | Off in `hcmap_local()` |
 | Title style | Comes from `hc_theme_jc`; the copies in the county map and `state_map_chart()` are gone |
 | Tooltip | The map's own tooltip formatter is gone, because `hc_setup()` replaced it anyway |
-| Legend symbols | Squares in place of dots |
+| Legend symbols | Squares in place of dots, with a dark border (`outline_legend_symbols`) so the white class shows |
 
-### 1.3 U.S. hex maps — done
+### 1.3 U.S. hex maps — declined
 
-| Change | Result |
-| --- | --- |
-| Classes | Seven fixed `dataClasses`, symmetric around zero |
-| Breaks | Crime rate 5, 15, 30 percent; solve rate 2, 5, 10 points (`crime_change_breaks`, `solve_change_breaks` in `R/page-data.R`) |
-| Why | One state's change set the old scale (−41% crime, +16 points solved), so most states looked pale |
-| Rounding | `change_map_class()` rounds first, so -5 and +5 both leave the middle class and match the tooltip |
-| Labels | Signed whole numbers, e.g., "-29% to -15%" (`change_map_data_classes()`) |
-| Legend | Squares with a dark border (`outline_legend_symbols`), also on the county map |
-| Screen readers | Read `change_text`, e.g., "+5%" |
+- The change maps keep continuous color ramps, scaled to the largest change in either direction.
+- Tried seven fixed classes (crime rate breaks at 5, 15 and 30 percent; solve rate at 2, 5 and 10 points), then went back to the ramps.
+- The largest change still sets each scale (−41% crime, +16 points solved), so most states look pale.
 
 ### 1.4 Homicide panels — done
 

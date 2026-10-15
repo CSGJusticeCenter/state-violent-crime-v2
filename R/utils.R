@@ -168,35 +168,9 @@ chart_bounds <- function(values, expansion = 0.5, floor = NULL, ceiling = NULL) 
   bounds
 }
 
-### signed whole number as plain text, e.g., "+3%", "-5%" or "0%"
-signed_text <- function(x, suffix = "") {
-  rounded <- half_up(x, 1)
-  ifelse(is.na(x), NA_character_, paste0(ifelse(rounded > 0, "+", ""), rounded, suffix))
-}
-
-### class index for a change map, from 1 for the largest drop to 2 * length(breaks) + 1
-### for the largest rise; whole-number changes under breaks[1] in size share the
-### middle class, and each break starts a class on both sides, so -5 and +5 both
-### leave it
-change_map_class <- function(x, breaks) {
-  rounded <- half_up(x, 1)
-  as.integer(length(breaks) + 1 + sign(rounded) * findInterval(abs(rounded), breaks))
-}
-
-### colorAxis dataClasses for change_map_class(), labeled with signed whole numbers
-change_map_data_classes <- function(breaks, colors, suffix = "") {
-  n <- length(breaks)
-  stopifnot(n >= 2, length(colors) == 2 * n + 1)
-  label <- \(x) signed_text(x, suffix)
-  inner <- breaks - 1
-  labels <- c(
-    paste(label(-breaks[n]), "or lower"),
-    paste(label(-inner[n:2]), "to", label(-breaks[(n - 1):1])),
-    paste(label(-inner[1]), "to", label(inner[1])),
-    paste(label(breaks[1:(n - 1)]), "to", label(inner[2:n])),
-    paste(label(breaks[n]), "or higher")
-  )
-  lapply(seq_along(colors), \(i) list(from = i, to = i, color = colors[i], name = labels[i]))
+change_map_bounds <- function(values) {
+  extent <- max(abs(values), na.rm = TRUE)
+  c(-extent, extent)
 }
 
 ### colorAxis dataClasses from the breaks between classes, one color per class
@@ -225,25 +199,18 @@ outline_legend_symbols <- JS("
   }")
 
 ### spec$tooltip names the tooltip_* column this map shows
-### spec$breaks bins a change into change_map_class() classes, and screen
-### readers read the change as change_text, e.g., "+5%"
 state_map_chart <- function(data, map, spec) {
   if (!is.null(spec$tooltip)) {
     data$tooltip <- data[[spec$tooltip]]
     data <- dplyr::select(data, -dplyr::starts_with("tooltip_"))
   }
-  binned <- !is.null(spec$breaks)
-  value <- spec$value
-  if (binned) {
-    data$change_class <- change_map_class(data[[spec$value]], spec$breaks)
-    data$change_text <- signed_text(data[[spec$value]], spec$suffix %||% "")
-    value <- "change_class"
-  }
+  bounds <- if (isTRUE(spec$symmetric)) change_map_bounds(data[[spec$value]]) else NULL
+  axis_colors <- spec$colors
 
   chart <- highchart() |>
     hc_add_series_map(
       map = map, df = data, joinBy = c("state_abb", "state_abbr"),
-      value = value, nullColor = "#E8E8E8",
+      value = spec$value, nullColor = "#E8E8E8",
       nullInteraction = isTRUE(spec$null_interaction),
       dataLabels = list(
         enabled = TRUE, format = "{point.state_abb}",
@@ -254,6 +221,16 @@ state_map_chart <- function(data, map, spec) {
     ) |>
     hc_title(text = spec$title) |>
     hc_subtitle(text = spec$subtitle) |>
+    hc_colorAxis(
+      min = if (is.null(bounds)) 0 else bounds[1],
+      max = if (is.null(bounds)) NULL else bounds[2],
+      endOnTick = TRUE, startOnTick = TRUE,
+      stops = color_stops(length(axis_colors), axis_colors),
+      labels = list(format = spec$label_format,
+                    style = list(fontSize = "12px", fontFamily = default_fonts))
+    ) |>
+    hc_legend(align = "center", horizontalAlign = "bottom", layout = "horizontal",
+              symbolHeight = 25, symbolWidth = spec$legend_width, x = 0, y = 0) |>
     hc_caption(text = spec$caption, align = "right",
                style = list(fontFamily = default_fonts)) |>
     hc_setup() |>
@@ -267,23 +244,7 @@ state_map_chart <- function(data, map, spec) {
       )))
     ))
 
-  if (binned) {
-    chart |>
-      hc_colorAxis(dataClasses = change_map_data_classes(spec$breaks, spec$colors, spec$suffix %||% "")) |>
-      hc_legend(align = "center", verticalAlign = "bottom", layout = "horizontal",
-                symbolRadius = 0, symbolHeight = 14, symbolWidth = 14) |>
-      hc_chart(events = list(render = outline_legend_symbols))
-  } else {
-    chart |>
-      hc_colorAxis(
-        min = 0, endOnTick = TRUE, startOnTick = TRUE,
-        stops = color_stops(length(spec$colors), spec$colors),
-        labels = list(format = spec$label_format,
-                      style = list(fontSize = "12px", fontFamily = default_fonts))
-      ) |>
-      hc_legend(align = "center", horizontalAlign = "bottom", layout = "horizontal",
-                symbolHeight = 25, symbolWidth = spec$legend_width, x = 0, y = 0)
-  }
+  chart
 }
 
 ### spline trend by year, padded with chart_bounds()

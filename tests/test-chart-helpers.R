@@ -25,27 +25,9 @@ test_that("map data classes leave the end classes open and label each class", {
   expect_error(map_data_classes(c(35, 45), c("a", "b")))
 })
 
-test_that("change map classes are symmetric around zero", {
-  breaks <- c(5, 15, 30)
-  expect_equal(
-    change_map_class(c(-41, -30, -29.6, -15, -5, -4.4, 0, 4.4, 4.5, 5, 15, 30, NA), breaks),
-    c(1L, 1L, 1L, 2L, 3L, 4L, 4L, 4L, 5L, 5L, 6L, 7L, NA)
-  )
-})
-
-test_that("change map data classes label each class with signed whole numbers", {
-  classes <- change_map_data_classes(c(5, 15, 30), letters[1:7], "%")
-  expect_equal(
-    vapply(classes, `[[`, character(1), "name"),
-    c("-30% or lower", "-29% to -15%", "-14% to -5%", "-4% to +4%",
-      "+5% to +14%", "+15% to +29%", "+30% or higher")
-  )
-  expect_equal(classes[[3]], list(from = 3, to = 3, color = "c", name = "-14% to -5%"))
-  expect_error(change_map_data_classes(c(5, 15), letters[1:4]))
-})
-
-test_that("signed text rounds halves away from zero", {
-  expect_equal(signed_text(c(2.5, -2.5, 0, NA), "%"), c("+3%", "-3%", "0%", NA))
+test_that("change maps center their scale on zero", {
+  expect_equal(change_map_bounds(c(-4, 2)), c(-4, 4))
+  expect_equal(change_map_bounds(c(NA, -2, 5)), c(-5, 5))
 })
 
 test_that("solve rate column tints pills against its rate and shows it in the footer", {
@@ -346,22 +328,18 @@ test_that("trend y format replaces the default axis label format", {
   expect_null(chart$x$hc_opts$subtitle)
 })
 
-test_that("state change map bins changes into classes and preserves null interaction", {
-  data <- tibble(state_abbr = c("AA", "BB", "CC"), change = c(-40, 2, NA),
-                 tooltip = c("a", "b", "c"), url = c("a", "b", "c"))
+test_that("state change map uses a symmetric scale and preserves null interaction", {
+  data <- tibble(state_abbr = c("AA", "BB"), change = c(-4, 2),
+                 tooltip = c("a", "b"), url = c("a", "b"))
   spec <- list(value = "change", title = "Change", subtitle = "Rate change",
-               caption = "Source", colors = letters[1:7], breaks = c(5, 15, 30), suffix = "%",
-               accessibility = "state: {point.state_abb}, change: {point.change_text}",
-               null_interaction = TRUE)
+               caption = "Source", colors = c("blue", "white", "orange"),
+               label_format = "{value}%", legend_width = 250,
+               accessibility = "state: {point.state_abb}, change: {point.value:.1f}",
+               symmetric = TRUE, null_interaction = TRUE)
   chart <- state_map_chart(data, list(type = "FeatureCollection", features = list()), spec)
-  points <- chart$x$hc_opts$series[[1]]$data
-  expect_equal(points[[1]]$tooltip, "a")
-  expect_equal(points[[1]]$value, 1)
-  expect_equal(points[[1]]$change_text, "-40%")
-  expect_equal(points[[2]]$value, 4)
-  expect_length(chart$x$hc_opts$colorAxis$dataClasses, 7)
-  expect_null(chart$x$hc_opts$colorAxis$stops)
-  expect_named(chart$x$hc_opts$chart$events, c("load", "beforePrint", "afterPrint", "render"), ignore.order = TRUE)
+  expect_equal(chart$x$hc_opts$colorAxis$min, -4)
+  expect_equal(chart$x$hc_opts$series[[1]]$data[[1]]$tooltip, "a")
+  expect_equal(chart$x$hc_opts$colorAxis$max, 4)
   expect_true(chart$x$hc_opts$series[[1]]$nullInteraction)
   expect_true(chart$x$hc_opts$plotOptions$series$accessibility$enabled)
   expect_true(chart$x$hc_opts$plotOptions$series$accessibility$keyboardNavigation$enabled)
