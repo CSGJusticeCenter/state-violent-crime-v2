@@ -190,10 +190,12 @@ test_that("offense trend uses the selected offense and its own rate range", {
     incidents_reported_rate_total = c(5, 7, 40, 50),
     tooltip = c("h1", "h2", "r1", "r2")
   )
-  chart <- offense_trend_chart(data, "Homicide", "Homicide", "Rate", "#123456")
+  chart <- offense_trend_chart(data, "Homicide", "State A")
   expect_equal(chart$x$hc_opts$yAxis$min, 4)
   expect_equal(chart$x$hc_opts$yAxis$max, 8)
-  expect_equal(chart$x$hc_opts$title$text, "Homicide")
+  expect_equal(chart$x$hc_opts$title$text, "Homicide in State A")
+  expect_equal(chart$x$hc_opts$series[[1]]$color, offense_color("Homicide"))
+  expect_equal(chart$x$hc_opts$subtitle$text, "Homicide incidents reported to police per 100,000 residents")
   expect_equal(length(chart$x$hc_opts$series[[1]]$data), 2)
 })
 

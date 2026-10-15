@@ -319,41 +319,25 @@ us_offense_rates <- srs_us |>
 ## Homicide
 
 ```{r}
-offense_trend_chart(
-  us_offense_rates, "Homicide", paste0("Homicide in ", state_name_text),
-  "Homicide incidents reported to police per 100,000 residents",
-  offense_color("Homicide")
-)
+offense_trend_chart(us_offense_rates, "Homicide", state_name_text)
 ```
 
 ## Aggravated assault
 
 ```{r}
-offense_trend_chart(
-  us_offense_rates, "Aggravated assault", paste0("Aggravated assault in ", state_name_text),
-  "Incidents reported to police per 100,000 residents where aggravated assault was the most serious offense",
-  offense_color("Aggravated assault")
-)
+offense_trend_chart(us_offense_rates, "Aggravated assault", state_name_text)
 ```
 
 ## Robbery
 
 ```{r}
-offense_trend_chart(
-  us_offense_rates, "Robbery", paste0("Robbery in ", state_name_text),
-  "Incidents reported to police per 100,000 residents where robbery was the most serious offense",
-  offense_color("Robbery")
-)
+offense_trend_chart(us_offense_rates, "Robbery", state_name_text)
 ```
 
 ## Rape
 
 ```{r}
-offense_trend_chart(
-  us_offense_rates, "Rape", paste0("Rape in ", state_name_text),
-  "Incidents reported to police per 100,000 residents where rape was the most serious offense",
-  offense_color("Rape")
-)
+offense_trend_chart(us_offense_rates, "Rape", state_name_text)
 ```
 
 ## By offense

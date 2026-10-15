@@ -407,17 +407,20 @@ offense_area_chart <- function(data, title, colors,
     hc_chart(events = list(render = end_labels))
 }
 
-### reported rate trend for one offense
+### reported rate trend for one offense in place, e.g., "Robbery in New York",
+### subtitled "Robbery incidents reported to police per 100,000 residents" and
+### drawn in the offense's color
 ### data needs rate_label, the rate as tooltips show it, for screen readers
-offense_trend_chart <- function(data, offense, title, subtitle, color,
+offense_trend_chart <- function(data, offense, place,
                                 caption = "FBI UCR Program, state crime estimates",
                                 compare = FALSE) {
   trend_chart(
     dplyr::filter(data, group == offense), "incidents_reported_rate_total",
-    title, subtitle, caption,
+    paste(offense, "in", place),
+    paste(offense, "incidents reported to police per 100,000 residents"), caption,
     value_label = paste(tolower(offense), "incidents per 100,000 residents"),
     value_format = "{point.rate_label}",
-    color = color, compare = compare
+    color = offense_color(offense), compare = compare
   )
 }
 
