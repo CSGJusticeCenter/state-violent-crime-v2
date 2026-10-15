@@ -63,7 +63,7 @@ Chart, table and page improvements from the October 2026 design audit. All fit t
 
 - The change maps keep continuous color ramps, scaled to the largest change in either direction.
 - Tried seven fixed classes (crime rate breaks at 5, 15 and 30 percent; solve rate at 2, 5 and 10 points), then went back to the ramps.
-- The largest change still sets each scale (−41% crime, +16 points solved), so most states look pale.
+- The largest change sets each scale (−41% crime, +16 points solved). States with similar changes get similar colors, which is intended.
 
 ### 1.4 Homicide panels — done
 
