@@ -80,9 +80,10 @@ The latest SRS year comes from the data, so the state pages pick it up automatic
 | Script | Does | Writes |
 |---|---|---|
 | `01-national-series.R` | US reported, solved and unsolved violent crime, 1965–2025. Solved counts use the site method from 2015 and rebuild it from agency counts before that. Prints checks comparing the two methods | `national-1965-2025.csv` |
-| `02-state-2020-2025.R` | State totals pooled over 2020–2025: reported, unsolved, unsolved homicides, share solved and crime rate per 100,000 | `state-2020-2025.csv` |
+| `02-state-2020-2025.R` | State backlog by year, 2020–2025, for violent crime and each offense: reported, solved, unsolved, share solved and crime rate per 100,000, pooled from 2020. The 2025 rows are the handout's state table | `state-backlog-2020-2025.csv` |
 | `03-handout-numbers.R` | Computes each handout number by page, with the handout text quoted beside its code, and prints them | Nothing |
 | `04-figures.R` | ggplot versions of the handout's charts, for reference | `p1-*.png` to `p4-*.png` |
+| `05-backlog-export.R` | US backlog by year, 2020–2025, for violent crime and each offense | `us-backlog-2020-2025.csv` |
 
 `helpers.R` holds the shared paths and calculations. Earlier versions of these scripts and their outputs are in `_archive/crime_wo_conseq/`.
 

@@ -4,11 +4,30 @@
 
 handout_dir <- "analysis/crime_wo_conseq"
 national_path <- file.path(handout_dir, "national-1965-2025.csv")
-state_path <- file.path(handout_dir, "state-2020-2025.csv")
+state_path <- file.path(handout_dir, "state-backlog-2020-2025.csv")
 
 read_national <- function() read_csv(national_path, show_col_types = FALSE)
 
-read_states <- function() read_csv(state_path, show_col_types = FALSE)
+### one row per state pooled over 2020-2025: violent crime counts and rates,
+### with unsolved homicides
+read_states <- function() {
+  pooled <- read_csv(state_path, show_col_types = FALSE) |>
+    filter(year == 2025)
+
+  homicide <- pooled |>
+    filter(offense == "Homicide") |>
+    select(
+      state_name,
+      homicide_years_shown = years_shown,
+      homicide_unsolved = backlog,
+      homicide_year_missing = year_missing
+    )
+
+  pooled |>
+    filter(offense == "Violent crime") |>
+    select(state_name, state_abbr, years_shown, pop_years, reported_all, reported, unsolved = backlog, no_data, year_missing, pct_solved, reported_per_100k) |>
+    left_join(homicide, by = join_by(state_name), relationship = "one-to-one")
+}
 
 ### national rows for the handout's 2020-2025 period
 recent_years <- function(national) filter(national, between(year, 2020, 2025))
