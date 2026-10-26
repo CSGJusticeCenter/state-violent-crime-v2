@@ -291,12 +291,15 @@ save_chart(ranked_bars, "state-map-5-ranked.png", width = 8, height = 10)
 
 ### 6. Crime rate against share unsolved -----------------------------------------
 
-years <- 6
+### reference line at the US crime rate
+us_crime_rate <- sum(states$reported_all) / sum(states$pop_years) * 1e5
 
-### reference lines at the US crime rate and the US share unsolved, which
-### pools every state but Illinois like the site's US solve rate
-us_crime_rate <- sum(states$reported_all) / years / sum(states$pop_2025) * 1e5
-us_unsolved <- sum(fill_rows$unsolved) / sum(fill_rows$reported)
+### US share unsolved from the national series, so the line matches the
+### handout's other US rates, not the pooled state rate (42.8% solved,
+### every state but Illinois)
+us_series <- read_csv("analysis/solved-unsolved-since-1960.csv", show_col_types = FALSE) |>
+  filter(between(year, 2020, 2025))
+us_unsolved <- sum(us_series$incidents_unsolved) / sum(us_series$incidents_reported)
 
 regions <- read_csv("data/csg-regions.csv", show_col_types = FALSE)
 
@@ -311,7 +314,7 @@ scatter_title <- str_c(
 
 scatter_rows <- fill_rows |>
   left_join(regions, by = join_by(state_name), relationship = "one-to-one") |>
-  mutate(crime_per_100k = reported_all / years / pop_2025 * 1e5)
+  mutate(crime_per_100k = reported_per_100k)
 stopifnot(!anyNA(scatter_rows$csg_region))
 
 region_colors <- c(Southern = "#eb6834", Western = "#eda100", Midwestern = "#1baf7a", Eastern = "#2a78d6")

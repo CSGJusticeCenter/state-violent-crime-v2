@@ -13,11 +13,15 @@
 ##   crime, and Illinois after illinois_last_year
 ##
 ## A year's clearances can include crimes from earlier years.
+##
+## Writes analysis/crime_wo_conseq/national-1965-2025.csv. The agency-based
+## state rates and the Checks section only print comparisons and never reach
+## the CSV. Run from the project root.
 
 library(tidyverse)
 library(csgjcr)
-library(scales)
 source("R/page-data.R")
+source("analysis/crime_wo_conseq/helpers.R")
 
 first_year <- 1965
 fbi_count_year <- 1979
@@ -45,7 +49,9 @@ kaplan <- read_rds(raw_path("fbi", "srs", "kaplan", "offenses_known_yearly_1960_
   ) |>
   as_tibble()
 
-### CDE agency counts from 2000, with NYPD's 2022 clearances repaired
+### CDE agency counts from 2000, with NYPD's 2022 clearances repaired. The CSV
+### uses agency counts only before published_year, so the repair reaches only
+### the checks
 nypd_clearance <- read_csv("data/nypd_clearance_2022.csv", show_col_types = FALSE)
 
 cde <- read_rds(csg_sp_path("jr_data_library", "data", "analysis", "fbi", "srs", "fbi_srs_agency.rds")) |>
@@ -81,7 +87,7 @@ ci_reported <- crimeindex_crime |>
 
 ci_reported <- ci_reported |>
   summarize(
-    incidents_reported = 2 * sum(incidents_reported[state_abbr == "US"]) - sum(incidents_reported),
+    incidents_reported = sum(incidents_reported[state_abbr == "US"]) - sum(incidents_reported[state_abbr != "US"]),
     .by = year
   ) |>
   mutate(state_abbr = "DC") |>
@@ -90,6 +96,7 @@ ci_reported <- ci_reported |>
 state_reported <- bind_rows(ci_reported, fbi_reported)
 
 if (any(count(state_reported, year)$n != 51)) stop("Every year needs reported counts for 50 states and DC")
+if (anyNA(state_reported$incidents_reported)) stop("Some state-years have no reported count")
 
 ### Site method from agency counts --------------------------------------------
 
@@ -114,9 +121,9 @@ site_replica_us <- state_reported |>
 
 ### Agency-based state rates --------------------------------------------------
 
-### a check: each state's rate from agencies that report clearances, applied to
-### its own reported count. Illinois after illinois_last_year, and states with
-### no clearances left, take the national rate
+### for the checks: each state's rate from agencies that report clearances,
+### applied to its own reported count. Illinois after illinois_last_year, and
+### states with no clearances left, take the national rate
 
 state_rates <- agencies |>
   filter(!non_reporting, state_abbr %in% state_reported$state_abbr) |>
@@ -147,12 +154,14 @@ agency_us <- agency_states |>
 ### state's population once
 srs_population <- srs |>
   filter(group == "Homicide", !is.na(pop_total)) |>
-  summarize(population = sum(pop_total), .by = year)
+  summarize(population = sum(pop_total), states = n(), .by = year)
+
+if (any(srs_population$states != 51)) stop("Some FBI estimate years lack population for every state")
 
 us_population <- crimeindex_crime |>
   filter(id == "us", year >= first_year, !year %in% srs_population$year) |>
   select(year, population) |>
-  bind_rows(srs_population)
+  bind_rows(select(srs_population, year, population))
 
 ### Spliced series ------------------------------------------------------------
 
@@ -179,10 +188,10 @@ trend <- bind_rows(
   arrange(year)
 
 if (anyNA(trend$population)) stop("The spliced series has years without population")
-
+if (anyNA(trend$incidents_solved)) stop("The spliced series has years without a solve rate")
 if (!all(diff(trend$year) == 1)) stop("The spliced series skips or repeats a year")
 
-write_csv(trend, "analysis/solved-unsolved-since-1960.csv")
+write_csv(trend, national_path)
 
 ### Checks --------------------------------------------------------------------
 
@@ -206,7 +215,8 @@ ci_solve <- read_csv(crimeindex_path("historical_clearance_1960_2025_1790092670.
   summarize(pct_crimeindex = sum(reported * pct_cleared / 100) / sum(reported), .by = year)
 
 ### agency rates, the site method on FBI-estimated clearances from their first
-### year, the site method rebuilt from agency counts, and Crime Index
+### year, the site method rebuilt from agency counts, and Crime Index. Near the
+### published_year splice, the rebuilt and published rates should agree
 site_method <- us_solve_trend(srs, 1985) |>
   transmute(year, pct_site_method = incidents_solved / incidents_reported)
 
@@ -217,120 +227,3 @@ agency_us |>
   left_join(ci_solve, by = join_by(year)) |>
   mutate(across(starts_with("pct"), \(x) round(100 * x, 1))) |>
   print(n = Inf)
-
-### Charts --------------------------------------------------------------------
-
-chart_colors <- c(reported = "#0B1F35", solved = "#0A8A6A", gap = "#B9CBD8", ink = "#0B1F35", muted = "#5B6B7C", surface = "#EEF3F9")
-chart_font <- "Public Sans"
-
-chart_sources <- str_c(
-  "Sources: FBI Crime Data Explorer; FBI Uniform Crime Reports via Jacob Kaplan; ",
-  "Crime Index (AH Datalytics) historical tables, 1965–1978"
-)
-
-short_count <- function(x) if_else(x >= 1e6, sprintf("%.2fM", x / 1e6), sprintf("%.0fK", x / 1e3))
-
-### reported and solved lines with the unsolved gap shaded
-### df has year, reported and solved; label_value formats the labeled values
-solved_chart <- function(df, label_value, y_breaks, y_labels, title, note) {
-  y_max <- max(y_breaks) * 1.1
-
-  ### first-year values sit left of their points, peak-year values above
-  ### reported and below solved, last-year values beside the series names
-  first <- slice_min(df, year, n = 1)
-  peak <- slice_max(df, reported, n = 1)
-  last <- slice_max(df, year, n = 1)
-
-  value_labels <- tibble(
-    year = c(first$year, first$year, peak$year, peak$year),
-    value = c(first$reported, first$solved, peak$reported, peak$solved),
-    series = c("reported", "solved", "reported", "solved"),
-    x = c(first$year - 1.2, first$year - 1.2, peak$year, peak$year),
-    hjust = c(1, 1, 0.5, 0.5),
-    vjust = c(0.5, 0.5, -0.9, 1.9)
-  ) |>
-    mutate(label = label_value(value))
-
-  points <- bind_rows(
-    select(value_labels, year, value, series),
-    tibble(year = last$year, value = c(last$reported, last$solved), series = c("reported", "solved"))
-  )
-
-  series_labels <- tibble(
-    y = c(last$reported, (last$reported + last$solved) / 2, last$solved),
-    label = c(
-      str_c("Reported\n", label_value(last$reported)),
-      "Unsolved\n(shaded gap)",
-      str_c("Solved\n", label_value(last$solved))
-    ),
-    color = chart_colors[c("reported", "muted", "solved")],
-    size = c(4.4, 3.8, 4.4)
-  )
-
-  ggplot(df, aes(year)) +
-    geom_ribbon(aes(ymin = solved, ymax = reported), fill = chart_colors[["gap"]]) +
-    geom_line(aes(y = reported), color = chart_colors[["reported"]], linewidth = 1) +
-    geom_line(aes(y = solved), color = chart_colors[["solved"]], linewidth = 1) +
-    geom_point(
-      data = points,
-      aes(y = value, color = series),
-      size = 2.6, stroke = 1.2, shape = 21, fill = chart_colors[["surface"]]
-    ) +
-    geom_text(
-      data = value_labels,
-      aes(x = x, y = value, label = label, color = series, hjust = hjust, vjust = vjust),
-      family = chart_font, fontface = "bold", size = 3.6
-    ) +
-    geom_text(
-      data = series_labels,
-      aes(x = last$year + 1.5, y = y, label = label),
-      color = series_labels$color, size = series_labels$size,
-      hjust = 0, lineheight = 0.9, family = chart_font, fontface = "bold"
-    ) +
-    scale_color_manual(values = chart_colors[c("reported", "solved")], guide = "none") +
-    scale_x_continuous(breaks = seq(first_year, 2025, 10), expand = expansion(add = c(6, 13))) +
-    scale_y_continuous(limits = c(0, y_max), breaks = y_breaks, labels = y_labels, expand = expansion(mult = 0)) +
-    labs(title = title, x = NULL, y = NULL, caption = str_c(note, "\n", chart_sources)) +
-    coord_cartesian(clip = "off") +
-    theme_minimal(base_family = chart_font, base_size = 12) +
-    theme(
-      plot.background = element_rect(fill = chart_colors[["surface"]], color = NA),
-      panel.grid.major.x = element_blank(),
-      panel.grid.minor = element_blank(),
-      panel.grid.major.y = element_line(color = "#D3DCE6", linewidth = 0.4),
-      axis.line.x = element_line(color = chart_colors[["ink"]], linewidth = 0.8),
-      axis.text.x = element_text(color = chart_colors[["ink"]], face = "bold", size = 11),
-      axis.text.y = element_text(color = chart_colors[["muted"]], size = 11),
-      plot.title = element_text(color = chart_colors[["ink"]], face = "bold", size = 18, margin = margin(b = 16)),
-      plot.title.position = "plot",
-      plot.caption = element_text(color = chart_colors[["muted"]], size = 8.5, hjust = 0, lineheight = 1.1, margin = margin(t = 14)),
-      plot.caption.position = "plot",
-      plot.margin = margin(20, 20, 16, 20)
-    )
-}
-
-save_chart <- function(chart, file) {
-  ggsave(file, chart, width = 9, height = 6, dpi = 200, device = ragg::agg_png, bg = chart_colors[["surface"]])
-}
-
-trend |>
-  select(year, reported = incidents_reported, solved = incidents_solved) |>
-  solved_chart(
-    label_value = short_count,
-    y_breaks = seq(0, 2e6, 5e5),
-    y_labels = label_number(scale_cut = cut_short_scale(), drop0trailing = TRUE),
-    title = "Violent crime reported and solved in the US, 1965–2025",
-    note = "Solved counts apply clearance rates to estimated violent crimes. Clearances can include crimes from earlier years."
-  ) |>
-  save_chart("analysis/solved-unsolved-since-1960.png")
-
-trend |>
-  select(year, reported = reported_per_100k, solved = solved_per_100k) |>
-  solved_chart(
-    label_value = \(x) comma(x, 1),
-    y_breaks = seq(0, 800, 200),
-    y_labels = comma,
-    title = "Violent crime reported and solved per 100,000 residents",
-    note = "US rates per 100,000 residents, 1965–2025. Solved rates apply clearance rates to estimated violent crimes. Clearances can include crimes from earlier years."
-  ) |>
-  save_chart("analysis/solved-unsolved-per-capita-since-1960.png")
