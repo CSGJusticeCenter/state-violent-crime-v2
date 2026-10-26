@@ -72,6 +72,7 @@ violent_offenses <- c("Homicide", "Rape", "Robbery", "Aggravated assault")
 
 ### one row per state, year and offense with reported, unsolved and cleared counts
 ### raw is fbi_srs_estimated_crimes_state.rds from jr_data_library
+### pop_total in raw is Census PEP state population, not an FBI figure
 prep_srs_state <- function(raw) {
   raw |>
     mutate(crime_cat = if_else(group %in% violent_offenses, "Violent", "Property")) |>
