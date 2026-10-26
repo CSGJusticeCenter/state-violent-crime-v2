@@ -89,7 +89,7 @@ prep_srs_state <- function(raw) {
 
 read_srs_state <- function(screen = read_rds(clearance_screen_path),
                            repairs = read_rds(clearance_repairs_path)) {
-  read_rds(csg_sp_path("jr_data_library", "data", "analysis", "fbi", "srs", "fbi_srs_estimated_crimes_state.rds")) |>
+  read_rds(csg_sp_path("JR_DATA_LIBRARY", "data", "analysis", "fbi", "srs", "fbi_srs_estimated_crimes_state.rds")) |>
     prep_srs_state() |>
     repair_clearances(repairs) |>
     flag_screened_solve_rates(screen, repairs)
