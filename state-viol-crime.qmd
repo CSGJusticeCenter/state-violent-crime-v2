@@ -163,6 +163,416 @@ us_state_rate_text_crime <- change_phrase((state_total$rate_100k - us_total$rate
 change_text_clear <- if (show_solved) change_phrase(state_total$solve_change / 100, "point") else ""
 ```
 
+## Violent crime is down, but unsolved crime keeps piling up.
+
+::: {.panel-tabset}
+
+```{r }
+# ==============================================================================
+# Crime Without Consequence, page 1: two accessible highcharter charts
+#   Chart 1 (hc_reported_solved): Violent crime reported, solved, and unsolved
+#            in the U.S., 2020-2025
+#   Chart 2 (hc_backlog): Backlog of unsolved violent crime, 2020-2025
+# ==============================================================================
+
+
+# ------------------------------------------------------------------------------
+# PREP DATA FOR FIRST SECTION
+# ------------------------------------------------------------------------------
+crime_data <- srs_by_cat_state |>
+  ### filter on years in handout
+  filter(year%in%c(2020:2025)) |> 
+  mutate(
+    cumulative_incidents_unsolved = cumsum(incidents_unsolved)     # backlog added since 2020
+  )
+
+# hc_setup() shows each point's `tooltip` column, so build that text per chart.
+# Chart 1: one tooltip per year listing all three values.
+trend_data <- crime_data |>
+  mutate(tooltip = paste0(
+    "<b>", year, "</b><br>",
+    "Violent crimes reported: ", comma(incidents_reported, 1), "<br>",
+    "Violent crimes solved: ", comma(incidents_solved, 1), "<br>",
+    "Violent crimes unsolved: ", comma(incidents_unsolved, 1)
+  ))
+
+# Chart 2: backlog tooltip.
+backlog_data <- crime_data |>
+  mutate(tooltip = paste0(
+    "<b>", year, "</b><br>",
+    "Unsolved crimes added since 2020: ", comma(cumulative_incidents_unsolved, 1), "<br>",
+    "Unsolved this year: ", comma(incidents_unsolved, 1)
+  ))
+
+```
+
+```{r }
+# ------------------------------------------------------------------------------
+# COLORS (from the handout) AND SMALL HELPERS
+# ------------------------------------------------------------------------------
+col_navy <- "#001E35"   # reported line, backlog fill
+col_blue <- "#005DA6"   # solved line, callout outline
+col_gap  <- "#CCE9FF"   # shaded "unsolved" gap
+col_teal <- "#2DEBC3"   # accent markers
+
+# Compact number formatter used inside the JS below. Scales itself to the data:
+#   1,313,000 -> "1.31M"   25,300 -> "25.3K"   563,000 -> "563K"   840 -> "840"
+# trim = TRUE drops trailing zeros (axis ticks: "1M", "1.5M");
+# dm = decimals for millions.
+crime_js_fmt <- "var fmt = function(v, trim, dm) {
+    var a = Math.abs(v); dm = (dm === undefined) ? 2 : dm;
+    var out;
+    if (a >= 1e6) { out = (v / 1e6).toFixed(dm); return (trim ? String(+out) : out) + 'M'; }
+    if (a >= 1e3) { out = (v / 1e3).toFixed(a >= 1e5 ? 0 : 1); return (trim ? String(+out) : out) + 'K'; }
+    return String(Math.round(v));
+  };"
+
+# Axis labels. plus = TRUE gives +1M, +2M ... and a blue "?" at the baseline
+# (the handout's way of saying the pre-2020 backlog is unknown).
+crime_js_axis_label <- function(plus = FALSE) {
+  JS(paste0(
+    "function() { ", crime_js_fmt, "
+      var v = this.value;
+      if (v === 0) return ",
+    if (plus) "'<span style=\"color:#005DA6;font-weight:900\">?</span>'" else "'0'", ";
+      return ", if (plus) "'+' + fmt(v, true)" else "fmt(v, true)", ";
+    }"
+  ))
+}
+
+# Value labels on the lines: 1.31M, 563K
+crime_js_point_label <- JS(paste0(
+  "function() { ", crime_js_fmt, " return fmt(this.y, false); }"
+))
+
+# Direct line label: the series name on the LAST point only
+crime_js_end_label <- JS("function() {
+  return this.point.index === this.series.data.length - 1 ? this.series.name : null;
+}")
+
+# Last-point label on the backlog chart: +4.3M (null for every other point)
+crime_js_backlog_label <- JS(paste0(
+  "function() { ", crime_js_fmt, "
+    return this.point.index === this.series.data.length - 1
+      ? '+' + fmt(this.y, true, 1) : null;
+  }"
+))
+
+# "Not starting at zero" note: a bordered box plus an angled dotted line,
+# drawn in a render event (the same way the site attaches end_labels).
+#   note_frac  box CENTER height as a fraction of the y-axis range (0.45 puts it
+#              at +2.25M on a 0-5M axis; it follows whatever the axis becomes)
+#   max_width  widest the box may get, in px (also capped at 30% of the plot)
+#   end_frac   how far above the baseline the dotted line ends (fraction of the
+#              plot height)
+# The box height is measured at render time, so the line always starts at the
+# bottom of the box. It is redrawn on every render (resize, print).
+crime_js_note_line <- function(note_frac = 0.45, max_width = 170, end_frac = 0.09) {
+  JS(paste0("function() {
+  var chart = this, accent = '#005DA6';
+  var axis = chart.yAxis[0];
+  var noteValue = axis.min + ", note_frac, " * (axis.max - axis.min);
+  if (chart.noteGroup) chart.noteGroup.destroy();
+  var g = chart.renderer.g('not-starting-at-zero-note').attr({ zIndex: 7 }).add();
+  chart.noteGroup = g;
+  var plotH = chart.plotHeight;
+  var xEnd = chart.plotLeft + 2;                           // line ends at the y-axis
+  var yEnd = chart.plotTop + plotH - ", end_frac, " * plotH; // just above the baseline
+  var yCenter = axis.toPixels(noteValue);
+
+  // White box with a blue border. SVG label (not HTML), so tooltips draw on top.
+  var html = '<span style=\"color:' + accent + ';font-weight:700\">Not starting at zero:</span> ' +
+             'added on top of unsolved crimes from before the first year shown';
+  var note = chart.renderer.label(html, xEnd + 6, 0, 'rect')
+    .css({ width: Math.min(", max_width, ", chart.plotWidth * 0.3) + 'px',
+           color: '#000000', fontSize: '13px' })
+    .attr({ fill: '#FFFFFF', stroke: accent, 'stroke-width': 1.2, r: 5,
+            padding: 8, zIndex: 8 })
+    .add(g);
+  var box = note.getBBox();
+  note.attr({ y: yCenter - box.height / 2 });
+
+  // Dotted line from the bottom of the box down-left to the axis
+  var xTop = xEnd + 6 + 16, yTop = yCenter + box.height / 2;
+  chart.renderer.path(['M', xTop, yTop, 'L', xEnd, yEnd])
+    .attr({ stroke: accent, 'stroke-width': 1.5, 'stroke-dasharray': '3,3',
+            fill: 'none', zIndex: 7 })
+    .add(g);
+
+  // Remember the box so tooltips can steer around it
+  chart.noteBox = { left: xEnd + 6, right: xEnd + 6 + box.width,
+                    top: yCenter - box.height / 2, bottom: yCenter + box.height / 2 };
+}"))
+}
+
+# Tooltip position: beside the point (flipping left near the right edge),
+# centered on it vertically and kept inside the plot. If that would cover the
+# note box, drop just below the box so both stay legible.
+crime_js_tooltip_position <- JS("function(labelWidth, labelHeight, point) {
+  var chart = this.chart, gap = 12;
+  var plotBottom = chart.plotTop + chart.plotHeight;
+  var px = chart.plotLeft + point.plotX, py = chart.plotTop + point.plotY;
+  var x = px + gap;
+  if (x + labelWidth > chart.plotLeft + chart.plotWidth) x = px - labelWidth - gap;
+  var y = Math.min(Math.max(py - labelHeight / 2, chart.plotTop), plotBottom - labelHeight);
+  var nb = chart.noteBox;
+  if (nb && x < nb.right && x + labelWidth > nb.left &&
+      y < nb.bottom && y + labelHeight > nb.top) {
+    y = Math.min(nb.bottom + 6, plotBottom - labelHeight);
+  }
+  return { x: x, y: y };
+}")
+
+# Sets only the long description for screen readers, so the accessibility
+# options hc_setup() already set are kept.
+crime_hc_describe <- function(chart, text) {
+  chart$x$hc_opts$accessibility$description <- text
+  chart
+}
+
+# Source line shared by both charts
+crime_caption <- "FBI UCR Program, state crime estimates and clearances"
+```
+
+```{r }
+# ------------------------------------------------------------------------------
+# 3. THE CHART BUILDER
+#   data            one row per year: year, reported, solved
+#   place           how the place reads in titles, e.g. "the U.S." or "Ohio"
+#   y_expansion     headroom above the largest value, as a share of it
+#                   (room for the value labels); passed to chart_bounds()
+#   x_pad           blank space (in years) before the first and after the last
+#                   year; leaves room for the end labels and the note line
+#   line_label_margin  right margin (px) reserved for the "Reported"/"Solved"
+#                   end labels
+#   note_frac, note_max_width, note_end_frac   see crime_js_note_line()
+# ------------------------------------------------------------------------------
+crime_trend_charts <- function(data, place = "the U.S.", caption = crime_caption,
+                               y_expansion = 0.2, x_pad = 0.4,
+                               line_label_margin = 70,
+                               note_frac = 0.45, note_max_width = 170,
+                               note_end_frac = 0.09) {
+
+  # ---- 3a. Data prep: everything below is computed from `data` --------------
+  data <- data |>
+    arrange(year) |>
+    mutate(
+      cumulative_incidents_unsolved = cumsum(incidents_unsolved)
+    )
+  years      <- data$year
+  year_range <- paste0(min(years), "\u2013", max(years))   # e.g. 2020-2025
+
+  # hc_setup() shows each point's `tooltip` column
+  trend_data <- data |>
+    mutate(tooltip = paste0(
+      "<b>", year, "</b><br>",
+      "Violent crimes reported: ", comma(incidents_reported, 1), "<br>",
+      "Violent crimes solved: ", comma(incidents_solved, 1), "<br>",
+      "Violent crimes unsolved: ", comma(incidents_unsolved, 1)
+    ))
+  backlog_data <- data |>
+    mutate(tooltip = paste0(
+      "<b>", year, "</b><br>",
+      "Unsolved crimes added since ", min(years), ": ", comma(cumulative_incidents_unsolved, 1), "<br>",
+      "Unsolved this year: ", comma(incidents_unsolved, 1)
+    ))
+
+  # ---- 3b. Axis limits from the data (same idea as the site's trend_chart()) --
+  # Including 0 in the values anchors the baseline at zero; chart_bounds()
+  # then adds `y_expansion` headroom above the largest value. endOnTick = FALSE
+  # lets Highcharts choose tick spacing for whatever the range turns out to be.
+  trend_bounds   <- chart_bounds(c(0, data$incidents_reported), expansion = y_expansion, floor = 0)
+  backlog_bounds <- chart_bounds(c(0, data$cumulative_incidents_unsolved),
+                                 expansion = y_expansion, floor = 0)
+
+  # Whole-year ticks, padded on both sides
+  x_min <- min(years) - x_pad
+  x_max <- max(years) + x_pad
+
+  # ---- 3c. Where to put the "Unsolved" label ---------------------------------
+  # Label the interior year with the WIDEST gap, so the word always fits inside
+  # the shaded area. (Interior = not the first or last year, so it never
+  # straddles the chart edge.)
+  interior <- if (length(years) > 2) data[-c(1, nrow(data)), ] else data
+  gap_year <- interior$year[which.max(interior$incidents_unsolved)]
+  gap_label_data <- data |>
+    filter(year == gap_year) |>
+    transmute(year, mid = (incidents_reported + incidents_solved) / 2)
+
+  # ---- 3d. Screen-reader descriptions built from the numbers -----------------
+  desc_trend <- paste0(
+    "Line chart with a shaded gap, ", min(years), " to ", max(years), ", for ", place,
+    ". Violent crimes reported went from ", comma(first(data$incidents_reported), 1), " in ",
+    min(years), " to ", comma(last(data$incidents_reported), 1), " in ", max(years),
+    ". Violent crimes solved ranged between ", comma(min(data$incidents_solved), 1), " and ",
+    comma(max(data$incidents_solved), 1), " each year. The shaded area between the two lines ",
+    "is the number left unsolved each year: ", comma(first(data$incidents_unsolved), 1), " in ",
+    min(years), " and ", comma(last(data$incidents_unsolved), 1), " in ", max(years), "."
+  )
+  desc_backlog <- paste0(
+    "Filled area chart, ", min(years), " to ", max(years), ", for ", place,
+    ". The backlog of unsolved violent crimes added since ", min(years),
+    " grows every year, from ", comma(first(data$cumulative_incidents_unsolved), 1),
+    " at the end of ", min(years), " to ", comma(last(data$cumulative_incidents_unsolved), 1),
+    " by the end of ", max(years), ". The chart does not start from zero in real terms: ",
+    "these crimes are added on top of an unknown number of unsolved crimes from before ",
+    min(years), "."
+  )
+
+  # ---- 3e. CHART 1: reported, solved, unsolved -------------------------------
+  # The shaded gap is two stacked area series: an invisible base that follows
+  # the solved line, with the unsolved amount stacked on top in light blue.
+  trend <- hchart(
+    trend_data, "area", hcaes(year, incidents_solved),
+    name = "Solved (base of gap)", color = "transparent", fillOpacity = 0,
+    lineWidth = 0, stacking = "normal", marker = list(enabled = FALSE),
+    enableMouseTracking = FALSE, zIndex = 0,
+    accessibility = list(enabled = FALSE)
+  ) |>
+    hc_add_series(
+      trend_data, "area", hcaes(year, incidents_unsolved),
+      name = "Unsolved", color = col_gap, fillOpacity = 1, lineWidth = 0,
+      stacking = "normal", marker = list(enabled = FALSE),
+      enableMouseTracking = FALSE, zIndex = 0,
+      accessibility = list(
+        description = "Shaded area showing violent crimes left unsolved each year.",
+        point = list(valueDescriptionFormat =
+          "year: {point.x:.0f}, violent crimes unsolved: {point.y:,.0f}")
+      )
+    ) |>
+    # Invisible helper that carries the "Unsolved" label inside the gap
+    hc_add_series(
+      gap_label_data, "line", hcaes(year, mid),
+      name = "Unsolved (label)", lineWidth = 0, marker = list(enabled = FALSE),
+      enableMouseTracking = FALSE, zIndex = 1,
+      dataLabels = list(enabled = TRUE, format = "Unsolved", align = "center",
+                        verticalAlign = "middle", y = 0, allowOverlap = TRUE,
+                        style = list(color = "#000000", fontSize = "15px",
+                                     fontWeight = "800", textOutline = "none")),
+      accessibility = list(enabled = FALSE)
+    ) |>
+    # Reported: solid navy line; value labels above, name label at the line end
+    hc_add_series(
+      trend_data, "line", hcaes(year, incidents_reported),
+      name = "Reported", color = col_navy, lineWidth = 3, zIndex = 2,
+      marker = list(symbol = "circle", radius = 4, lineColor = "#FFFFFF", lineWidth = 1.5),
+      dataLabels = list(
+        list(enabled = TRUE, formatter = crime_js_point_label,
+             verticalAlign = "bottom", y = -6,
+             style = list(color = col_navy, fontSize = "13px",
+                          fontWeight = "400", textOutline = "none")),
+        list(enabled = TRUE, formatter = crime_js_end_label,
+             align = "left", verticalAlign = "middle", x = 10, y = 0,
+             crop = FALSE, overflow = "allow", allowOverlap = TRUE,
+             style = list(color = col_navy, fontSize = "15px",
+                          fontWeight = "800", textOutline = "none"))
+      ),
+      accessibility = list(
+        description = "Violent crimes reported each year.",
+        point = list(valueDescriptionFormat =
+          "year: {point.x:.0f}, violent crimes reported: {point.y:,.0f}")
+      )
+    ) |>
+    # Solved: dashed blue line, diamond markers (differs by more than color)
+    hc_add_series(
+      trend_data, "line", hcaes(year, incidents_solved),
+      name = "Solved", color = col_blue, lineWidth = 3, dashStyle = "ShortDash",
+      zIndex = 2,
+      marker = list(symbol = "diamond", radius = 5, lineColor = "#FFFFFF", lineWidth = 1.5),
+      dataLabels = list(
+        list(enabled = TRUE, formatter = crime_js_point_label,
+             verticalAlign = "top", y = 8,
+             style = list(color = col_blue, fontSize = "13px",
+                          fontWeight = "400", textOutline = "none")),
+        list(enabled = TRUE, formatter = crime_js_end_label,
+             align = "left", verticalAlign = "middle", x = 10, y = 0,
+             crop = FALSE, overflow = "allow", allowOverlap = TRUE,
+             style = list(color = col_blue, fontSize = "15px",
+                          fontWeight = "800", textOutline = "none"))
+      ),
+      accessibility = list(
+        description = "Violent crimes solved each year.",
+        point = list(valueDescriptionFormat =
+          "year: {point.x:.0f}, violent crimes solved: {point.y:,.0f}")
+      )
+    ) |>
+    hc_title(text = paste0("Violent Crime Reported, Solved, and Unsolved in ",
+                           place)) |>
+    hc_caption(text = caption) |>
+    hc_legend(enabled = FALSE) |>
+    hc_setup() |>
+    # Chart-specific settings go AFTER hc_setup() so they merge into its defaults
+    hc_xAxis(tickPositions = years, min = x_min, max = x_max) |>
+    hc_yAxis(min = trend_bounds[1], max = trend_bounds[2], endOnTick = FALSE,
+             reversedStacks = FALSE,            # base series sits at the bottom
+             labels = list(formatter = crime_js_axis_label(plus = FALSE))) |>
+    hc_chart(marginRight = line_label_margin) |>
+    crime_hc_describe(desc_trend)
+
+  # ---- 3f. CHART 2: cumulative backlog ----------------------------------------
+  backlog <- hchart(
+    backlog_data, "area", hcaes(year, cumulative_incidents_unsolved),
+    name = paste0("Backlog added since ", min(years)),
+    color = col_navy, fillOpacity = 1, lineWidth = 2,
+    marker = list(enabled = TRUE, symbol = "circle", radius = 4,
+                  fillColor = col_teal, lineColor = col_navy, lineWidth = 1.5),
+    dataLabels = list(enabled = TRUE, align = "right", verticalAlign = "bottom", y = -8,
+                      formatter = crime_js_backlog_label,
+                      style = list(color = "#000000", fontSize = "13px",
+                                   fontWeight = "800", textOutline = "none")),
+    accessibility = list(
+      description = paste0("Cumulative unsolved violent crimes added to the backlog since ",
+                           min(years), "."),
+      point = list(valueDescriptionFormat = paste0(
+        "year: {point.x:.0f}, unsolved violent crimes added since ", min(years),
+        ": {point.y:,.0f}"))
+    )
+  ) |>
+    hc_title(text = paste0("Backlog of Unsolved Violent Crime in ", place)) |>
+    hc_subtitle(text = paste0("Unsolved violent crimes added since ", min(years))) |>
+    hc_caption(text = caption) |>
+    hc_legend(enabled = FALSE) |>
+    hc_setup() |>
+    hc_xAxis(tickPositions = years, min = min(years) - x_pad * 0.75,
+             max = max(years) + x_pad * 0.75) |>
+    hc_yAxis(min = backlog_bounds[1], max = backlog_bounds[2], endOnTick = FALSE,
+             labels = list(formatter = crime_js_axis_label(plus = TRUE), useHTML = TRUE)) |>
+    # Note box + dotted line, added after hc_setup() the way the site adds end_labels
+    hc_chart(events = list(render = crime_js_note_line(note_frac, note_max_width,
+                                                        note_end_frac))) |>
+    # Keep tooltips from covering the note
+    hc_tooltip(positioner = crime_js_tooltip_position) |>
+    crime_hc_describe(desc_backlog)
+
+  list(trend = trend, backlog = backlog)
+}
+```
+
+## 2020–2025 change 
+
+```{r }
+#| fig-height: 5.5
+
+state_charts <- crime_trend_charts(crime_data, place = paste0(state_name_text))
+hc_reported_solved <- state_charts$trend      
+
+hc_reported_solved
+
+```
+
+## 2020–2025 backlog 
+
+```{r }
+#| fig-height: 5.5
+hc_backlog <- state_charts$backlog
+
+
+hc_backlog
+```
+
+:::
+
+
 ## Violent crime in `r state_name_text`
 
 In `r latest_year`, `r format_rate_100k(state_total$rate_100k)` violent crime incidents per 100,000 residents were reported to police in `r state_name_text`. This is `r change_text_crime` the violent crime rate in `r base_year`.

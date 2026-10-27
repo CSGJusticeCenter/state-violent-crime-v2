@@ -1,5 +1,6 @@
-## render 51 state violent crime pages and the US page to _site for netlify deploy
-## Rscript R/02-render-site.R NY IL US renders only those pages, for testing
+## render 51 state violent crime pages, 51 state backlog pages and the US page
+## to _site for netlify deploy
+## Rscript R/02-render-site.R NY IL US BACKLOG-NY renders only those pages, for testing
 
 source("R/site-checks.R")
 
@@ -8,8 +9,11 @@ n_parallel <- 4
 # a page that fails is retried once; a real error fails both times
 max_attempts <- 2
 
-all_pages <- c("US", state.abb, "DC")
+backlog_qmd    <- "state-backlog-viz-only.qmd"
+backlog_prefix <- "state-backlog-viz-only"
 
+state_pages <- c(state.abb, "DC")
+all_pages <- c("US", state_pages, paste0("BACKLOG-", state_pages))
 pages <- unique(toupper(commandArgs(trailingOnly = TRUE)))
 if (length(pages) == 0) {
   pages <- all_pages
@@ -53,6 +57,13 @@ make_slot <- function() {
 start_render <- function(page, slot) {
   args <- if (page == "US") {
     c("render", "index.qmd", "--output", "index.html")
+  } else if (startsWith(page, "BACKLOG-")) {
+    abb <- sub("^BACKLOG-", "", page)
+    c(
+      "render", backlog_qmd,
+      "-P", paste0("state:", abb),
+      "--output", paste0(backlog_prefix, "-", tolower(abb), ".html")
+    )
   } else {
     c(
       "render", "state-viol-crime.qmd",

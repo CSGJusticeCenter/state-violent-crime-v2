@@ -60,10 +60,13 @@ delete_stale_previews <- function() {
 }
 
 # netlify replaces the whole site on each deploy, so a missing page would go
-# offline. stop unless every state page and the US page are present.
+# offline. stop unless the US page and every state page of each type are present.
+page_prefixes <- c("state-viol-crime", "state-backlog-viz-only")
+abbs <- tolower(c(state.abb, "DC"))
+
 expected_pages <- c(
   "index.html",
-  paste0("state-viol-crime-", tolower(c(state.abb, "DC")), ".html")
+  unlist(lapply(page_prefixes, \(p) paste0(p, "-", abbs, ".html")))
 )
 
 missing_pages <- expected_pages[!file.exists(file.path("_site", expected_pages))]

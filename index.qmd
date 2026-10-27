@@ -420,7 +420,6 @@ hc_reported_solved <- hchart(
   ) |>
 
   hc_title(text = "Violent Crime Reported, Solved, and Unsolved in the U.S., 2020–2025") |>
-  hc_subtitle(text = "Violent crimes reported to police per year") |>
   hc_caption(text = crime_caption) |>
   # No legend: lines are labeled at their ends and the gap inside the chart
   hc_legend(enabled = FALSE) |>
