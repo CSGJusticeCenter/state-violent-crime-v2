@@ -163,16 +163,13 @@ us_state_rate_text_crime <- change_phrase((state_total$rate_100k - us_total$rate
 change_text_clear <- if (show_solved) change_phrase(state_total$solve_change / 100, "point") else ""
 ```
 
-## Violent crime is down, but unsolved crime keeps piling up.
-
-::: {.panel-tabset}
 
 ```{r }
 # ==============================================================================
-# Crime Without Consequence, page 1: two accessible highcharter charts
+# Crime Without Consequence, state pages: two accessible highcharter charts
 #   Chart 1 (hc_reported_solved): Violent crime reported, solved, and unsolved
-#            in the U.S., 2020-2025
-#   Chart 2 (hc_backlog): Backlog of unsolved violent crime, 2020-2025
+#   Chart 2 (hc_backlog): Backlog of unsolved violent crime, stacked by offense
+# Everything is driven by the data passed in, so the same code runs for any state.
 # ==============================================================================
 
 
@@ -181,22 +178,24 @@ change_text_clear <- if (show_solved) change_phrase(state_total$solve_change / 1
 # ------------------------------------------------------------------------------
 crime_data <- srs_by_cat_state |>
   ### filter on years in handout
-  filter(year%in%c(2020:2025)) |> 
+  filter(year%in%c(2020:2025)) |>
   mutate(
     cumulative_incidents_unsolved = cumsum(incidents_unsolved)     # backlog added since 2020
   )
 
 # hc_setup() shows each point's `tooltip` column, so build that text per chart.
-# Chart 1: one tooltip per year listing all three values.
+# Chart 1: one tooltip per year listing all three values, plus the running
+# total of unsolved crimes since 2020 as the last row.
 trend_data <- crime_data |>
   mutate(tooltip = paste0(
     "<b>", year, "</b><br>",
     "Violent crimes reported: ", comma(incidents_reported, 1), "<br>",
     "Violent crimes solved: ", comma(incidents_solved, 1), "<br>",
-    "Violent crimes unsolved: ", comma(incidents_unsolved, 1)
+    "Violent crimes unsolved: ", comma(incidents_unsolved, 1), "<br>",
+    "<b>Total unsolved since 2020: ", comma(cumulative_incidents_unsolved, 1), "</b>"
   ))
 
-# Chart 2: backlog tooltip.
+# Chart 2: backlog tooltip for the total line (dots and numbers).
 backlog_data <- crime_data |>
   mutate(tooltip = paste0(
     "<b>", year, "</b><br>",
@@ -210,10 +209,19 @@ backlog_data <- crime_data |>
 # ------------------------------------------------------------------------------
 # COLORS (from the handout) AND SMALL HELPERS
 # ------------------------------------------------------------------------------
-col_navy <- "#001E35"   # reported line, backlog fill
+col_navy <- "#001E35"   # reported line, backlog total line
 col_blue <- "#005DA6"   # solved line, callout outline
 col_gap  <- "#CCE9FF"   # shaded "unsolved" gap
-col_teal <- "#2DEBC3"   # accent markers
+
+# Offense colors, matching the microsite's 50-state crime data page. The order
+# is the stack order, bottom to top (largest slice at the bottom).
+offense_order <- c("Aggravated assault", "Robbery", "Rape", "Homicide")
+offense_fills <- c(
+  "Aggravated assault" = "#005DA6",
+  "Robbery"            = "#7397B0",
+  "Rape"               = "#2DEBC3",
+  "Homicide"           = "#001E35"
+)
 
 # Compact number formatter used inside the JS below. Scales itself to the data:
 #   1,313,000 -> "1.31M"   25,300 -> "25.3K"   563,000 -> "563K"   840 -> "840"
@@ -258,7 +266,7 @@ crime_js_backlog_label <- JS(paste0(
   }"
 ))
 
-# "Not starting at zero" note: a bordered box plus an angled dotted line,
+# "Not starting at zero" note: borderless text plus an angled dotted line,
 # drawn in a render event (the same way the site attaches end_labels).
 #   note_frac  box CENTER height as a fraction of the y-axis range (0.45 puts it
 #              at +2.25M on a 0-5M axis; it follows whatever the axis becomes)
@@ -280,14 +288,13 @@ crime_js_note_line <- function(note_frac = 0.45, max_width = 170, end_frac = 0.0
   var yEnd = chart.plotTop + plotH - ", end_frac, " * plotH; // just above the baseline
   var yCenter = axis.toPixels(noteValue);
 
-  // White box with a blue border. SVG label (not HTML), so tooltips draw on top.
+  // Borderless text (no fill, no outline). SVG label (not HTML), so tooltips draw on top.
   var html = '<span style=\"color:' + accent + ';font-weight:700\">Not starting at zero:</span> ' +
              'added on top of unsolved crimes from before the first year shown';
   var note = chart.renderer.label(html, xEnd + 6, 0, 'rect')
     .css({ width: Math.min(", max_width, ", chart.plotWidth * 0.3) + 'px',
            color: '#000000', fontSize: '13px' })
-    .attr({ fill: '#FFFFFF', stroke: accent, 'stroke-width': 1.2, r: 5,
-            padding: 8, zIndex: 8 })
+    .attr({ fill: 'none', padding: 8, zIndex: 8 })
     .add(g);
   var box = note.getBBox();
   note.attr({ y: yCenter - box.height / 2 });
@@ -332,13 +339,56 @@ crime_hc_describe <- function(chart, text) {
 
 # Source line shared by both charts
 crime_caption <- "FBI UCR Program, state crime estimates and clearances"
+
+# ------------------------------------------------------------------------------
+# MICROSITE LOOK (same as the national page)
+# Libre Franklin type, black 800-weight headings, blue-gray secondary text,
+# light blue-gray borders, 8px rounded cards. Merged on top of the site theme
+# (hc_theme_jc) and applied to these two charts after hc_setup(). These
+# definitions are identical on the national page, so you could move them into
+# the functions file and delete the copies.
+# ------------------------------------------------------------------------------
+# ONE plain font name (no commas or quotes): highcharter turns it into a Google
+# Fonts link, and a font stack breaks rendering.
+microsite_font <- "Libre Franklin"
+microsite_text <- "#4B5D6E"   # subtitles, captions, axis labels (about 7:1 on white)
+microsite_line <- "#D5E0EA"   # gridlines, axis lines, card border
+
+hc_theme_microsite <- hc_theme_merge(
+  hc_theme_jc,
+  hc_theme(
+    # Delete borderColor/borderWidth/borderRadius for a borderless chart
+    chart = list(
+      style = list(fontFamily = microsite_font),
+      borderColor = microsite_line, borderWidth = 1, borderRadius = 8
+    ),
+    title = list(style = list(fontFamily = microsite_font, color = "#000000",
+                              fontSize = "22px", fontWeight = "800")),
+    subtitle = list(style = list(fontFamily = microsite_font, color = microsite_text,
+                                 fontSize = "15px")),
+    caption = list(style = list(fontFamily = microsite_font, color = microsite_text,
+                                fontSize = "13px")),
+    xAxis = list(lineColor = microsite_line, tickColor = microsite_line,
+                 labels = list(style = list(color = microsite_text, fontSize = "13px"))),
+    yAxis = list(gridLineColor = microsite_line,
+                 labels = list(style = list(color = microsite_text, fontSize = "13px"))),
+    legend = list(itemStyle = list(color = "#000000", fontSize = "14px", fontWeight = "600")),
+    tooltip = list(backgroundColor = "#FFFFFF", borderColor = microsite_line,
+                   borderRadius = 8,
+                   style = list(color = "#000000", fontSize = "14px"))
+  )
+)
 ```
 
 ```{r }
 # ------------------------------------------------------------------------------
 # 3. THE CHART BUILDER
-#   data            one row per year: year, reported, solved
-#   place           how the place reads in titles, e.g. "the U.S." or "Ohio"
+#   data            one row per year: year, incidents_reported, incidents_solved,
+#                   incidents_unsolved (the state's totals)
+#   offense_data    one row per offense and year: group (the offense), year,
+#                   incidents_reported, incidents_solved (the state's offense-
+#                   level data, used for the stacked slices in chart 2)
+#   place           how the place reads in titles, e.g. "Ohio"
 #   y_expansion     headroom above the largest value, as a share of it
 #                   (room for the value labels); passed to chart_bounds()
 #   x_pad           blank space (in years) before the first and after the last
@@ -347,20 +397,20 @@ crime_caption <- "FBI UCR Program, state crime estimates and clearances"
 #                   end labels
 #   note_frac, note_max_width, note_end_frac   see crime_js_note_line()
 # ------------------------------------------------------------------------------
-crime_trend_charts <- function(data, place = "the U.S.", caption = crime_caption,
+crime_trend_charts <- function(data, offense_data, place, caption = crime_caption,
                                y_expansion = 0.2, x_pad = 0.4,
                                line_label_margin = 70,
                                note_frac = 0.45, note_max_width = 170,
                                note_end_frac = 0.09) {
 
-  # ---- 3a. Data prep: everything below is computed from `data` --------------
+  # ---- 3a. Data prep: everything below is computed from the data -------------
   data <- data |>
     arrange(year) |>
     mutate(
       cumulative_incidents_unsolved = cumsum(incidents_unsolved)
     )
   years      <- data$year
-  year_range <- paste0(min(years), "\u2013", max(years))   # e.g. 2020-2025
+  year_range <- paste0(min(years), "–", max(years))   # e.g. 2020-2025
 
   # hc_setup() shows each point's `tooltip` column
   trend_data <- data |>
@@ -368,7 +418,8 @@ crime_trend_charts <- function(data, place = "the U.S.", caption = crime_caption
       "<b>", year, "</b><br>",
       "Violent crimes reported: ", comma(incidents_reported, 1), "<br>",
       "Violent crimes solved: ", comma(incidents_solved, 1), "<br>",
-      "Violent crimes unsolved: ", comma(incidents_unsolved, 1)
+      "Violent crimes unsolved: ", comma(incidents_unsolved, 1), "<br>",
+      "<b>Total unsolved since ", min(years), ": ", comma(cumulative_incidents_unsolved, 1), "</b>"
     ))
   backlog_data <- data |>
     mutate(tooltip = paste0(
@@ -376,6 +427,38 @@ crime_trend_charts <- function(data, place = "the U.S.", caption = crime_caption
       "Unsolved crimes added since ", min(years), ": ", comma(cumulative_incidents_unsolved, 1), "<br>",
       "Unsolved this year: ", comma(incidents_unsolved, 1)
     ))
+
+  # One stacked slice per offense. complete() adds a zero row for any offense
+  # or year a state has no data for, so every slice has a point in every year.
+  # (Missing counts are treated as zero for the slices only.)
+  offense_backlog <- offense_data |>
+    filter(year %in% years, group %in% offense_order) |>
+    mutate(
+      group = factor(group, levels = offense_order),
+      incidents_unsolved = incidents_reported - incidents_solved
+    ) |>
+    tidyr::complete(
+      group, year = years,
+      fill = list(incidents_reported = 0, incidents_solved = 0, incidents_unsolved = 0)
+    ) |>
+    arrange(group, year) |>
+    group_by(group) |>
+    mutate(cumulative_incidents_unsolved = cumsum(coalesce(incidents_unsolved, 0))) |>
+    ungroup() |>
+    left_join(
+      data |> select(year, total_cumulative = cumulative_incidents_unsolved),
+      by = "year"
+    )
+
+  # The slices should add up to the total line; warn if they are more than 0.5%
+  # apart (small gaps are invisible on the chart)
+  stack_check <- offense_backlog |>
+    summarize(slices = sum(cumulative_incidents_unsolved), .by = c(year, total_cumulative))
+  if (any(abs(stack_check$slices - stack_check$total_cumulative) /
+            pmax(stack_check$total_cumulative, 1) > 0.005, na.rm = TRUE)) {
+    warning("Offense slices do not add up to the total backlog for ", place,
+            "; check the offense-level data", call. = FALSE)
+  }
 
   # ---- 3b. Axis limits from the data (same idea as the site's trend_chart()) --
   # Including 0 in the values anchors the baseline at zero; chart_bounds()
@@ -390,14 +473,16 @@ crime_trend_charts <- function(data, place = "the U.S.", caption = crime_caption
   x_max <- max(years) + x_pad
 
   # ---- 3c. Where to put the "Unsolved" label ---------------------------------
-  # Label the interior year with the WIDEST gap, so the word always fits inside
-  # the shaded area. (Interior = not the first or last year, so it never
-  # straddles the chart edge.)
-  interior <- if (length(years) > 2) data[-c(1, nrow(data)), ] else data
-  gap_year <- interior$year[which.max(interior$incidents_unsolved)]
-  gap_label_data <- data |>
-    filter(year == gap_year) |>
-    transmute(year, mid = (incidents_reported + incidents_solved) / 2)
+  # Centered horizontally on the x-axis (the middle of the years shown), and
+  # vertically halfway between the two lines at that point. The lines are
+  # straight between years, so the halfway height at the center is
+  # interpolated from the yearly midpoints.
+  x_center <- mean(range(years))
+  gap_label_data <- tibble(
+    year = x_center,
+    mid  = approx(years, (data$incidents_reported + data$incidents_solved) / 2,
+                  xout = x_center)$y
+  )
 
   # ---- 3d. Screen-reader descriptions built from the numbers -----------------
   desc_trend <- paste0(
@@ -407,14 +492,33 @@ crime_trend_charts <- function(data, place = "the U.S.", caption = crime_caption
     ". Violent crimes solved ranged between ", comma(min(data$incidents_solved), 1), " and ",
     comma(max(data$incidents_solved), 1), " each year. The shaded area between the two lines ",
     "is the number left unsolved each year: ", comma(first(data$incidents_unsolved), 1), " in ",
-    min(years), " and ", comma(last(data$incidents_unsolved), 1), " in ", max(years), "."
+    min(years), " and ", comma(last(data$incidents_unsolved), 1), " in ", max(years),
+    ". In total, ", comma(last(data$cumulative_incidents_unsolved), 1),
+    " violent crimes went unsolved from ", min(years), " through ", max(years), "."
   )
+
+  # Each offense's share of the backlog in the last year, for the description
+  # (e.g., "aggravated assault 65 percent")
+  last_totals <- offense_backlog |> filter(year == max(year))
+  offense_share_text <- if (sum(last_totals$cumulative_incidents_unsolved) > 0) {
+    last_totals |>
+      mutate(share = cumulative_incidents_unsolved / sum(cumulative_incidents_unsolved)) |>
+      arrange(desc(share)) |>
+      mutate(text = paste0(tolower(as.character(group)), " ",
+                           percent(share, 1, suffix = " percent"))) |>
+      pull(text) |>
+      knitr::combine_words()
+  } else {
+    "not available"
+  }
   desc_backlog <- paste0(
-    "Filled area chart, ", min(years), " to ", max(years), ", for ", place,
+    "Stacked area chart, ", min(years), " to ", max(years), ", for ", place,
     ". The backlog of unsolved violent crimes added since ", min(years),
     " grows every year, from ", comma(first(data$cumulative_incidents_unsolved), 1),
     " at the end of ", min(years), " to ", comma(last(data$cumulative_incidents_unsolved), 1),
-    " by the end of ", max(years), ". The chart does not start from zero in real terms: ",
+    " by the end of ", max(years), ". The area is divided by offense. By the end of ",
+    max(years), ", the backlog is ", offense_share_text,
+    ". The chart does not start from zero in real terms: ",
     "these crimes are added on top of an unknown number of unsolved crimes from before ",
     min(years), "."
   )
@@ -496,11 +600,13 @@ crime_trend_charts <- function(data, place = "the U.S.", caption = crime_caption
           "year: {point.x:.0f}, violent crimes solved: {point.y:,.0f}")
       )
     ) |>
-    hc_title(text = paste0("Violent Crime Reported, Solved, and Unsolved in ",
+    hc_title(text = paste0("Violent crime reported, solved, and unsolved in ",
                            place)) |>
     hc_caption(text = caption) |>
     hc_legend(enabled = FALSE) |>
     hc_setup() |>
+    # Microsite look (fonts, heading colors, borders); must come after hc_setup()
+    hc_add_theme(hc_theme_microsite) |>
     # Chart-specific settings go AFTER hc_setup() so they merge into its defaults
     hc_xAxis(tickPositions = years, min = x_min, max = x_max) |>
     hc_yAxis(min = trend_bounds[1], max = trend_bounds[2], endOnTick = FALSE,
@@ -509,33 +615,69 @@ crime_trend_charts <- function(data, place = "the U.S.", caption = crime_caption
     hc_chart(marginRight = line_label_margin) |>
     crime_hc_describe(desc_trend)
 
-  # ---- 3f. CHART 2: cumulative backlog ----------------------------------------
-  backlog <- hchart(
-    backlog_data, "area", hcaes(year, cumulative_incidents_unsolved),
-    name = paste0("Backlog added since ", min(years)),
-    color = col_navy, fillOpacity = 1, lineWidth = 2,
-    marker = list(enabled = TRUE, symbol = "circle", radius = 4,
-                  fillColor = col_teal, lineColor = col_navy, lineWidth = 1.5),
-    dataLabels = list(enabled = TRUE, align = "right", verticalAlign = "bottom", y = -8,
-                      formatter = crime_js_backlog_label,
-                      style = list(color = "#000000", fontSize = "13px",
-                                   fontWeight = "800", textOutline = "none")),
-    accessibility = list(
-      description = paste0("Cumulative unsolved violent crimes added to the backlog since ",
-                           min(years), "."),
-      point = list(valueDescriptionFormat = paste0(
-        "year: {point.x:.0f}, unsolved violent crimes added since ", min(years),
-        ": {point.y:,.0f}"))
-    )
-  ) |>
-    hc_title(text = paste0("Backlog of Unsolved Violent Crime in ", place)) |>
-    hc_subtitle(text = paste0("Unsolved violent crimes added since ", min(years))) |>
+  # ---- 3f. CHART 2: cumulative backlog, stacked by offense -------------------
+  # Four stacked area slices (one per offense) add up to the total backlog. A
+  # line on top keeps the black dots and the "+4.3M"-style total label.
+  backlog <- highchart()
+
+  for (g in offense_order) {
+    backlog <- backlog |>
+      hc_add_series(
+        filter(offense_backlog, group == g), "area",
+        hcaes(year, cumulative_incidents_unsolved),
+        name = g, color = offense_fills[[g]], fillOpacity = 1,
+        lineWidth = 1, lineColor = "#FFFFFF", stacking = "normal",
+        marker = list(enabled = FALSE, states = list(hover = list(enabled = FALSE))),
+        # The slices have no hover tooltip; the total line's tooltip is the only
+        # one. Keyboard and screen-reader users still get each slice's numbers
+        # from the accessibility descriptions.
+        enableMouseTracking = FALSE,
+        zIndex = 1,
+        accessibility = list(
+          description = paste0("Unsolved ", tolower(g), " cases added to the backlog since ",
+                               min(years), "."),
+          point = list(valueDescriptionFormat = paste0(
+            "{point.series.name}, year: {point.x:.0f}, ",
+            "unsolved added since ", min(years), ": {point.y:,.0f}"))
+        )
+      )
+  }
+
+  backlog <- backlog |>
+    # Total line on top of the stack: black dots and the last-point label. Left
+    # out of the legend because the slices already add up to it.
+    hc_add_series(
+      backlog_data, "line", hcaes(year, cumulative_incidents_unsolved),
+      name = paste0("Total backlog added since ", min(years)),
+      color = col_navy, lineWidth = 2, zIndex = 3, showInLegend = FALSE,
+      # Black dots with a white edge, so they can't be mistaken for an offense color
+      marker = list(enabled = TRUE, symbol = "circle", radius = 4,
+                    fillColor = "#000000", lineColor = "#FFFFFF", lineWidth = 1.5),
+      dataLabels = list(enabled = TRUE, align = "right", verticalAlign = "bottom", y = -8,
+                        formatter = crime_js_backlog_label,
+                        style = list(color = "#000000", fontSize = "13px",
+                                     fontWeight = "800", textOutline = "none")),
+      accessibility = list(
+        description = paste0("Total unsolved violent crimes added to the backlog since ",
+                             min(years), ", all offenses combined."),
+        point = list(valueDescriptionFormat = paste0(
+          "year: {point.x:.0f}, total unsolved violent crimes added since ", min(years),
+          ": {point.y:,.0f}"))
+      )
+    ) |>
+    hc_title(text = paste0("Backlog of unsolved violent crime in ", place)) |>
+    hc_subtitle(text = paste0("Unsolved violent crimes added since ", min(years), ", by offense")) |>
     hc_caption(text = caption) |>
-    hc_legend(enabled = FALSE) |>
+    # Legend names the four slices (clicking is already disabled by hc_setup())
+    hc_legend(enabled = TRUE, reversed = FALSE) |>
     hc_setup() |>
+    # Microsite look (fonts, heading colors, borders); must come after hc_setup()
+    hc_add_theme(hc_theme_microsite) |>
     hc_xAxis(tickPositions = years, min = min(years) - x_pad * 0.75,
              max = max(years) + x_pad * 0.75) |>
+    # reversedStacks = FALSE puts the first offense (aggravated assault) at the bottom
     hc_yAxis(min = backlog_bounds[1], max = backlog_bounds[2], endOnTick = FALSE,
+             reversedStacks = FALSE,
              labels = list(formatter = crime_js_axis_label(plus = TRUE), useHTML = TRUE)) |>
     # Note box + dotted line, added after hc_setup() the way the site adds end_labels
     hc_chart(events = list(render = crime_js_note_line(note_frac, note_max_width,
@@ -548,19 +690,24 @@ crime_trend_charts <- function(data, place = "the U.S.", caption = crime_caption
 }
 ```
 
-## 2020–2025 change 
+## The backlog of unsolved violent crime is adding up.
 
 ```{r }
 #| fig-height: 5.5
 
-state_charts <- crime_trend_charts(crime_data, place = paste0(state_name_text))
-hc_reported_solved <- state_charts$trend      
+# srs_state supplies the offense-level slices for chart 2 (`group` = offense,
+# `year`, `incidents_reported`, `incidents_solved`); srs_by_cat_state is the totals.
+state_charts <- crime_trend_charts(
+  crime_data, offense_data = srs_state, place = paste0(state_name_text)
+)
+hc_reported_solved <- state_charts$trend
 
 hc_reported_solved
 
 ```
 
-## 2020–2025 backlog 
+
+## Aggravated assaults make up nearly two-thirds of the backlog.
 
 ```{r }
 #| fig-height: 5.5
@@ -570,7 +717,8 @@ hc_backlog <- state_charts$backlog
 hc_backlog
 ```
 
-:::
+
+
 
 
 ## Violent crime in `r state_name_text`
