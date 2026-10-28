@@ -52,16 +52,7 @@ homicide_rate_100k_cell <- function(value, ...) {
   if (is.na(value)) na_text else format_rate_100k(value, homicide = TRUE)
 }
 
-### colors from the Crime Without Consequence microsite's 50-state crime data page
-### muted text keeps 4.5:1 contrast on white
-site_colors <- c(
-  navy = "#001E35", dark_blue = "#004270", blue = "#005DA6", slate = "#7397B0",
-  teal = "#2DEBC3", light_teal = "#C8F5EA", pale_blue = "#D7E3EE",
-  text = "#000000", dark_gray = "#33404D", muted = "#5A6470",
-  baseline = "#9FB0C0", border = "#C9D3DC", grid = "#DDE3E9"
-)
-
-### default series colors, in order
+### default series colors, in order, from site_colors in R/page-data.R
 chart_pal <- unname(site_colors[c("blue", "navy", "slate", "teal", "dark_blue", "muted")])
 
 # define theme for highcharter
@@ -207,12 +198,12 @@ map_data_classes <- function(breaks, colors, suffix = "") {
 }
 
 ### dark border on every map legend square, so white and pale classes show on the white page
-outline_legend_symbols <- JS("
+outline_legend_symbols <- JS(paste0("
   function() {
     this.legend.allItems.forEach(function(item) {
-      if (item.legendSymbol) item.legendSymbol.attr({ stroke: '#33404D', 'stroke-width': 1 });
+      if (item.legendSymbol) item.legendSymbol.attr({ stroke: '", site_colors[["dark_gray"]], "', 'stroke-width': 1 });
     });
-  }")
+  }"))
 
 ### spec$tooltip names the tooltip_* column this map shows
 state_map_chart <- function(data, map, spec) {
@@ -498,7 +489,7 @@ compact_number_js <- "var fmt = function(v, trim, dm) {
 ### y-axis labels in compact numbers; plus labels read +1M, +2M, with a blue
 ### "?" at the baseline because the backlog from earlier years is unknown
 compact_axis_labels <- function(plus = FALSE) {
-  zero <- if (plus) "'<span style=\"color:#005DA6;font-weight:900\">?</span>'" else "'0'"
+  zero <- if (plus) paste0("'<span style=\"color:", site_colors[["blue"]], ";font-weight:900\">?</span>'") else "'0'"
   value <- if (plus) "'+' + fmt(v, true)" else "fmt(v, true)"
   JS(paste0("function() { ", compact_number_js, "
     var v = this.value;
@@ -527,7 +518,7 @@ backlog_end_label <- JS(paste0("function() { ", compact_number_js, "
 ### the note's box is saved so backlog_tooltip_position() can steer around it
 backlog_note <- function(first_year, note_frac = 0.45, max_width = 170, end_frac = 0.09) {
   JS(paste0("function() {
-  var chart = this, accent = '#005DA6', axis = chart.yAxis[0];
+  var chart = this, accent = '", site_colors[["blue"]], "', axis = chart.yAxis[0];
   if (chart.noteGroup) chart.noteGroup.destroy();
   var g = chart.renderer.g('not-starting-at-zero-note').attr({ zIndex: 7 }).add();
   chart.noteGroup = g;
@@ -681,23 +672,34 @@ backlog_charts <- function(totals, offenses, place,
       "<b>Total added since ", first_year, ": ", comma(backlog), "</b>"
     ))
 
+  shown <- years[!is.na(totals$incidents_solved)]
+  if (length(shown) == 0) {
+    stop("No year has a solve rate for ", place,
+         ". Add it to states_to_exclude_from_solved_rate_viz.", call. = FALSE)
+  }
+
   ### "Unsolved" sits halfway between the lines at the middle year, or at the
   ### nearest year with a solve rate when the middle falls in a gap
-  shown <- years[!is.na(totals$incidents_solved)]
   label_x <- mean(range(years))
   if (!all(c(floor(label_x), ceiling(label_x)) %in% shown)) label_x <- shown[which.min(abs(shown - label_x))]
+  mid <- (totals$incidents_reported + totals$incidents_solved) / 2
   gap_label_data <- tibble::tibble(
     year = label_x,
-    mid = stats::approx(years, (totals$incidents_reported + totals$incidents_solved) / 2, xout = label_x)$y
+    mid = if (label_x %in% years) mid[years == label_x] else stats::approx(years, mid, xout = label_x)$y
   )
 
   shown_totals <- dplyr::filter(totals, !is.na(incidents_solved))
+  solved_text <- if (nrow(shown_totals) == 1) {
+    paste0("Violent crimes solved were ", comma(shown_totals$incidents_solved), " in ", shown_totals$year)
+  } else {
+    paste0("Violent crimes solved ranged from ", comma(min(shown_totals$incidents_solved)), " to ",
+           comma(max(shown_totals$incidents_solved)), " a year")
+  }
   desc_trend <- paste0(
     "Line chart with a shaded gap, ", first_year, " to ", last_year, ", for ", place,
     ". Violent crimes reported went from ", comma(dplyr::first(totals$incidents_reported)), " in ",
     first_year, " to ", comma(dplyr::last(totals$incidents_reported)), " in ", last_year,
-    ". Violent crimes solved ranged from ", comma(min(shown_totals$incidents_solved)), " to ",
-    comma(max(shown_totals$incidents_solved)), " a year. The shaded area between the two lines ",
+    ". ", solved_text, ". The shaded area between the two lines ",
     "is the number left unsolved each year. In total, ", comma(dplyr::last(totals$backlog)),
     " violent crimes went unsolved from ", first_year, " through ", last_year, ".",
     if (missing_note != "") paste0(" ", missing_note)

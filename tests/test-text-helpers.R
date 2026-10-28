@@ -3,6 +3,7 @@ library(highcharter)
 library(reactable)
 library(tidyverse)
 
+source("../R/page-data.R")
 source("../R/utils.R")
 
 test_that("display formatters round halves up", {

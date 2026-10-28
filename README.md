@@ -8,7 +8,7 @@ Site: https://csg-state-violent-crime.netlify.app/ (password-protected; ask the 
 
 - R 4.6.1. Packages are managed with renv, which activates when R starts in the project root.
 - Run `renv::restore()` once after cloning to install the locked package versions.
-- Data comes from the CSG SharePoint `jr_data_library`, read through `csgjcr::csg_sp_path()`, so SharePoint must be synced locally.
+- Data comes from the CSG SharePoint `jr_data_library`, read through `jr_data_path()` (which wraps `csgjcr::csg_sp_path()`), so SharePoint must be synced locally.
 - Deploying needs access to the site in the CSG Netlify team and the Netlify CLI. Install the CLI with Node.js and log in once:
 
 ```sh

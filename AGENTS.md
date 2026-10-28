@@ -19,7 +19,7 @@ quarto::quarto_render("index.qmd", output_file = "index.html", quiet = TRUE)
 
 ## Data
 
-- Source data lives in SharePoint `jr_data_library`, read with `csgjcr::csg_sp_path("jr_data_library", ...)`. If a path fails, ask before guessing a new one.
+- Source data lives in SharePoint `jr_data_library`, read with `jr_data_path(...)` from `R/page-data.R`, which finds the library folder in any capitalization under `CSG_SP_PATH`. If a path fails, ask before guessing a new one.
 - `data/csg-regions.csv` and the inflation `.xls` are vendored. Their old SharePoint sources moved to `z_ARCHIVE`.
 
 ## Site output and deploy
@@ -59,7 +59,7 @@ quarto::quarto_render("index.qmd", output_file = "index.html", quiet = TRUE)
 
 - Never delete project files. Move retired code and outputs to `_archive/` with `git mv`. Quarto ignores `_`-prefixed folders.
 - Shared chart and table helpers go in `R/utils.R`, with tests in `tests/`.
-- Shared data reads, prep and page settings (base year, excluded states, palettes) go in `R/page-data.R`.
+- Shared data reads, prep and page settings (base year, excluded states, palettes) go in `R/page-data.R`. Every color is named once in `site_colors` there. Source `R/page-data.R` before `R/utils.R`, whose chart themes use those colors.
 - Match the existing tidyverse style: native pipe `|>`, snake_case.
 - Keep comments short and about present behavior. Don't leave commented-out code; git history has it.
 - After adding or upgrading packages, run `renv::snapshot()` and commit `renv.lock`.

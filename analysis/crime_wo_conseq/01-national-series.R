@@ -30,7 +30,7 @@ published_year <- 2015
 ### Illinois clearances are plausible through this year
 illinois_last_year <- 1985
 
-raw_path <- function(...) csg_sp_path("jr_data_library", "data", "raw", ...)
+raw_path <- function(...) jr_data_path("data", "raw", ...)
 crimeindex_path <- function(file) raw_path("ahd", "crime_index", file)
 
 srs <- read_srs_state()
@@ -54,7 +54,7 @@ kaplan <- read_rds(raw_path("fbi", "srs", "kaplan", "offenses_known_yearly_1960_
 ### the checks
 nypd_clearance <- read_csv("data/nypd_clearance_2022.csv", show_col_types = FALSE)
 
-cde <- read_rds(csg_sp_path("jr_data_library", "data", "analysis", "fbi", "srs", "fbi_srs_agency.rds")) |>
+cde <- read_rds(jr_data_path("data", "analysis", "fbi", "srs", "fbi_srs_agency.rds")) |>
   filter(group %in% violent_offenses, indicator %in% c("Incidents reported", "Incidents cleared")) |>
   mutate(indicator = if_else(indicator == "Incidents reported", "reported", "cleared")) |>
   summarize(n = sum(n, na.rm = TRUE), .by = c(year, ori, state_abbr, group, indicator)) |>

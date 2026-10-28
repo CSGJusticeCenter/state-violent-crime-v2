@@ -1,10 +1,41 @@
 ## settings and data prep shared by the national and state pages
 
+### path inside the SharePoint data library, whose folder name is capitalized
+### differently on different synced machines
+jr_data_path <- function(...) {
+  root <- csgjcr::csg_sp_path()
+  lib <- grep("^jr_data_library$", list.files(root), ignore.case = TRUE, value = TRUE)
+  if (length(lib) == 0) {
+    stop("No jr_data_library folder found in ", root, call. = FALSE)
+  }
+  file.path(root, lib[1], ...)
+}
+
 ### pre-pandemic year that maps, tables and agency changes compare against
 base_year <- 2019
 
 ### states without reliable clearance data in the base or latest year
 states_to_exclude_from_solved_rate_viz <- c("Illinois")
+
+### state page setup shared by the full and backlog-only pages
+### abbr is the page's state param, e.g., "DC"; state is the full name
+state_name_from_abbr <- function(abbr) csgjcr::csg_state_convert(abbr, from = "abbr", "name")
+state_place_text <- function(abbr) {
+  if (abbr == "DC") "the District of Columbia" else state_name_from_abbr(abbr)
+}
+shows_solve_rates <- function(state) !state %in% states_to_exclude_from_solved_rate_viz
+
+### shown in place of solve-rate sections on pages without solve-rate data
+no_solve_data_sentence <- function(place) {
+  paste(place, "did not report enough data on solved crime to the FBI to make reliable estimates.")
+}
+
+### a mid-document YAML block setting show-solved, which shows or hides the
+### solve-rate sections; when-meta needs a YAML boolean, and an inline-R value
+### in the title block arrives as a string
+show_solved_meta <- function(show_solved) {
+  cat("---\nshow-solved: ", tolower(show_solved), "\n---\n", sep = "")
+}
 
 ### the NIBRS transition cut reporting in 2021, so solve rates for that year show
 ### only where reporting agencies covered at least min_solve_coverage of the population
@@ -53,36 +84,43 @@ axis_expansion_mult <- 0.5
 ### from: https://www.census.gov/topics/income-poverty/income/guidance/current-vs-constant-dollars.html
 inflation_index_path <- "data/annual-index-value_annual-percent-change_2025.xls"
 
-### all chart colors come from the Crime Without Consequence microsite's 50-state
-### crime data page; R/utils.R holds the rest of that palette (site_colors)
+### every chart and map color, from the Crime Without Consequence microsite's
+### 50-state crime data page; muted text keeps 4.5:1 contrast on white
+site_colors <- c(
+  navy = "#001E35", dark_blue = "#004270", blue = "#005DA6", slate = "#7397B0",
+  teal = "#2DEBC3", dark_teal = "#17B894", light_teal = "#C8F5EA", pale_blue = "#D7E3EE",
+  white = "#FFFFFF", text = "#000000", dark_gray = "#33404D", muted = "#5A6470",
+  baseline = "#9FB0C0", border = "#C9D3DC", grid = "#DDE3E9"
+)
 
 ### map palettes, diverging for changes (navy to teal) and sequential for rates
-change_colors <- c("#001E35", "#005DA6", "#D7E3EE", "#FFFFFF", "#C8F5EA", "#2DEBC3", "#17B894")
-rate_colors <- c("#D7E3EE", "#7397B0", "#005DA6", "#001E35")
+change_colors <- unname(site_colors[c("navy", "blue", "pale_blue", "white", "light_teal", "teal", "dark_teal")])
+rate_colors <- unname(site_colors[c("pale_blue", "slate", "blue", "navy")])
 
 ### county map solve-rate classes, in whole percents
 ### the breaks split 2025 counties with 25 or more incidents into groups of similar size
 county_map_breaks <- c(35, 45, 55, 65)
-county_map_colors <- c("#D7E3EE", "#9FB0C0", "#7397B0", "#005DA6", "#001E35")
+county_map_colors <- unname(site_colors[c("pale_blue", "baseline", "slate", "blue", "navy")])
 
 ### counties without a rate are white, so they stand apart from every class
-county_map_null_color <- "#FFFFFF"
-county_map_border <- list(color = "#000000", width = 0.45)
+county_map_null_color <- site_colors[["white"]]
+county_map_border <- list(color = site_colors[["text"]], width = 0.45)
 
 ### backlog charts sum unsolved crime from this year through the latest year
 backlog_first_year <- 2020
 
 ### offense colors for every chart, in the backlog charts' stack order, bottom to top
 offense_colors <- c(
-  "Aggravated assault" = "#005DA6",
-  "Robbery"            = "#7397B0",
-  "Rape"               = "#2DEBC3",
-  "Homicide"           = "#001E35"
+  "Aggravated assault" = site_colors[["blue"]],
+  "Robbery"            = site_colors[["slate"]],
+  "Rape"               = site_colors[["teal"]],
+  "Homicide"           = site_colors[["navy"]]
 )
 offense_pal <- tibble(color = unname(offense_colors), crime = names(offense_colors))
 offense_color <- function(offense) unname(offense_colors[offense])
 
-backlog_colors <- c(reported = "#001E35", solved = "#005DA6", unsolved = "#D7E3EE")
+backlog_colors <- c(reported = site_colors[["navy"]], solved = site_colors[["blue"]],
+                    unsolved = site_colors[["pale_blue"]])
 
 ### violent offenses in the order of the agency data columns and data exports
 ### page tables order offenses by table_offenses in R/utils.R
@@ -107,7 +145,7 @@ prep_srs_state <- function(raw) {
 
 read_srs_state <- function(screen = read_rds(clearance_screen_path),
                            repairs = read_rds(clearance_repairs_path)) {
-  read_rds(csg_sp_path("JR_DATA_LIBRARY", "data", "analysis", "fbi", "srs", "fbi_srs_estimated_crimes_state.rds")) |>
+  read_rds(jr_data_path("data", "analysis", "fbi", "srs", "fbi_srs_estimated_crimes_state.rds")) |>
     prep_srs_state() |>
     repair_clearances(repairs) |>
     flag_screened_solve_rates(screen, repairs)
@@ -407,7 +445,7 @@ adjust_for_inflation <- function(df, inflation_index) {
 
 ### state and local police protection expenditures for the last 11 survey years
 read_police_spending <- function(geo, inflation_index) {
-  read_rds(csg_sp_path("jr_data_library", "data", "analysis", "census", "asslgf", "census_asslgf_state.rds")) |>
+  read_rds(jr_data_path("data", "analysis", "census", "asslgf", "census_asslgf_state.rds")) |>
     filter(
       indicator == "Expenditures",
       group == "Police Protection",
@@ -419,7 +457,7 @@ read_police_spending <- function(geo, inflation_index) {
 
 ### sworn officer counts and rates for the last 11 years
 read_lee_officers <- function(geo) {
-  read_rds(csg_sp_path("jr_data_library", "data", "analysis", "fbi", "lee", "fbi_lee_state.rds")) |>
+  read_rds(jr_data_path("data", "analysis", "fbi", "lee", "fbi_lee_state.rds")) |>
     filter(geo_abbr %in% geo, group == "Officers", year >= max(year) - 10)
 }
 

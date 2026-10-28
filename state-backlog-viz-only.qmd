@@ -11,8 +11,8 @@ library(highcharter)
 library(htmlwidgets)
 library(reactable)
 
-source("R/utils.R")
 source("R/page-data.R")
+source("R/utils.R")
 
 # htmlwidgets seeds its element IDs from this, so rerenders give identical HTML
 set.seed(2019)
@@ -22,16 +22,14 @@ if (!exists("params")) {
   params <- list(state = "NY")
 }
 
-state <- csg_state_convert(params$state, from = "abbr", "name")
-state_name_text <- if_else(params$state == "DC", "the District of Columbia", state)
-show_solved <- !state %in% states_to_exclude_from_solved_rate_viz
+state <- state_name_from_abbr(params$state)
+state_name_text <- state_place_text(params$state)
+show_solved <- shows_solve_rates(state)
+no_solve_data_text <- no_solve_data_sentence(state_name_text)
 
 srs_state_new <- read_srs_state()
 srs_state <- violent_by_offense(srs_state_new, backlog_first_year, state)
 solve_coverage <- read_solve_coverage()
-
-### shown in place of the charts on pages without solve-rate data
-no_solve_data_text <- paste(state_name_text, "did not report enough data on solved crime to the FBI to make reliable estimates.")
 
 page_title <- paste0(state, ": backlog of unsolved violent crime")
 ```
@@ -43,9 +41,8 @@ pagetitle: "`r page_title`"
 ```{r}
 #| output: asis
 
-### show-solved shows the charts; when it's false or missing, the page shows
-### no_solve_data_text instead. when-meta needs a YAML boolean, so it's written here
-cat("---\nshow-solved: ", tolower(show_solved), "\n---\n", sep = "")
+### when show-solved is false or missing, the page shows no_solve_data_text
+show_solved_meta(show_solved)
 ```
 
 `r state_name_text`

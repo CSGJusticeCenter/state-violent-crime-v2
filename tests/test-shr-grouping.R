@@ -3,8 +3,8 @@ library(highcharter)
 library(reactable)
 library(tidyverse)
 
-source("../R/utils.R")
 source("../R/page-data.R")
+source("../R/utils.R")
 
 test_that("state SHR panels pool recent incidents and compare with other regional states", {
   data <- tibble(

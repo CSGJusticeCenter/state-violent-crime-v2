@@ -3,8 +3,8 @@ library(highcharter)
 library(reactable)
 library(tidyverse)
 
-source("../R/utils.R")
 source("../R/page-data.R")
+source("../R/utils.R")
 
 test_that("chart bounds expand the data and respect a zero floor", {
   expect_equal(chart_bounds(c(10, 20), expansion = 0.5), c(5, 25))
@@ -549,6 +549,19 @@ test_that("backlog charts note years without a solve rate", {
   charts <- backlog_charts(fx$totals, fx$offenses, "State A")
   expect_match(charts$backlog$x$hc_opts$caption$text, "Solve rates are not shown for all offenses in 2021, so the backlog", fixed = TRUE)
   expect_match(charts$trend$x$hc_opts$accessibility$description, "is a minimum", fixed = TRUE)
+})
+
+test_that("backlog charts handle a single year with a solve rate", {
+  fx <- backlog_fixture(hidden_year = 2020:2021)
+  charts <- backlog_charts(fx$totals, fx$offenses, "State A")
+  label <- charts$trend$x$hc_opts$series[[3]]$data[[1]]
+  expect_equal(c(label$year, label$mid), c(2022, 75))
+  expect_match(charts$trend$x$hc_opts$accessibility$description, "Violent crimes solved were 50 in 2022.", fixed = TRUE)
+})
+
+test_that("backlog charts stop when no year has a solve rate", {
+  fx <- backlog_fixture(hidden_year = 2020:2022)
+  expect_error(backlog_charts(fx$totals, fx$offenses, "State A"), "No year has a solve rate")
 })
 
 test_that("backlog charts stop when an offense is missing a year", {

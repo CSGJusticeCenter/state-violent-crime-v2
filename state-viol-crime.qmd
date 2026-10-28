@@ -11,8 +11,8 @@ library(highcharter)
 library(htmlwidgets)
 library(reactable)
 
-source("R/utils.R")
 source("R/page-data.R")
+source("R/utils.R")
 source("R/local-map-data.R")
 
 # htmlwidgets seeds its element IDs from this, so rerenders give identical HTML
@@ -23,10 +23,10 @@ if (!exists("params")) {
   params <- list(state = "NY")
 }
 
-state <- csg_state_convert(params$state, from = "abbr", "name")
+state <- state_name_from_abbr(params$state)
 state_abbr_params <- params$state
-state_name_text <- if_else(params$state == "DC", "the District of Columbia", state)
-show_solved <- !state %in% states_to_exclude_from_solved_rate_viz
+state_name_text <- state_place_text(params$state)
+show_solved <- shows_solve_rates(state)
 
 ### New York 2022 solve rates use NYPD clearance reports
 nypd_note <- if (state == "New York") {
@@ -94,8 +94,7 @@ doc_title <- if_else(
   paste(state, "data on violent crime")
 )
 
-### shown in place of each solve-rate section on pages without solve-rate data
-no_solve_data_text <- paste(state_name_text, "did not report enough data on solved crime to the FBI to make reliable estimates.")
+no_solve_data_text <- no_solve_data_sentence(state_name_text)
 ```
 
 ```{r }
@@ -127,7 +126,7 @@ csg_region <- csg_regions$csg_region[csg_regions$state_abbr == state_abbr_params
 csg_region_full <- paste0("CSG ", csg_region, " Region")
 
 ### homicide case characteristics from state-level SHR data
-shr_state <- read_rds(csg_sp_path("jr_data_library", "data", "analysis", "fbi", "shr", "fbi_shr_state.rds"))
+shr_state <- read_rds(jr_data_path("data", "analysis", "fbi", "shr", "fbi_shr_state.rds"))
 shr_years <- paste0(shr_first_year, "–", max(shr_state$year))
 shr_region_abbr <- csg_regions$state_abbr[csg_regions$csg_region == csg_region &
                                             csg_regions$state_abbr != state_abbr_params]
@@ -141,13 +140,10 @@ title: "`r doc_title`"
 ```{r}
 #| output: asis
 
-### show-solved shows the solve-rate sections; when it's false or missing,
-### the pages show no_solve_data_text instead
-### the flag is written here because when-meta needs a YAML boolean, and an
-### inline-R value in the title block arrives as a string
-### the title stays in that block because a title written from a chunk
+### when show-solved is false or missing, the pages show no_solve_data_text
+### the title stays in the title block because a title written from a chunk
 ### doesn't reach the page's <title>
-cat("---\nshow-solved: ", tolower(show_solved), "\n---\n", sep = "")
+show_solved_meta(show_solved)
 ```
 
 ```{r}

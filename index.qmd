@@ -10,8 +10,8 @@ library(highcharter)
 library(htmlwidgets)
 library(reactable)
 
-source("R/utils.R")
 source("R/page-data.R")
+source("R/utils.R")
 
 # htmlwidgets seeds its element IDs from this, so rerenders give identical HTML
 set.seed(2019)
@@ -161,7 +161,7 @@ ucr_employee_data_national_clean <- read_lee_officers("US") |>
 
 ```{r }
 ### import shr homicide incidents and clearances by state, year, and group
-shr_state <- read_rds(csg_sp_path("jr_data_library", "data", "analysis", "fbi", "shr", "fbi_shr_state.rds"))
+shr_state <- read_rds(jr_data_path("data", "analysis", "fbi", "shr", "fbi_shr_state.rds"))
 
 shr_years <- paste0(shr_first_year, "–", max(shr_state$year))
 

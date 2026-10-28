@@ -414,3 +414,23 @@ test_that("backlog totals sum offenses and hide a year missing any offense", {
   expect_equal(totals$incidents_unsolved, c(4, NA, 4))
   expect_equal(totals$backlog, c(4, 6, 10))
 })
+
+test_that("jr_data_path finds the data library whatever its case", {
+  skip_if_not_installed("csgjcr")
+  root <- withr::local_tempdir()
+  withr::local_envvar(CSG_SP_PATH = root)
+  expect_error(jr_data_path("data"), "No jr_data_library folder")
+
+  dir.create(file.path(root, "JR_DATA_LIBRARY"))
+  expect_equal(jr_data_path("data", "x.rds"), file.path(root, "JR_DATA_LIBRARY", "data", "x.rds"))
+})
+
+test_that("state page setup names DC and flags states without solve rates", {
+  skip_if_not_installed("csgjcr")
+  expect_equal(state_place_text("DC"), "the District of Columbia")
+  expect_equal(state_place_text("NY"), "New York")
+  expect_false(shows_solve_rates("Illinois"))
+  expect_true(shows_solve_rates("New York"))
+  expect_match(no_solve_data_sentence("Illinois"), "^Illinois did not report enough data")
+  expect_output(show_solved_meta(FALSE), "---\nshow-solved: false\n---", fixed = TRUE)
+})
