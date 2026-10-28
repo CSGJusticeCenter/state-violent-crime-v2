@@ -1,6 +1,6 @@
 ## State violent crime interactive pages
 
-Quarto site with one page per state plus DC (`state-viol-crime.qmd`) and a national page (`index.qmd`). Pages render to `_site/`, which is uploaded to Netlify from a local machine. `_site/` is not committed.
+Quarto site with one page per state plus DC (`state-viol-crime.qmd`), a backlog-charts-only page per state plus DC (`state-backlog-viz-only.qmd`) and a national page (`index.qmd`). Pages render to `_site/`, which is uploaded to Netlify from a local machine. `_site/` is not committed.
 
 Site: https://csg-state-violent-crime.netlify.app/ (password-protected; ask the team for the password)
 
@@ -19,8 +19,8 @@ netlify login
 ### Build
 
 1. `R/01-prep-agency-county-data.R` builds the county map, agency tables and state reporting coverage in `data/` from the CDE agency file in `jr_data_library`. It also writes the clearance screen (`data/clearance_screen.rds`) and New York's repaired 2022 clearance rates (`data/clearance_repairs.rds`), and prints the state-years the screen flags. Rerun when that file refreshes. State pages stop rendering when the agency year differs from the latest year in the state estimates.
-2. `R/02-render-site.R` empties `_site/`, renders all 51 state pages and the national page four at a time, then copies `styles.css`, `img/` and `fonts/` into `_site/`. It prints each page's render time. A page that fails is retried once, and a second failure stops the script. Each failure prints the exit status, the last knitr chunk reached and Quarto's output.
-   - `Rscript R/02-render-site.R NY US` renders only the listed pages. Unknown page names stop the script before `_site/` is touched.
+2. `R/02-render-site.R` empties `_site/`, renders the 51 state pages, the 51 backlog pages and the national page four at a time, then copies `styles.css`, `img/` and `fonts/` into `_site/`. It prints each page's render time. A page that fails is retried once, and a second failure stops the script. Each failure prints the exit status, the last knitr chunk reached and Quarto's output.
+   - `Rscript R/02-render-site.R NY US BACKLOG-NY` renders only the listed pages. Unknown page names stop the script before `_site/` is touched.
    - Set `n_parallel <- 1` at the top of the script to render one page at a time.
    - After rendering, it warns about NA, NaN or Inf in page text and in `alt`, `title` and `aria-label` attributes. Chart and table contents are not checked, because widget data holds many legitimate NA values.
 
@@ -57,10 +57,11 @@ Notes:
 | Agency year | `R/01-prep-agency-county-data.R` (`agency_year`) |
 | Base year for maps, tables and agency changes | `R/page-data.R` (`base_year`); rerun step 1 after changing it |
 | SHR pooling start year | `R/page-data.R` (`shr_first_year`) |
+| Backlog start year | `R/page-data.R` (`backlog_first_year`) |
 | Clearance screen threshold and repaired offenses shown | `R/page-data.R` (`max_no_clearance_share`, `min_screen_reported`, `repaired_offenses_shown`). Pages stop if the screen hides a base, first or latest year; decide on a repair or exclusion before rendering. Pages also stop if the screen lacks a shown year, so raise `agency_year` in step 1 and rerun it when the SRS data adds a year |
 | 2021 solve-rate coverage bar | `R/page-data.R` (`min_solve_coverage`); coverage comes from `data/ucr_coverage_2021.csv`, built by `R/download-ucr-coverage.R` |
 | Inflation index file | `data/annual-index-value_annual-percent-change_YYYY.xls`, referenced in `R/page-data.R` (`inflation_index_path`) |
-| Narrative text | `index.qmd`, `state-viol-crime.qmd` and `_methodology-*.qmd` |
+| Narrative text | `index.qmd`, `state-viol-crime.qmd`, `_backlog-charts.qmd` and `_methodology-*.qmd` |
 
 The latest SRS year comes from the data, so the state pages pick it up automatically.
 

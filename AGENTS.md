@@ -40,6 +40,13 @@ quarto::quarto_render("index.qmd", output_file = "index.html", quiet = TRUE)
 - Highcharts maps lack AK 02063 and VA 51678, so those agencies appear in tables but not on the map.
 - Solve-rate change compares each agency with itself against base year 2019. It shows a dash unless the agency has full reporting in both years.
 
+## Backlog chart rules
+
+- Build the backlog charts with `backlog_charts()` on `add_backlog()` output. Both state page types include `_backlog-charts.qmd`; `index.qmd` calls `backlog_charts()` directly.
+- The backlog sums unsolved crime from `backlog_first_year`. Years and offenses whose solve rate the site hides add nothing, and the chart caption names them and says the backlog is a minimum.
+- State totals come from `backlog_totals()`, the sum of the offense rows, so the total line always equals the stacked offenses. `backlog_charts()` stops the render if they differ by more than 0.5%. The U.S. total uses the pooled solve rate and differs from its offenses by about 0.1%.
+- Pages without solve-rate data show `no_solve_data_text` in place of the charts.
+
 ## Table rules
 
 - Build tables with `reactable_template()`. Its default cell shows missing values as `na_text`, a dash that screen readers hear as "not available", and sorts them last. Use cell functions, not `colFormat()` or `na`, which can't render that HTML.

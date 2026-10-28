@@ -12,9 +12,10 @@ test_that("chart bounds expand the data and respect a zero floor", {
   expect_equal(chart_bounds(c(98, 100), expansion = 0.5, ceiling = 100), c(97, 100))
 })
 
-test_that("offense colors come from the offense palette", {
-  expect_equal(offense_color("Homicide"), jr_pal[2])
-  expect_equal(offense_color("Aggravated assault"), jr_pal[5])
+test_that("offense colors match the microsite palette", {
+  expect_equal(offense_color("Homicide"), "#001E35")
+  expect_equal(offense_color("Aggravated assault"), "#005DA6")
+  expect_equal(offense_pal$color[offense_pal$crime == "Rape"], "#2DEBC3")
 })
 
 test_that("map data classes leave the end classes open and label each class", {
@@ -44,7 +45,7 @@ test_that("solve rate pill styles by side and hides screen reader words", {
   expect_equal(
     solve_rate_pill("40%", "below", "below, "),
     paste0(
-      '<span class="solve-rate-pill solve-rate-pill-below" style="color:#9A4A0A;background-color:#FBE8DA">',
+      '<span class="solve-rate-pill solve-rate-pill-below" style="color:#001E35;background-color:#D7E3EE">',
       '<span class="visually-hidden">below, </span>40%</span>'
     )
   )
@@ -273,7 +274,7 @@ test_that("compare trend draws the state solid and the US dashed in gray", {
                        color = "#123456", compare = TRUE)
   series <- chart$x$hc_opts$series
   expect_equal(vapply(series, `[[`, character(1), "name"), c("State A", "United States"))
-  expect_equal(vapply(series, `[[`, character(1), "color"), c("#123456", jr_pal[7]))
+  expect_equal(vapply(series, `[[`, character(1), "color"), c("#123456", site_colors[["muted"]]))
   expect_equal(vapply(series, `[[`, character(1), "dashStyle"), c("solid", "dash"))
   expect_equal(vapply(series, `[[`, numeric(1), "opacity"), c(1, 0.75))
   expect_equal(chart$x$hc_opts$yAxis$min, 0)
@@ -512,4 +513,83 @@ test_that("offense end labels replace the legend and shorten aggravated assault"
   expect_equal(opts$series[[2]]$custom, list(value = "{point.y:.0f}%"))
   expect_equal(opts$chart$marginRight, end_label_margin)
   expect_s3_class(opts$chart$events$render, "JS_EVAL")
+})
+
+### one place's backlog totals and offenses, 2020 to 2022
+backlog_fixture <- function(hidden_year = NULL) {
+  offenses <- expand_grid(year = 2020:2022, group = names(offense_colors)) |>
+    mutate(
+      incidents_reported = if_else(group == "Aggravated assault", 70, 10),
+      incidents_unsolved = if_else(group == "Aggravated assault", 35, 5),
+      incidents_unsolved = if_else(year %in% hidden_year, NA_real_, incidents_unsolved),
+      incidents_solved = incidents_reported - incidents_unsolved
+    ) |>
+    mutate(backlog = cumsum(coalesce(incidents_unsolved, 0)), .by = group)
+  totals <- offenses |>
+    summarize(across(c(incidents_reported, incidents_unsolved, incidents_solved), sum), .by = year) |>
+    mutate(backlog = cumsum(coalesce(incidents_unsolved, 0)))
+  list(totals = totals, offenses = offenses)
+}
+
+test_that("backlog headline names the offense with the largest share", {
+  expect_equal(backlog_headline(backlog_fixture()$offenses), "Aggravated assaults make up 70% of the backlog.")
+})
+
+test_that("backlog charts title the place and describe both charts", {
+  fx <- backlog_fixture()
+  charts <- backlog_charts(fx$totals, fx$offenses, "State A")
+  expect_equal(charts$trend$x$hc_opts$title$text, "Violent crime reported, solved, and unsolved in State A")
+  expect_match(charts$backlog$x$hc_opts$accessibility$description, "aggravated assault 70 percent", fixed = TRUE)
+  expect_length(charts$backlog$x$hc_opts$series, length(offense_colors) + 1)
+  expect_no_match(charts$backlog$x$hc_opts$caption$text, "minimum")
+})
+
+test_that("backlog charts note years without a solve rate", {
+  fx <- backlog_fixture(hidden_year = 2021)
+  charts <- backlog_charts(fx$totals, fx$offenses, "State A")
+  expect_match(charts$backlog$x$hc_opts$caption$text, "Solve rates are not shown for all offenses in 2021, so the backlog", fixed = TRUE)
+  expect_match(charts$trend$x$hc_opts$accessibility$description, "is a minimum", fixed = TRUE)
+})
+
+test_that("backlog charts stop when an offense is missing a year", {
+  fx <- backlog_fixture()
+  expect_error(backlog_charts(fx$totals, fx$offenses[-1, ], "State A"), "every offense in every year")
+})
+
+test_that("backlog charts stop when offense slices miss the total", {
+  fx <- backlog_fixture()
+  fx$totals$backlog <- fx$totals$backlog + 1000
+  expect_error(backlog_charts(fx$totals, fx$offenses, "State A"), "do not add up")
+})
+
+test_that("backlog tooltip lists each offense's unsolved count for that year", {
+  fx <- backlog_fixture(hidden_year = 2021)
+  charts <- backlog_charts(fx$totals, fx$offenses, "State A")
+  total_line <- charts$backlog$x$hc_opts$series[[length(offense_colors) + 1]]$data
+  tooltips <- vapply(total_line, `[[`, character(1), "tooltip")
+  expect_match(tooltips[3], "Aggravated assault: 35<", fixed = TRUE)
+  expect_match(tooltips[2], "Aggravated assault: not available", fixed = TRUE)
+  expect_match(tooltips[3], "Total added since 2020: 100", fixed = TRUE)
+})
+
+test_that("backlog note names offenses hidden in only some years", {
+  fx <- backlog_fixture(hidden_year = 2021)
+  offenses <- mutate(fx$offenses, incidents_unsolved = if_else(
+    year == 2022 & group %in% c("Homicide", "Rape"), NA_real_, incidents_unsolved
+  ))
+  expect_equal(
+    backlog_missing_note(offenses, fx$totals),
+    paste("Solve rates are not shown for all offenses in 2021 or for homicide and rape in 2022,",
+          "so the backlog leaves out those crimes and is a minimum.")
+  )
+  expect_equal(backlog_missing_note(backlog_fixture()$offenses, backlog_fixture()$totals), "")
+})
+
+test_that("a partly hidden year's slices still add up to state totals", {
+  offenses <- backlog_fixture()$offenses |>
+    mutate(incidents_unsolved = if_else(year == 2021 & group == "Rape", NA_real_, incidents_unsolved),
+           incidents_solved = incidents_reported - incidents_unsolved) |>
+    mutate(backlog = cumsum(coalesce(incidents_unsolved, 0)), .by = group)
+  charts <- backlog_charts(backlog_totals(offenses), offenses, "State A")
+  expect_match(charts$backlog$x$hc_opts$caption$text, "rape in 2021", fixed = TRUE)
 })

@@ -53,18 +53,36 @@ axis_expansion_mult <- 0.5
 ### from: https://www.census.gov/topics/income-poverty/income/guidance/current-vs-constant-dollars.html
 inflation_index_path <- "data/annual-index-value_annual-percent-change_2025.xls"
 
-### map palettes, diverging for changes and sequential for rates
-change_colors <- c("#00475d", "#007392", "#9ed4ef", "#FFFFFF", "#EDB799", "#D25E2D", "#7B3014")
-rate_colors <- c("#d4e9f8", "#9ed4ef", "#007392", "#00475d")
+### all chart colors come from the Crime Without Consequence microsite's 50-state
+### crime data page; R/utils.R holds the rest of that palette (site_colors)
+
+### map palettes, diverging for changes (navy to teal) and sequential for rates
+change_colors <- c("#001E35", "#005DA6", "#D7E3EE", "#FFFFFF", "#C8F5EA", "#2DEBC3", "#17B894")
+rate_colors <- c("#D7E3EE", "#7397B0", "#005DA6", "#001E35")
 
 ### county map solve-rate classes, in whole percents
 ### the breaks split 2025 counties with 25 or more incidents into groups of similar size
 county_map_breaks <- c(35, 45, 55, 65)
-county_map_colors <- c("#d4e9f8", "#9ed4ef", "#4fa6c8", "#007392", "#00475d")
+county_map_colors <- c("#D7E3EE", "#9FB0C0", "#7397B0", "#005DA6", "#001E35")
 
 ### counties without a rate are white, so they stand apart from every class
 county_map_null_color <- "#FFFFFF"
-county_map_border <- list(color = "black", width = 0.45)
+county_map_border <- list(color = "#000000", width = 0.45)
+
+### backlog charts sum unsolved crime from this year through the latest year
+backlog_first_year <- 2020
+
+### offense colors for every chart, in the backlog charts' stack order, bottom to top
+offense_colors <- c(
+  "Aggravated assault" = "#005DA6",
+  "Robbery"            = "#7397B0",
+  "Rape"               = "#2DEBC3",
+  "Homicide"           = "#001E35"
+)
+offense_pal <- tibble(color = unname(offense_colors), crime = names(offense_colors))
+offense_color <- function(offense) unname(offense_colors[offense])
+
+backlog_colors <- c(reported = "#001E35", solved = "#005DA6", unsolved = "#D7E3EE")
 
 ### violent offenses in the order of the agency data columns and data exports
 ### page tables order offenses by table_offenses in R/utils.R
@@ -342,6 +360,34 @@ solve_rate_years <- function(df, coverage_tbl) {
       ""
     )) |>
     filter(!solve_rate_hidden(df, coverage_tbl, exclude = character()))
+}
+
+### rows from `from` on with backlog, the unsolved crime summed since then, by
+### group when df has one. df is violent_totals(), violent_by_offense() or
+### us_solve_trend() output
+### years whose solve rate solve_rate_hidden() marks have no solved or unsolved
+### count and add nothing to the backlog, so a place missing a year shows a minimum
+add_backlog <- function(df, coverage_tbl, from = backlog_first_year) {
+  df <- filter(df, year >= from)
+  hidden <- solve_rate_hidden(df, coverage_tbl)
+  df |>
+    mutate(
+      incidents_solved = if_else(hidden, NA_real_, incidents_solved),
+      incidents_unsolved = if_else(hidden, NA_real_, incidents_unsolved)
+    ) |>
+    arrange(year) |>
+    mutate(backlog = cumsum(coalesce(incidents_unsolved, 0)), .by = any_of("group"))
+}
+
+### a state's backlog totals by year, summed from add_backlog() offense rows so
+### the total always equals its offenses; a year's solved and unsolved counts
+### show only when every offense has a solve rate, as on the microsite
+backlog_totals <- function(offenses) {
+  summarize(
+    offenses,
+    across(c(incidents_reported, incidents_solved, incidents_unsolved, backlog), sum),
+    .by = year
+  )
 }
 
 ### first 4 characters of year drop footnote markers (e.g., "20252" is 2025)

@@ -1,0 +1,34 @@
+```{r}
+### backlog charts for state pages; the including page sets srs_state,
+### solve_coverage, show_solved, state_name_text and no_solve_data_text
+### pages without solve-rate data skip the charts
+if (show_solved) {
+  backlog_offenses <- add_backlog(srs_state, solve_coverage)
+  state_backlog_charts <- backlog_charts(
+    backlog_totals(backlog_offenses), backlog_offenses, state_name_text
+  )
+  backlog_headline_text <- backlog_headline(backlog_offenses)
+}
+```
+
+## The backlog of unsolved violent crime is adding up. {.microsite-h2}
+
+::: {.content-hidden when-meta="show-solved"}
+`r no_solve_data_text`
+:::
+
+::: {.content-visible when-meta="show-solved"}
+
+```{r}
+#| fig-height: 5.5
+if (show_solved) state_backlog_charts$trend
+```
+
+## `r if (show_solved) backlog_headline_text` {.microsite-h2 .microsite-h2-spaced}
+
+```{r}
+#| fig-height: 5.5
+if (show_solved) state_backlog_charts$backlog
+```
+
+:::

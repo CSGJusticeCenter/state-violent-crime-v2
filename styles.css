@@ -100,20 +100,34 @@ h4 {
   }
 }
 
-/* gray for flagged agencies and rates from few incidents; 4.5:1 on white */
+/* gray for flagged agencies and rates from few incidents; 6:1 on white */
 .agency-flag {
   font-size: 0.85em;
-  color: #767676;
+  color: #5A6470;
 }
 
 .small-n-note {
-  color: #767676;
+  color: #5A6470;
 }
 
 /* sticky columns give wide tables phantom width, which adds a second scrollbar
    to the output wrapper; the table keeps its own scrollbar */
 .Reactable {
   overflow-x: clip;
+}
+
+/* backlog chart headings match the Crime Without Consequence microsite, in the site font */
+h2.microsite-h2 {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.2;
+  font-weight: 700;
+  color: #000000;
+}
+
+h2.microsite-h2-spaced {
+  margin-top: 28px;
+  line-height: 1.5;
 }
 
 .rt-align-right {

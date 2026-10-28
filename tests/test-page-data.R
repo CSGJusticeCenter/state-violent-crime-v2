@@ -378,3 +378,39 @@ test_that("state benchmarks use the state estimates and blank screened offenses"
   expect_true(is.na(state_solve_benchmark(screened, "State A", 2025)[["robbery"]]))
   expect_error(state_solve_benchmark(srs, "State A", 2030), "No 2030 solve rates")
 })
+
+### State A by year and offense from 2020 to 2022, two unsolved per row
+backlog_input <- function() {
+  expand_grid(year = 2019:2022, group = c("Homicide", "Robbery")) |>
+    mutate(state_name = "State A", incidents_reported = 10, incidents_unsolved = 2,
+           incidents_solved = 8, hide_offense_solve = FALSE)
+}
+backlog_coverage <- tibble(state_name = "State A", coverage = 0.9)
+
+test_that("backlog sums unsolved crime by group from the first backlog year", {
+  out <- add_backlog(backlog_input(), backlog_coverage)
+  expect_equal(min(out$year), backlog_first_year)
+  expect_equal(out$backlog[out$group == "Robbery"], c(2, 4, 6))
+})
+
+test_that("backlog skips hidden years and keeps their reported counts", {
+  df <- mutate(backlog_input(), hide_offense_solve = year == 2021 & group == "Homicide")
+  homicide <- filter(add_backlog(df, backlog_coverage), group == "Homicide")
+  expect_equal(homicide$incidents_unsolved, c(2, NA, 2))
+  expect_equal(homicide$incidents_solved, c(8, NA, 8))
+  expect_equal(homicide$incidents_reported, c(10, 10, 10))
+  expect_equal(homicide$backlog, c(2, 2, 4))
+})
+
+test_that("backlog totals without a group sum across years", {
+  totals <- summarize(backlog_input(), across(starts_with("incidents"), sum), .by = c(year, state_name))
+  expect_equal(add_backlog(totals, backlog_coverage)$backlog, c(4, 8, 12))
+})
+
+test_that("backlog totals sum offenses and hide a year missing any offense", {
+  df <- mutate(backlog_input(), hide_offense_solve = year == 2021 & group == "Homicide")
+  totals <- backlog_totals(add_backlog(df, backlog_coverage))
+  expect_equal(totals$incidents_reported, c(20, 20, 20))
+  expect_equal(totals$incidents_unsolved, c(4, NA, 4))
+  expect_equal(totals$backlog, c(4, 6, 10))
+})

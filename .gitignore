@@ -10,6 +10,9 @@
 
 **/*.quarto_ipynb
 
+# left behind by interrupted renders
+*.rmarkdown
+
 *.stackdump
 
 /_site/

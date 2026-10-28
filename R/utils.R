@@ -52,26 +52,42 @@ homicide_rate_100k_cell <- function(value, ...) {
   if (is.na(value)) na_text else format_rate_100k(value, homicide = TRUE)
 }
 
-# define justice reinvestment color palette
-jr_pal <- c("#4095B1", "#273C4C", "#50A25D", "#E17619", "#E25449", "#779F38", "#AFABAB")
+### colors from the Crime Without Consequence microsite's 50-state crime data page
+### muted text keeps 4.5:1 contrast on white
+site_colors <- c(
+  navy = "#001E35", dark_blue = "#004270", blue = "#005DA6", slate = "#7397B0",
+  teal = "#2DEBC3", light_teal = "#C8F5EA", pale_blue = "#D7E3EE",
+  text = "#000000", dark_gray = "#33404D", muted = "#5A6470",
+  baseline = "#9FB0C0", border = "#C9D3DC", grid = "#DDE3E9"
+)
+
+### default series colors, in order
+chart_pal <- unname(site_colors[c("blue", "navy", "slate", "teal", "dark_blue", "muted")])
 
 # define theme for highcharter
 hc_theme_jc <- hc_theme_merge(
   hc_theme_smpl(),
   hc_theme(
-    colors = jr_pal,
+    colors = chart_pal,
     chart = list(
-      style = list(fontFamily = default_fonts)
+      style = list(fontFamily = default_fonts, color = site_colors[["muted"]])
     ),
-    title = list(style = list(fontFamily = header_font, color = "#005FAD",
+    title = list(style = list(fontFamily = header_font, color = site_colors[["text"]],
                               fontSize = "24px")),
     subtitle = list(style = list(fontFamily = default_fonts, fontSize = "16px",
-                                 color = "#666666")),
+                                 color = site_colors[["muted"]])),
+    ### hc_theme_smpl() sets light gray axis lines; these replace them
+    xAxis = list(lineColor = site_colors[["baseline"]], tickColor = site_colors[["baseline"]],
+                 gridLineColor = site_colors[["grid"]], minorGridLineColor = site_colors[["grid"]],
+                 labels = list(style = list(color = site_colors[["muted"]]))),
+    yAxis = list(gridLineColor = site_colors[["grid"]], lineColor = site_colors[["grid"]],
+                 minorGridLineColor = site_colors[["grid"]], tickColor = site_colors[["grid"]],
+                 labels = list(style = list(color = site_colors[["muted"]]))),
     ### legend items only label the chart, so they don't look or act like buttons
     legend = list(
       align = "center", verticalAlign = "bottom",
       itemStyle = list(cursor = "default"),
-      itemHoverStyle = list(color = "#333333", cursor = "default"),
+      itemHoverStyle = list(color = site_colors[["dark_gray"]], cursor = "default"),
       accessibility = list(enabled = FALSE)
     ),
     caption = list(align = "right"),
@@ -194,7 +210,7 @@ map_data_classes <- function(breaks, colors, suffix = "") {
 outline_legend_symbols <- JS("
   function() {
     this.legend.allItems.forEach(function(item) {
-      if (item.legendSymbol) item.legendSymbol.attr({ stroke: '#333333', 'stroke-width': 1 });
+      if (item.legendSymbol) item.legendSymbol.attr({ stroke: '#33404D', 'stroke-width': 1 });
     });
   }")
 
@@ -210,7 +226,7 @@ state_map_chart <- function(data, map, spec) {
   chart <- highchart() |>
     hc_add_series_map(
       map = map, df = data, joinBy = c("state_abb", "state_abbr"),
-      value = spec$value, nullColor = "#E8E8E8",
+      value = spec$value, nullColor = site_colors[["grid"]],
       nullInteraction = isTRUE(spec$null_interaction),
       dataLabels = list(
         enabled = TRUE, format = "{point.state_abb}",
@@ -254,7 +270,7 @@ state_map_chart <- function(data, map, spec) {
 ### value_label and value_format describe each point to screen readers
 trend_chart <- function(data, value, title, subtitle = NULL, caption, value_label,
                         value_format = "{point.y:.1f}", label_format = value_format,
-                        color = jr_pal[1], compare = FALSE, expansion = 0.5,
+                        color = site_colors[["blue"]], compare = FALSE, expansion = 0.5,
                         floor = 0, ceiling = NULL, y_format = NULL, y_formatter = NULL) {
   bounds <- chart_bounds(data[[value]], expansion = expansion, floor = floor, ceiling = ceiling)
   accessibility <- list(point = list(valueDescriptionFormat = paste0(
@@ -264,7 +280,7 @@ trend_chart <- function(data, value, title, subtitle = NULL, caption, value_labe
   chart <- if (compare) {
     data$state_name <- forcats::fct_relevel(data$state_name, "United States", after = Inf)
     hchart(data, "spline", hcaes(year, !!rlang::sym(value), group = state_name),
-           color = c(color, jr_pal[7]), dashStyle = c("solid", "dash"),
+           color = c(color, site_colors[["muted"]]), dashStyle = c("solid", "dash"),
            opacity = c(1, 0.75), accessibility = accessibility)
   } else {
     hchart(data, "spline", hcaes(year, !!rlang::sym(value)),
@@ -314,7 +330,8 @@ hc_hollow_year <- function(chart, year) {
 ### labels at the right end of each series in place of a legend
 ### a series' custom options can set label (default its name), short (used on
 ### charts narrower than 500px), value (a format string for a second line) and
-### color (default the series color, darkened so text stays readable)
+### color (default the series color, darkened only as far as needed for 4.5:1
+### contrast on white)
 ### labels start at each line's latest point with a value; a value from before
 ### the chart's last year names its year
 ### close labels push apart, and the right margin widens to fit them
@@ -325,6 +342,20 @@ end_labels <- JS("
     var chart = this, lineHeight = 14, pad = 3;
     var narrow = chart.chartWidth < 500;
     var lastX = chart.xAxis[0].dataMax;
+    var luminance = function(rgba) {
+      var c = rgba.slice(0, 3).map(function(v) {
+        v /= 255;
+        return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+      });
+      return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+    };
+    var readable = function(color) {
+      for (var i = 0; i <= 10; i++) {
+        var c = Highcharts.color(color).brighten(-i / 10);
+        if (1.05 / (luminance(c.rgba) + 0.05) >= 4.5) return c.get('rgb');
+      }
+      return '#000000';
+    };
     (chart.endLabels || []).forEach(function(label) { label.destroy(); });
     var items = chart.series.map(function(s) {
       var points = s.visible ? s.points.filter(function(p) { return !p.isNull; }) : [];
@@ -337,7 +368,7 @@ end_labels <- JS("
         lines.push(p.x < lastX ? value + ' (' + p.x + ')' : value);
       }
       var height = lines.length * lineHeight;
-      var color = custom.color || Highcharts.color(s.color).brighten(-0.2).get();
+      var color = custom.color || readable(s.color);
       return { lines: lines, color: color, height: height, top: p.plotY - height / 2 };
     }).filter(Boolean).sort(function(a, b) { return a.top - b.top; });
     items.forEach(function(item, i) {
@@ -372,7 +403,7 @@ state_short_names <- c(rlang::set_names(state.abb, state.name), "District of Col
 compare_end_labels <- function(chart, value) {
   chart$x$hc_opts$series <- lapply(chart$x$hc_opts$series, function(series) {
     series$custom <- if (series$name == "United States") {
-      list(label = "U.S.", value = value, color = "#6F6B6B")
+      list(label = "U.S.", value = value, color = site_colors[["muted"]])
     } else {
       list(short = unname(state_short_names[series$name]), value = value)
     }
@@ -429,6 +460,385 @@ offense_trend_chart <- function(data, offense, place,
   )
 }
 
+### backlog charts styled like the Crime Without Consequence microsite: larger
+### type and bordered cards, in the site colors and GT America
+### hc_add_theme() replaces the theme hc_setup() adds, so this builds on hc_theme_jc
+hc_theme_microsite <- hc_theme_merge(
+  hc_theme_jc,
+  hc_theme(
+    chart = list(borderColor = site_colors[["border"]], borderWidth = 1, borderRadius = 8),
+    title = list(style = list(fontSize = "22px", fontWeight = "700")),
+    subtitle = list(style = list(fontSize = "15px")),
+    caption = list(style = list(color = site_colors[["muted"]], fontSize = "13px")),
+    xAxis = list(labels = list(style = list(fontSize = "13px"))),
+    yAxis = list(labels = list(style = list(fontSize = "13px"))),
+    legend = list(itemStyle = list(color = site_colors[["text"]], fontSize = "14px", fontWeight = "600")),
+    tooltip = list(backgroundColor = "#FFFFFF", borderColor = site_colors[["border"]],
+                   borderRadius = 8, style = list(color = site_colors[["text"]], fontSize = "14px"))
+  )
+)
+
+### sets the chart's long description for screen readers and keeps the other
+### accessibility options hc_setup() set
+hc_describe <- function(chart, text) {
+  chart$x$hc_opts$accessibility$description <- text
+  chart
+}
+
+### compact JS number format, e.g., 1.31M, 563K, 25.3K or 840
+### trim drops trailing zeros and dm sets the decimals for millions
+compact_number_js <- "var fmt = function(v, trim, dm) {
+    var a = Math.abs(v), out;
+    dm = (dm === undefined) ? 2 : dm;
+    if (a >= 1e6) { out = (v / 1e6).toFixed(dm); return (trim ? String(+out) : out) + 'M'; }
+    if (a >= 1e3) { out = (v / 1e3).toFixed(a >= 1e5 ? 0 : 1); return (trim ? String(+out) : out) + 'K'; }
+    return String(Math.round(v));
+  };"
+
+### y-axis labels in compact numbers; plus labels read +1M, +2M, with a blue
+### "?" at the baseline because the backlog from earlier years is unknown
+compact_axis_labels <- function(plus = FALSE) {
+  zero <- if (plus) "'<span style=\"color:#005DA6;font-weight:900\">?</span>'" else "'0'"
+  value <- if (plus) "'+' + fmt(v, true)" else "fmt(v, true)"
+  JS(paste0("function() { ", compact_number_js, "
+    var v = this.value;
+    if (v === 0) return ", zero, ";
+    return ", value, ";
+  }"))
+}
+
+compact_point_label <- JS(paste0("function() { ", compact_number_js, " return fmt(this.y, false); }"))
+
+### the series name at its last point with a value
+last_point_name_label <- JS("function() {
+  var points = this.series.points.filter(function(p) { return p.y !== null; });
+  return this.point === points[points.length - 1] ? this.series.name : null;
+}")
+
+### the last point's value with a plus sign, e.g., +4.3M
+backlog_end_label <- JS(paste0("function() { ", compact_number_js, "
+  return this.point.index === this.series.data.length - 1 ? '+' + fmt(this.y, true, 1) : null;
+}"))
+
+### render event that draws a note and a dotted line down to the baseline,
+### saying the backlog adds to unsolved crime from before first_year
+### note_frac places the note's center as a share of the y-axis range, and
+### end_frac ends the line that share of the plot height above the baseline
+### the note's box is saved so backlog_tooltip_position() can steer around it
+backlog_note <- function(first_year, note_frac = 0.45, max_width = 170, end_frac = 0.09) {
+  JS(paste0("function() {
+  var chart = this, accent = '#005DA6', axis = chart.yAxis[0];
+  if (chart.noteGroup) chart.noteGroup.destroy();
+  var g = chart.renderer.g('not-starting-at-zero-note').attr({ zIndex: 7 }).add();
+  chart.noteGroup = g;
+  var xEnd = chart.plotLeft + 2;
+  var yEnd = chart.plotTop + chart.plotHeight * (1 - ", end_frac, ");
+  var yCenter = axis.toPixels(axis.min + ", note_frac, " * (axis.max - axis.min));
+  var html = '<span style=\"color:' + accent + ';font-weight:700\">Not starting at zero:</span> ' +
+             'added on top of unsolved crimes from before ", first_year, "';
+  var note = chart.renderer.label(html, xEnd + 6, 0, 'rect')
+    .css({ width: Math.min(", max_width, ", chart.plotWidth * 0.3) + 'px', color: '#000000', fontSize: '13px' })
+    .attr({ fill: 'none', padding: 8, zIndex: 8 })
+    .add(g);
+  var box = note.getBBox();
+  note.attr({ y: yCenter - box.height / 2 });
+  chart.renderer.path(['M', xEnd + 22, yCenter + box.height / 2, 'L', xEnd, yEnd])
+    .attr({ stroke: accent, 'stroke-width': 1.5, 'stroke-dasharray': '3,3', fill: 'none', zIndex: 7 })
+    .add(g);
+  chart.noteBox = { left: xEnd + 6, right: xEnd + 6 + box.width,
+                    top: yCenter - box.height / 2, bottom: yCenter + box.height / 2 };
+}"))
+}
+
+### tooltips sit beside the point inside the plot, and drop below the note
+### when they would cover it
+backlog_tooltip_position <- JS("function(labelWidth, labelHeight, point) {
+  var chart = this.chart, gap = 12;
+  var plotBottom = chart.plotTop + chart.plotHeight;
+  var px = chart.plotLeft + point.plotX, py = chart.plotTop + point.plotY;
+  var x = px + gap;
+  if (x + labelWidth > chart.plotLeft + chart.plotWidth) x = px - labelWidth - gap;
+  var y = Math.min(Math.max(py - labelHeight / 2, chart.plotTop), plotBottom - labelHeight);
+  var nb = chart.noteBox;
+  if (nb && x < nb.right && x + labelWidth > nb.left && y < nb.bottom && y + labelHeight > nb.top) {
+    y = Math.min(nb.bottom + 6, plotBottom - labelHeight);
+  }
+  return { x: x, y: y };
+}")
+
+### plural offense names for backlog text
+backlog_offense_plurals <- c(
+  "Aggravated assault" = "Aggravated assaults", "Robbery" = "Robberies",
+  "Rape" = "Rapes", "Homicide" = "Homicides"
+)
+
+### each offense's share of the latest year's backlog, largest first
+### offenses is add_backlog() output by offense
+backlog_shares <- function(offenses) {
+  offenses |>
+    dplyr::filter(year == max(year)) |>
+    dplyr::mutate(group = as.character(group), share = backlog / sum(backlog)) |>
+    dplyr::arrange(dplyr::desc(share)) |>
+    dplyr::select(group, share)
+}
+
+### heading naming the offense with the largest share of the backlog, e.g.,
+### "Aggravated assaults make up 65% of the backlog."
+backlog_headline <- function(offenses) {
+  top <- backlog_shares(offenses)[1, ]
+  if (!is.finite(top$share)) stop("The backlog has no unsolved crime to divide by offense", call. = FALSE)
+  paste0(backlog_offense_plurals[[top$group]], " make up ", percent(top$share), " of the backlog.")
+}
+
+### tooltip counts, with "not available" for years without a solve rate
+backlog_count <- function(x) dplyr::if_else(is.na(x), "not available", comma(x))
+
+### caption note naming the solve rates the backlog leaves out, e.g., "Solve
+### rates are not shown for all offenses in 2021 or for homicide and rape in
+### 2022, so ...", or "" when none are hidden
+### offenses and totals are add_backlog() output
+backlog_missing_note <- function(offenses, totals) {
+  n_offenses <- dplyr::n_distinct(offenses$group)
+  hidden <- offenses |>
+    dplyr::filter(is.na(incidents_unsolved)) |>
+    dplyr::summarize(groups = list(sort(tolower(as.character(group)))), .by = year)
+  ### a missing total with every offense shown hides the whole year
+  whole_years <- sort(union(hidden$year[lengths(hidden$groups) == n_offenses],
+                            setdiff(totals$year[is.na(totals$incidents_unsolved)], hidden$year)))
+  partial <- dplyr::filter(hidden, lengths(groups) < n_offenses, !year %in% whole_years)
+
+  pieces <- c(
+    if (length(whole_years) > 0) paste("all offenses in", knitr::combine_words(whole_years)),
+    vapply(seq_len(nrow(partial)), \(i) {
+      paste(knitr::combine_words(partial$groups[[i]]), "in", partial$year[i])
+    }, character(1))
+  )
+  if (length(pieces) == 0) return("")
+  paste0("Solve rates are not shown for ",
+         knitr::combine_words(pieces, sep = ", for ", and = " or for ", oxford_comma = FALSE),
+         ", so the backlog leaves out those crimes and is a minimum.")
+}
+
+### a reported, solved and unsolved trend and a backlog stacked by offense
+### totals and offenses are add_backlog() output; place reads in titles, e.g.,
+### "Ohio"; y_expansion is headroom above the largest value and x_pad the space
+### in years beside the first and last year
+backlog_charts <- function(totals, offenses, place,
+                           caption = "FBI UCR Program, state crime estimates and clearances",
+                           y_expansion = 0.2, x_pad = 0.4) {
+  years <- totals$year
+  first_year <- min(years)
+  last_year <- max(years)
+  offense_order <- names(offense_colors)
+  offenses <- offenses |>
+    dplyr::filter(group %in% offense_order) |>
+    dplyr::mutate(group = factor(group, levels = offense_order))
+  if (nrow(offenses) != length(offense_order) * length(years)) {
+    stop("Backlog charts need every offense in every year for ", place, call. = FALSE)
+  }
+
+  ### the slices must add up to the total line, or the chart contradicts itself;
+  ### state totals are sums of their offenses, and pooled US offense rates differ
+  ### from the pooled total by well under the tolerance
+  slice_check <- offenses |>
+    dplyr::summarize(slices = sum(backlog), .by = year) |>
+    dplyr::inner_join(dplyr::select(totals, year, backlog), by = "year")
+  if (any(abs(slice_check$slices - slice_check$backlog) / pmax(slice_check$backlog, 1) > 0.005)) {
+    stop("Offense slices do not add up to the total backlog for ", place,
+         ". Build state totals with backlog_totals().", call. = FALSE)
+  }
+
+  missing_note <- backlog_missing_note(offenses, totals)
+  caption <- paste(c(if (missing_note != "") missing_note, caption), collapse = "<br>")
+
+  trend_data <- totals |>
+    dplyr::mutate(tooltip = paste0(
+      "<b>", year, "</b><br>",
+      "Violent crimes reported: ", backlog_count(incidents_reported), "<br>",
+      "Violent crimes solved: ", backlog_count(incidents_solved), "<br>",
+      "Violent crimes unsolved: ", backlog_count(incidents_unsolved), "<br>",
+      "<b>Total unsolved since ", first_year, ": ", comma(backlog), "</b>"
+    ))
+
+  ### each offense's unsolved count that year, top to bottom like the slices,
+  ### with a matching swatch
+  offense_tooltip <- offenses |>
+    dplyr::arrange(year, dplyr::desc(group)) |>
+    dplyr::summarize(
+      offense_text = paste0(
+        "<span style='color:", offense_colors[as.character(group)], "'>●</span> ",
+        group, ": ", backlog_count(incidents_unsolved), collapse = "<br>"
+      ),
+      .by = year
+    )
+
+  backlog_data <- totals |>
+    dplyr::left_join(offense_tooltip, by = "year") |>
+    dplyr::mutate(tooltip = paste0(
+      "<b>", year, "</b><br>",
+      "Unsolved this year: ", backlog_count(incidents_unsolved), "<br>",
+      offense_text, "<br>",
+      "<b>Total added since ", first_year, ": ", comma(backlog), "</b>"
+    ))
+
+  ### "Unsolved" sits halfway between the lines at the middle year, or at the
+  ### nearest year with a solve rate when the middle falls in a gap
+  shown <- years[!is.na(totals$incidents_solved)]
+  label_x <- mean(range(years))
+  if (!all(c(floor(label_x), ceiling(label_x)) %in% shown)) label_x <- shown[which.min(abs(shown - label_x))]
+  gap_label_data <- tibble::tibble(
+    year = label_x,
+    mid = stats::approx(years, (totals$incidents_reported + totals$incidents_solved) / 2, xout = label_x)$y
+  )
+
+  shown_totals <- dplyr::filter(totals, !is.na(incidents_solved))
+  desc_trend <- paste0(
+    "Line chart with a shaded gap, ", first_year, " to ", last_year, ", for ", place,
+    ". Violent crimes reported went from ", comma(dplyr::first(totals$incidents_reported)), " in ",
+    first_year, " to ", comma(dplyr::last(totals$incidents_reported)), " in ", last_year,
+    ". Violent crimes solved ranged from ", comma(min(shown_totals$incidents_solved)), " to ",
+    comma(max(shown_totals$incidents_solved)), " a year. The shaded area between the two lines ",
+    "is the number left unsolved each year. In total, ", comma(dplyr::last(totals$backlog)),
+    " violent crimes went unsolved from ", first_year, " through ", last_year, ".",
+    if (missing_note != "") paste0(" ", missing_note)
+  )
+
+  shares <- backlog_shares(offenses)
+  desc_backlog <- paste0(
+    "Stacked area chart, ", first_year, " to ", last_year, ", for ", place,
+    ". The backlog of unsolved violent crimes added since ", first_year, " reaches ",
+    comma(dplyr::last(totals$backlog)), " by the end of ", last_year,
+    ". The area is divided by offense. By the end of ", last_year, ", the backlog is ",
+    knitr::combine_words(paste(tolower(shares$group), percent(shares$share, suffix = " percent"))),
+    ". The chart does not start from zero in real terms: these crimes are added on top of ",
+    "an unknown number of unsolved crimes from before ", first_year, ".",
+    if (missing_note != "") paste0(" ", missing_note)
+  )
+
+  ### value labels above or below each point, and the series name at the line's end
+  line_labels <- function(color, above) {
+    list(
+      list(enabled = TRUE, formatter = compact_point_label,
+           verticalAlign = if (above) "bottom" else "top", y = if (above) -6 else 8,
+           style = list(color = color, fontSize = "13px", fontWeight = "400", textOutline = "none")),
+      list(enabled = TRUE, formatter = last_point_name_label,
+           align = "left", verticalAlign = "middle", x = 10, y = 0,
+           crop = FALSE, overflow = "allow", allowOverlap = TRUE,
+           style = list(color = color, fontSize = "15px", fontWeight = "700", textOutline = "none"))
+    )
+  }
+  point_format <- function(label) list(valueDescriptionFormat = paste0("year: {point.x:.0f}, ", label, ": {point.y:,.0f}"))
+  trend_bounds <- chart_bounds(c(0, totals$incidents_reported), expansion = y_expansion, floor = 0)
+
+  ### the shaded gap stacks the unsolved count on an invisible series that
+  ### follows the solved line
+  trend <- hchart(
+    trend_data, "area", hcaes(year, incidents_solved),
+    name = "Solved (base of gap)", color = "transparent", fillOpacity = 0,
+    lineWidth = 0, stacking = "normal", marker = list(enabled = FALSE),
+    enableMouseTracking = FALSE, zIndex = 0, accessibility = list(enabled = FALSE)
+  ) |>
+    hc_add_series(
+      trend_data, "area", hcaes(year, incidents_unsolved),
+      name = "Unsolved", color = backlog_colors[["unsolved"]], fillOpacity = 1, lineWidth = 0,
+      stacking = "normal", marker = list(enabled = FALSE), enableMouseTracking = FALSE, zIndex = 0,
+      accessibility = list(description = "Shaded area showing violent crimes left unsolved each year.",
+                           point = point_format("violent crimes unsolved"))
+    ) |>
+    hc_add_series(
+      gap_label_data, "line", hcaes(year, mid),
+      name = "Unsolved (label)", lineWidth = 0, marker = list(enabled = FALSE),
+      enableMouseTracking = FALSE, zIndex = 1,
+      dataLabels = list(enabled = TRUE, format = "Unsolved", align = "center",
+                        verticalAlign = "middle", y = 0, allowOverlap = TRUE,
+                        style = list(color = "#000000", fontSize = "15px",
+                                     fontWeight = "700", textOutline = "none")),
+      accessibility = list(enabled = FALSE)
+    ) |>
+    hc_add_series(
+      trend_data, "line", hcaes(year, incidents_reported),
+      name = "Reported", color = backlog_colors[["reported"]], lineWidth = 3, zIndex = 2,
+      marker = list(symbol = "circle", radius = 4, lineColor = "#FFFFFF", lineWidth = 1.5),
+      dataLabels = line_labels(backlog_colors[["reported"]], above = TRUE),
+      accessibility = list(description = "Violent crimes reported each year.",
+                           point = point_format("violent crimes reported"))
+    ) |>
+    ### dashes and diamonds set solved apart by more than color
+    hc_add_series(
+      trend_data, "line", hcaes(year, incidents_solved),
+      name = "Solved", color = backlog_colors[["solved"]], lineWidth = 3, dashStyle = "ShortDash", zIndex = 2,
+      marker = list(symbol = "diamond", radius = 5, lineColor = "#FFFFFF", lineWidth = 1.5),
+      dataLabels = line_labels(backlog_colors[["solved"]], above = FALSE),
+      accessibility = list(description = "Violent crimes solved each year.",
+                           point = point_format("violent crimes solved"))
+    ) |>
+    hc_title(text = paste("Violent crime reported, solved, and unsolved in", place)) |>
+    hc_caption(text = caption) |>
+    hc_legend(enabled = FALSE) |>
+    hc_setup() |>
+    hc_add_theme(hc_theme_microsite) |>
+    ### reversedStacks = FALSE keeps the invisible base at the bottom
+    hc_xAxis(tickPositions = years, min = first_year - x_pad, max = last_year + x_pad) |>
+    hc_yAxis(min = trend_bounds[1], max = trend_bounds[2], endOnTick = FALSE, reversedStacks = FALSE,
+             labels = list(formatter = compact_axis_labels())) |>
+    hc_chart(marginRight = 70) |>
+    hc_describe(desc_trend)
+
+  ### one slice per offense, with the slices' numbers in the total line's
+  ### tooltip and, for screen readers, in each slice's descriptions
+  backlog <- highchart()
+  for (g in offense_order) {
+    backlog <- backlog |>
+      hc_add_series(
+        dplyr::filter(offenses, group == g), "area", hcaes(year, backlog),
+        name = g, color = offense_colors[[g]], fillOpacity = 1,
+        lineWidth = 1, lineColor = "#FFFFFF", stacking = "normal",
+        marker = list(enabled = FALSE, states = list(hover = list(enabled = FALSE))),
+        enableMouseTracking = FALSE, zIndex = 1,
+        accessibility = list(
+          description = paste0("Unsolved ", tolower(g), " cases added to the backlog since ", first_year, "."),
+          point = list(valueDescriptionFormat = paste0(
+            "{point.series.name}, year: {point.x:.0f}, unsolved added since ", first_year, ": {point.y:,.0f}"))
+        )
+      )
+  }
+
+  backlog_bounds <- chart_bounds(c(0, totals$backlog), expansion = y_expansion, floor = 0)
+  backlog <- backlog |>
+    ### the total line is left out of the legend because the slices add up to it
+    hc_add_series(
+      backlog_data, "line", hcaes(year, backlog),
+      name = paste("Total backlog added since", first_year),
+      color = backlog_colors[["reported"]], lineWidth = 2, zIndex = 3, showInLegend = FALSE,
+      marker = list(enabled = TRUE, symbol = "circle", radius = 4,
+                    fillColor = "#000000", lineColor = "#FFFFFF", lineWidth = 1.5),
+      dataLabels = list(enabled = TRUE, align = "right", verticalAlign = "bottom", y = -8,
+                        formatter = backlog_end_label,
+                        style = list(color = "#000000", fontSize = "13px",
+                                     fontWeight = "700", textOutline = "none")),
+      accessibility = list(
+        description = paste0("Total unsolved violent crimes added to the backlog since ",
+                             first_year, ", all offenses combined."),
+        point = point_format(paste("total unsolved violent crimes added since", first_year))
+      )
+    ) |>
+    hc_title(text = paste("Backlog of unsolved violent crime in", place)) |>
+    hc_subtitle(text = paste0("Unsolved violent crimes added since ", first_year, ", by offense")) |>
+    hc_caption(text = caption) |>
+    hc_legend(enabled = TRUE, reversed = FALSE) |>
+    hc_setup() |>
+    hc_add_theme(hc_theme_microsite) |>
+    hc_xAxis(tickPositions = years, min = first_year - x_pad * 0.75, max = last_year + x_pad * 0.75) |>
+    ### reversedStacks = FALSE puts aggravated assault at the bottom
+    hc_yAxis(min = backlog_bounds[1], max = backlog_bounds[2], endOnTick = FALSE, reversedStacks = FALSE,
+             labels = list(formatter = compact_axis_labels(plus = TRUE), useHTML = TRUE)) |>
+    hc_chart(events = list(render = backlog_note(first_year))) |>
+    hc_tooltip(positioner = backlog_tooltip_position) |>
+    hc_describe(desc_backlog)
+
+  list(trend = trend, backlog = backlog)
+}
+
 ### homicide solve-rate panels by victim and incident characteristic
 ### note is the caption line above the data source
 shr_panels <- list(
@@ -462,7 +872,7 @@ shr_source <- function(years) {
 
 ### state bars in the trend charts' state color, region bars in a muted gray
 ### that keeps 3:1 contrast on white
-shr_series_colors <- c(jr_pal[1], "#8C8C8C")
+shr_series_colors <- unname(site_colors[c("blue", "muted")])
 
 ### column chart of solve rates by group
 ### series names a column that splits the bars into series shown in a legend,
@@ -554,8 +964,8 @@ shr_panel_chart <- function(spec, prep, years, series = NULL) {
 ### comparison rate; each text color reaches at least 4.5:1 contrast on its fill
 ### below pills are filled and above pills are outlined, so the two differ
 ### without color; the outline is in styles.css
-solve_rate_colors <- c(above = "#15607A", below = "#9A4A0A")
-solve_rate_fills <- c(above = "#FFFFFF", below = "#FBE8DA")
+solve_rate_colors <- c(above = site_colors[["dark_blue"]], below = site_colors[["navy"]])
+solve_rate_fills <- c(above = "#FFFFFF", below = site_colors[["pale_blue"]])
 
 ### text in a pill styled for one side of the comparison rate
 ### sr_text adds words that only screen readers announce; title shows on hover
@@ -727,19 +1137,12 @@ table_widths <- list(name = 200, county = 130, population = 120, number = 100)
 ### footer labels the total row, e.g., "U.S. total"
 ### a right border sets off the sticky column
 sticky_name_column <- function(name, footer = NULL, ...) {
-  border <- list(borderRight = "1px solid #eee")
+  border <- list(borderRight = paste("1px solid", site_colors[["grid"]]))
   colDef(
     name = name, footer = footer, minWidth = table_widths$name, sticky = "left",
     style = border, headerStyle = border, footerStyle = border, ...
   )
 }
-
-offense_pal <- tibble(
-  color = jr_pal[c(2,3,4,5)],
-  crime = c("Homicide", "Robbery", "Rape", "Aggravated assault")
-)
-
-offense_color <- function(offense) offense_pal$color[offense_pal$crime == offense]
 
 ### fonts and header styles live in the theme, so column styles add to them
 ### tabular figures give every digit the same width, so numbers line up in columns
