@@ -576,7 +576,7 @@ backlog_shares <- function(offenses) {
 ### heading naming the offense with the largest share of the backlog, e.g.,
 ### "Aggravated assaults make up 65% of the backlog."
 backlog_headline <- function(offenses) {
-  top <- backlog_shares(offenses)[1, ]
+  top <- dplyr::filter(backlog_shares(offenses), group %in% names(backlog_offense_plurals))[1, ]
   if (!is.finite(top$share)) stop("The backlog has no unsolved crime to divide by offense", call. = FALSE)
   paste0(backlog_offense_plurals[[top$group]], " make up ", percent(top$share), " of the backlog.")
 }
@@ -586,9 +586,12 @@ backlog_count <- function(x) dplyr::if_else(is.na(x), "not available", comma(x))
 
 ### caption note naming the solve rates the backlog leaves out, e.g., "Solve
 ### rates are not shown for all offenses in 2021 or for homicide and rape in
-### 2022, so ...", or "" when none are hidden
+### 2022, so ...", and the years an unsplit slice holds offenses together, or ""
 ### offenses and totals are add_backlog() output
 backlog_missing_note <- function(offenses, totals) {
+  unsplit <- if ("unsplit" %in% names(offenses)) offenses$unsplit %in% TRUE else rep(FALSE, nrow(offenses))
+  unsplit_years <- offenses$year[unsplit & !is.na(offenses$incidents_unsolved)]
+  offenses <- offenses[!unsplit, ]
   n_offenses <- dplyr::n_distinct(offenses$group)
   hidden <- offenses |>
     dplyr::filter(is.na(incidents_unsolved)) |>
@@ -597,6 +600,8 @@ backlog_missing_note <- function(offenses, totals) {
   whole_years <- sort(union(hidden$year[lengths(hidden$groups) == n_offenses],
                             setdiff(totals$year[is.na(totals$incidents_unsolved)], hidden$year)))
   partial <- dplyr::filter(hidden, lengths(groups) < n_offenses, !year %in% whole_years)
+  combined <- dplyr::filter(partial, year %in% unsplit_years)
+  partial <- dplyr::filter(partial, !year %in% unsplit_years)
 
   pieces <- c(
     if (length(whole_years) > 0) paste("all offenses in", knitr::combine_words(whole_years)),
@@ -604,10 +609,18 @@ backlog_missing_note <- function(offenses, totals) {
       paste(knitr::combine_words(partial$groups[[i]]), "in", partial$year[i])
     }, character(1))
   )
-  if (length(pieces) == 0) return("")
-  paste0("Solve rates are not shown for ",
-         knitr::combine_words(pieces, sep = ", for ", and = " or for ", oxford_comma = FALSE),
-         ", so the backlog leaves out those crimes and is a minimum.")
+  missing <- if (length(pieces) > 0) {
+    paste0("Solve rates are not shown for ",
+           knitr::combine_words(pieces, sep = ", for ", and = " or for ", oxford_comma = FALSE),
+           ", so the backlog leaves out those crimes and is a minimum.")
+  }
+  together <- vapply(seq_len(nrow(combined)), \(i) {
+    groups <- combined$groups[[i]]
+    paste0("In ", combined$year[i], ", ", knitr::combine_words(groups),
+           if (length(groups) > 1) " are" else " is", " counted together, not broken out, because ",
+           if (length(groups) > 1) "their separate solve rates are" else "its own solve rate is", " not shown.")
+  }, character(1))
+  paste(c(missing, together), collapse = " ")
 }
 
 ### a reported, solved and unsolved trend and a backlog stacked by offense
@@ -620,7 +633,10 @@ backlog_charts <- function(totals, offenses, place,
   years <- totals$year
   first_year <- min(years)
   last_year <- max(years)
-  offense_order <- names(offense_colors)
+  ### unsplit slices (see add_backlog()) stack on top of the offenses
+  unsplit_groups <- unique(as.character(offenses$group[offenses$unsplit %in% TRUE]))
+  slice_colors <- c(offense_colors, setNames(rep(backlog_colors[["unsplit"]], length(unsplit_groups)), unsplit_groups))
+  offense_order <- names(slice_colors)
   offenses <- offenses |>
     dplyr::filter(group %in% offense_order) |>
     dplyr::mutate(group = factor(group, levels = offense_order))
@@ -652,12 +668,15 @@ backlog_charts <- function(totals, offenses, place,
     ))
 
   ### each offense's unsolved count that year, top to bottom like the slices,
-  ### with a matching swatch
+  ### with a matching swatch; in a year with an unsplit count, its offenses
+  ### show only in that line
   offense_tooltip <- offenses |>
+    dplyr::mutate(unsplit_year = any(group %in% unsplit_groups & !is.na(incidents_unsolved)), .by = year) |>
+    dplyr::filter(!is.na(incidents_unsolved) | !(unsplit_year | group %in% unsplit_groups)) |>
     dplyr::arrange(year, dplyr::desc(group)) |>
     dplyr::summarize(
       offense_text = paste0(
-        "<span style='color:", offense_colors[as.character(group)], "'>●</span> ",
+        "<span style='color:", slice_colors[as.character(group)], "'>●</span> ",
         group, ": ", backlog_count(incidents_unsolved), collapse = "<br>"
       ),
       .by = year
@@ -711,7 +730,7 @@ backlog_charts <- function(totals, offenses, place,
     ". The backlog of unsolved violent crimes added since ", first_year, " reaches ",
     comma(dplyr::last(totals$backlog)), " by the end of ", last_year,
     ". The area is divided by offense. By the end of ", last_year, ", the backlog is ",
-    knitr::combine_words(paste(tolower(shares$group), percent(shares$share, suffix = " percent"))),
+    knitr::combine_words(paste(sub(", not broken out$", " combined", tolower(shares$group)), percent(shares$share, suffix = " percent"))),
     ". The chart does not start from zero in real terms: these crimes are added on top of ",
     "an unknown number of unsolved crimes from before ", first_year, ".",
     if (missing_note != "") paste0(" ", missing_note)
@@ -793,12 +812,12 @@ backlog_charts <- function(totals, offenses, place,
     backlog <- backlog |>
       hc_add_series(
         dplyr::filter(offenses, group == g), "area", hcaes(year, backlog),
-        name = g, color = offense_colors[[g]], fillOpacity = 1,
+        name = g, color = slice_colors[[g]], fillOpacity = 1,
         lineWidth = 1, lineColor = "#FFFFFF", stacking = "normal",
         marker = list(enabled = FALSE, states = list(hover = list(enabled = FALSE))),
         enableMouseTracking = FALSE, zIndex = 1,
         accessibility = list(
-          description = paste0("Unsolved ", tolower(g), " cases added to the backlog since ", first_year, "."),
+          description = paste0(g, ": unsolved cases added to the backlog since ", first_year, "."),
           point = list(valueDescriptionFormat = paste0(
             "{point.series.name}, year: {point.x:.0f}, unsolved added since ", first_year, ": {point.y:,.0f}"))
         )
@@ -966,8 +985,8 @@ shr_panel_chart <- function(spec, prep, years, series = NULL) {
 ### comparison rate; each text color reaches at least 4.5:1 contrast on its fill
 ### below pills are filled and above pills are outlined, so the two differ
 ### without color; the outline is in styles.css
-solve_rate_colors <- c(above = site_colors[["dark_blue"]], below = site_colors[["navy"]])
-solve_rate_fills <- c(above = "#FFFFFF", below = site_colors[["pale_blue"]])
+solve_rate_colors <- c(above = site_colors[["dark_blue"]], below = site_colors[["orange"]])
+solve_rate_fills <- c(above = site_colors[["white"]], below = site_colors[["light_orange"]])
 
 ### text in a pill styled for one side of the comparison rate
 ### sr_text adds words that only screen readers announce; title shows on hover

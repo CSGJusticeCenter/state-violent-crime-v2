@@ -85,12 +85,14 @@ axis_expansion_mult <- 0.5
 inflation_index_path <- "data/annual-index-value_annual-percent-change_2025.xls"
 
 ### every chart and map color, from the Crime Without Consequence microsite's
-### 50-state crime data page; muted text keeps 4.5:1 contrast on white
+### 50-state crime data page, plus orange for solve rates below the comparison
+### rate; muted text keeps 4.5:1 contrast on white
 site_colors <- c(
   navy = "#001E35", dark_blue = "#004270", blue = "#005DA6", slate = "#7397B0",
   teal = "#2DEBC3", dark_teal = "#17B894", light_teal = "#C8F5EA", pale_blue = "#D7E3EE",
   white = "#FFFFFF", text = "#000000", dark_gray = "#33404D", muted = "#5A6470",
-  baseline = "#9FB0C0", border = "#C9D3DC", grid = "#DDE3E9"
+  baseline = "#9FB0C0", border = "#C9D3DC", grid = "#DDE3E9",
+  orange = "#9A4A0A", light_orange = "#FBE8DA"
 )
 
 ### map palettes, diverging for changes (navy to teal) and sequential for rates
@@ -120,7 +122,7 @@ offense_pal <- tibble(color = unname(offense_colors), crime = names(offense_colo
 offense_color <- function(offense) unname(offense_colors[offense])
 
 backlog_colors <- c(reported = site_colors[["navy"]], solved = site_colors[["blue"]],
-                    unsolved = site_colors[["pale_blue"]])
+                    unsolved = site_colors[["pale_blue"]], unsplit = site_colors[["baseline"]])
 
 ### violent offenses in the order of the agency data columns and data exports
 ### page tables order offenses by table_offenses in R/utils.R
@@ -405,9 +407,18 @@ solve_rate_years <- function(df, coverage_tbl) {
 ### us_solve_trend() output
 ### years whose solve rate solve_rate_hidden() marks have no solved or unsolved
 ### count and add nothing to the backlog, so a place missing a year shows a minimum
+### offenses hidden in a year whose total solve rate shows, such as New York's
+### 2022 homicide and rape, also move into an unsplit row (see unsplit_backlog_rows())
 add_backlog <- function(df, coverage_tbl, from = backlog_first_year) {
   df <- filter(df, year >= from)
   hidden <- solve_rate_hidden(df, coverage_tbl)
+  if ("group" %in% names(df)) {
+    ### total_label rows read the state-year's total solve flags
+    total_hidden <- solve_rate_hidden(mutate(df, group = total_label), coverage_tbl)
+    unsplit <- unsplit_backlog_rows(df[hidden & !total_hidden, ], unique(df$year))
+    df <- bind_rows(mutate(df, unsplit = FALSE), unsplit)
+    hidden <- c(hidden, rep(FALSE, NROW(unsplit)))
+  }
   df |>
     mutate(
       incidents_solved = if_else(hidden, NA_real_, incidents_solved),
@@ -417,15 +428,34 @@ add_backlog <- function(df, coverage_tbl, from = backlog_first_year) {
     mutate(backlog = cumsum(coalesce(incidents_unsolved, 0)), .by = any_of("group"))
 }
 
+### one row per year holding the solved and unsolved counts of offenses whose own
+### solve rates are hidden, grouped as, e.g., "Homicide and rape, not broken out",
+### or NULL when there are none; reported counts stay in the offense rows
+unsplit_backlog_rows <- function(rows, years) {
+  if (nrow(rows) == 0) return(NULL)
+  label <- paste0(str_to_sentence(knitr::combine_words(tolower(sort(unique(rows$group))))),
+                  ", not broken out")
+  counts <- summarize(rows, across(c(incidents_solved, incidents_unsolved), sum), .by = year)
+  tibble(year = years) |>
+    left_join(counts, by = "year") |>
+    mutate(group = label, unsplit = TRUE)
+}
+
 ### a state's backlog totals by year, summed from add_backlog() offense rows so
 ### the total always equals its offenses; a year's solved and unsolved counts
-### show only when every offense has a solve rate, as on the microsite
+### show only when every offense has a count or an unsplit row covers it
 backlog_totals <- function(offenses) {
-  summarize(
-    offenses,
-    across(c(incidents_reported, incidents_solved, incidents_unsolved, backlog), sum),
-    .by = year
-  )
+  unsplit <- if ("unsplit" %in% names(offenses)) offenses$unsplit else FALSE
+  offenses |>
+    mutate(unsplit = unsplit) |>
+    summarize(
+      incidents_reported = sum(incidents_reported, na.rm = TRUE),
+      across(c(incidents_solved, incidents_unsolved), \(x) {
+        if (any(is.na(x[!unsplit])) && !any(!is.na(x[unsplit]))) NA_real_ else sum(x, na.rm = TRUE)
+      }),
+      backlog = sum(backlog),
+      .by = year
+    )
 }
 
 ### first 4 characters of year drop footnote markers (e.g., "20252" is 2025)

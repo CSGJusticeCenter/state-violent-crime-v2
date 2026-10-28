@@ -45,7 +45,7 @@ test_that("solve rate pill styles by side and hides screen reader words", {
   expect_equal(
     solve_rate_pill("40%", "below", "below, "),
     paste0(
-      '<span class="solve-rate-pill solve-rate-pill-below" style="color:#001E35;background-color:#D7E3EE">',
+      '<span class="solve-rate-pill solve-rate-pill-below" style="color:#9A4A0A;background-color:#FBE8DA">',
       '<span class="visually-hidden">below, </span>40%</span>'
     )
   )
@@ -596,6 +596,31 @@ test_that("backlog note names offenses hidden in only some years", {
           "so the backlog leaves out those crimes and is a minimum.")
   )
   expect_equal(backlog_missing_note(backlog_fixture()$offenses, backlog_fixture()$totals), "")
+})
+
+test_that("an unsplit slice stacks on top and replaces its offenses in the tooltip", {
+  offenses <- backlog_fixture()$offenses |>
+    mutate(across(c(incidents_unsolved, incidents_solved),
+                  \(x) if_else(year == 2021 & group %in% c("Homicide", "Rape"), NA_real_, x)),
+           unsplit = FALSE)
+  unsplit <- tibble(year = 2020:2022, group = "Homicide and rape, not broken out", unsplit = TRUE,
+                    incidents_solved = c(NA, 10, NA), incidents_unsolved = c(NA, 10, NA))
+  offenses <- bind_rows(offenses, unsplit) |>
+    mutate(backlog = cumsum(coalesce(incidents_unsolved, 0)), .by = group)
+  charts <- backlog_charts(backlog_totals(offenses), offenses, "State A")
+
+  series <- charts$backlog$x$hc_opts$series
+  expect_equal(series[[length(offense_colors) + 1]]$name, "Homicide and rape, not broken out")
+  expect_equal(series[[length(offense_colors) + 1]]$color, backlog_colors[["unsplit"]])
+  tooltips <- vapply(series[[length(series)]]$data, `[[`, character(1), "tooltip")
+  expect_match(tooltips[2], "Unsolved this year: 50<", fixed = TRUE)
+  expect_match(tooltips[2], "Homicide and rape, not broken out: 10<", fixed = TRUE)
+  expect_no_match(tooltips[2], "not available", fixed = TRUE)
+  expect_no_match(tooltips[1], "not broken out", fixed = TRUE)
+  caption <- charts$backlog$x$hc_opts$caption$text
+  expect_match(caption, "In 2021, homicide and rape are counted together", fixed = TRUE)
+  expect_no_match(caption, "minimum")
+  expect_equal(backlog_headline(offenses), "Aggravated assaults make up 70% of the backlog.")
 })
 
 test_that("a partly hidden year's slices still add up to state totals", {

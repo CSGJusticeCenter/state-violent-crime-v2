@@ -407,12 +407,32 @@ test_that("backlog totals without a group sum across years", {
   expect_equal(add_backlog(totals, backlog_coverage)$backlog, c(4, 8, 12))
 })
 
-test_that("backlog totals sum offenses and hide a year missing any offense", {
-  df <- mutate(backlog_input(), hide_offense_solve = year == 2021 & group == "Homicide")
-  totals <- backlog_totals(add_backlog(df, backlog_coverage))
+test_that("backlog totals sum offenses and hide a year whose total is hidden", {
+  df <- mutate(backlog_input(), hide_offense_solve = year == 2021 & group == "Homicide",
+               hide_total_solve = year == 2021)
+  out <- add_backlog(df, backlog_coverage)
+  expect_false(any(out$unsplit))
+  totals <- backlog_totals(out)
   expect_equal(totals$incidents_reported, c(20, 20, 20))
   expect_equal(totals$incidents_unsolved, c(4, NA, 4))
   expect_equal(totals$backlog, c(4, 6, 10))
+})
+
+test_that("offenses hidden in a year whose total shows move into an unsplit row", {
+  df <- mutate(backlog_input(), hide_offense_solve = year == 2021 & group == "Homicide",
+               hide_total_solve = FALSE)
+  out <- add_backlog(df, backlog_coverage)
+  unsplit <- filter(out, unsplit)
+  expect_equal(unique(unsplit$group), "Homicide, not broken out")
+  expect_equal(unsplit$incidents_unsolved, c(NA, 2, NA))
+  expect_equal(unsplit$backlog, c(0, 2, 2))
+  expect_equal(filter(out, group == "Homicide")$backlog, c(2, 2, 4))
+
+  totals <- backlog_totals(out)
+  expect_equal(totals$incidents_reported, c(20, 20, 20))
+  expect_equal(totals$incidents_unsolved, c(4, 4, 4))
+  expect_equal(totals$incidents_solved, c(16, 16, 16))
+  expect_equal(totals$backlog, c(4, 8, 12))
 })
 
 test_that("jr_data_path finds the data library whatever its case", {
