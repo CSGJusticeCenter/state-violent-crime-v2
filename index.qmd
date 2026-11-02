@@ -12,6 +12,7 @@ library(reactable)
 
 source("R/page-data.R")
 source("R/utils.R")
+source("R/crime_ball_stream_chart.R")
 
 # htmlwidgets seeds its element IDs from this, so rerenders give identical HTML
 set.seed(2019)
@@ -169,6 +170,13 @@ shr_years <- paste0(shr_first_year, "–", max(shr_state$year))
 shr_us <- function(category) {
   function_shr_grouping_for_national_plot(shr_state, category, shr_first_year)
 }
+```
+
+# Most violent crimes don’t get solved. They pile up, year after year
+
+```{r}
+crime_ball_stream_chart(srs_us_solve, place = "the U.S.")
+
 ```
 
 

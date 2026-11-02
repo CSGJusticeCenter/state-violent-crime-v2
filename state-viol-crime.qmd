@@ -14,6 +14,7 @@ library(reactable)
 source("R/page-data.R")
 source("R/utils.R")
 source("R/local-map-data.R")
+source("R/crime_ball_stream_chart.R")
 
 # htmlwidgets seeds its element IDs from this, so rerenders give identical HTML
 set.seed(2019)
@@ -159,6 +160,12 @@ us_state_rate_text_crime <- change_phrase((state_total$rate_100k - us_total$rate
 change_text_clear <- if (show_solved) change_phrase(state_total$solve_change / 100, "point") else ""
 ```
 
+## Most violent crimes don’t get solved. They pile up, year after year
+
+```{r}
+crime_ball_stream_chart(srs_state, place = state_name_text)
+
+```
 
 {{< include _backlog-charts.qmd >}}
 
@@ -169,6 +176,7 @@ In `r latest_year`, `r format_rate_100k(state_total$rate_100k)` violent crime in
 The crime rate in `r state_name_text` in `r latest_year` was `r us_state_rate_text_crime` the United States average.
 
 Data regarding crime and solve rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr). Violent crime includes homicide, aggravated assault, robbery, and rape. Crime rates are calculated by dividing the number of estimated incidents by the total population for a given geography. For more information, see the [data sources and methodology](#methodology) section below.
+
 
 ::: {.panel-tabset}
 
