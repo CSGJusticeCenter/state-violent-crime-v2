@@ -154,3 +154,22 @@ test_that("change chart keeps agencies with a change and enough incidents", {
   chart <- agency_solve_change_chart(rows, 2, "Title", 2019, 2025)
   expect_equal(map_chr(chart$x$hc_opts$series, "name"), c(unname(agency_change_names), state_marker_name))
 })
+
+long_states <- city_solve_long(rows, benchmarks = benchmarks)
+
+test_that("state gap rows sort by the difference from the state", {
+  gaps <- state_gap_rows(long_states, total_label, 0.46)
+  expect_equal(gaps$ori, c("NYC", "GLC", "SEA"))
+  expect_equal(gaps$gap, c(19, 15, -7))
+  expect_equal(agencies_above_state(long_states, total_label, 0.46), c(above = 2, n = 3))
+  chart <- agency_state_dumbbell(long_states, total_label, 0.46, "Title", 2025)
+  expect_true(chart$x$hc_opts$chart$inverted)
+  expect_equal(chart$x$hc_opts$series[[1]]$type, "columnrange")
+})
+
+test_that("regional panels color one region over the rest", {
+  regional <- mutate(long, csg_region = if_else(state_abbr == "NY", "Eastern", "Western"))
+  chart <- agency_region_scatter(regional, "Eastern", 0.46, 400, 1000, 100, 2025)
+  expect_equal(length(chart$x$hc_opts$series[[1]]$data), 3)
+  expect_equal(region_median_text(regional, "Eastern"), "69 percent in the Eastern region")
+})
