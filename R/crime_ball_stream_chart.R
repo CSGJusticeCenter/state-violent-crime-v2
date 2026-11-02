@@ -39,12 +39,13 @@ stream_nice_unit <- function(x) {
 
 stream_css <- "
 .ballstream { margin: 24px 0; }
-.ballstream { background: #FFFFFF; }
-.ballstream canvas { background: #FFFFFF; display: block; margin: 0 auto; width: 100%; max-width: 880px; height: auto; aspect-ratio: 880 / 525; }
+.ballstream { background: #FFFFFF; font-family: 'GT-America', 'GT America', sans-serif; }
+.ballstream button, .ballstream input, .ballstream label, .ballstream summary, .ballstream table { font-family: inherit; }
+.ballstream canvas { background: #FFFFFF; display: block; margin: 0 auto; width: 100%; max-width: 880px; height: auto; aspect-ratio: 880 / 535; }
 .ballstream-controls { display: flex; align-items: center; gap: 16px; max-width: 880px; margin: 8px auto; }
 .ballstream-controls button {
   min-width: 96px; min-height: 44px; background: #2DEBC3; color: #000; border: 0; border-radius: 999px;
-  padding: 0 22px; font: 700 14px 'Libre Franklin', sans-serif; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer;
+  padding: 0 22px; font: 700 14px 'GT-America', 'GT America', sans-serif; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer;
 }
 .ballstream-controls button:focus-visible, .ballstream-controls input:focus-visible { outline: 3px solid #005DA6; outline-offset: 2px; }
 .ballstream-controls input[type=range] { flex-grow: 1; height: 44px; accent-color: #005DA6; }
@@ -66,12 +67,12 @@ stream_js_template <- r"--((function () {
   var cv = document.getElementById(id + '-cv');
   if (!root || !cv) return;
   var ctx = cv.getContext('2d');
-  var W = 880, H = 525, sc = 1;
+  var W = 880, H = 535, sc = 1;
   var N = cfg.off.length, K = cfg.offenses.length;
   var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var FONT = "'Libre Franklin', 'Helvetica Neue', Arial, sans-serif";
+  var FONT = "'GT-America', 'GT America', sans-serif";   // the site font (see default_fonts in utils.R)
   var DUR = 12, GRAV = 0.17, VMAX = 6.4;
-  var G = { left: 40, right: 840, spoutY: 66, splitY: 134, binTop: 190, binBot: 412, binW: 92 };
+  var G = { left: 40, right: 840, spoutY: 76, splitY: 144, binTop: 200, binBot: 422, binW: 92 };
   var laneW = (G.right - G.left) / K;
 
   // ---- Geometry: one lane per offense, an unsolved bin (left) and a solved bin (right)
@@ -90,17 +91,9 @@ stream_js_template <- r"--((function () {
     return 1.2;
   })();
   var SX = 2.15 * R, COLS = Math.max(1, Math.floor((G.binW - 8) / SX));
-  // Each row of a pile fills in a random column order, so balls land all along the bin
-  var perms = {};
-  function colPerm(b, row) {
-    var key = b + '-' + row;
-    if (!perms[key]) { var a = [], c, j, t; for (c = 0; c < COLS; c++) a.push(c);
-      for (c = a.length - 1; c > 0; c--) { j = (Math.random() * (c + 1)) | 0; t = a[c]; a[c] = a[j]; a[j] = t; }
-      perms[key] = a; }
-    return perms[key];
-  }
   function slotXY(b, n) {
-    var row = Math.floor(n / COLS), col = colPerm(b, row)[n % COLS];
+    // Piles fill from the bottom row up, and each row fills left to right
+    var row = Math.floor(n / COLS), col = n % COLS;
     return [binX(b) + (G.binW - COLS * SX) / 2 + col * SX + SX / 2, G.binBot - row * SX - SX / 2 - 2];
   }
 
@@ -190,12 +183,12 @@ stream_js_template <- r"--((function () {
     ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, W, H);   // solid white background
     var all = allStats(), k, b;
     // header: running overall percent and the year
-    ctx.textAlign = 'left'; ctx.fillStyle = '#000'; ctx.font = '800 46px ' + FONT; ctx.fillText(all.pct, 40, 46);
+    ctx.textAlign = 'left'; ctx.fillStyle = '#000'; ctx.font = '800 56px ' + FONT; ctx.fillText(all.pct, 40, 54);
     var pw = ctx.measureText(all.pct).width;
-    ctx.fillStyle = '#4B5D6E'; ctx.font = '400 17px ' + FONT;
-    ctx.fillText(done() ? 'of violent crimes went unsolved' : 'of violent crimes unsolved so far', 40 + pw + 12, 44);
-    ctx.textAlign = 'right'; ctx.fillStyle = '#4B5D6E'; ctx.font = '700 12px ' + FONT; ctx.fillText('YEAR', W - 40, 18);
-    ctx.fillStyle = '#000'; ctx.font = '800 30px ' + FONT; ctx.fillText(String(cfg.years[tickYear]), W - 40, 50);
+    ctx.fillStyle = '#4B5D6E'; ctx.font = '400 20px ' + FONT;
+    ctx.fillText(done() ? 'of violent crimes went unsolved' : 'of violent crimes unsolved so far', 40 + pw + 14, 50);
+    ctx.textAlign = 'right'; ctx.fillStyle = '#4B5D6E'; ctx.font = '700 13px ' + FONT; ctx.fillText('YEAR', W - 40, 20);
+    ctx.fillStyle = '#000'; ctx.font = '800 38px ' + FONT; ctx.fillText(String(cfg.years[tickYear]), W - 40, 56);
     ctx.textAlign = 'center';
     for (k = 0; k < K; k++) {
       var x = cx(k);
@@ -274,6 +267,13 @@ stream_js_template <- r"--((function () {
     }, { threshold: 0.35 }).observe(cv);
   } else if (!reduce) play();
   window.addEventListener('resize', draw);
+  // Canvas text can't trigger a web font download, so ask for the weights used
+  // here and redraw when they are ready
+  if (document.fonts && document.fonts.load) {
+    Promise.all(['400 14px', '700 14px', '800 14px'].map(function (f) {
+      return document.fonts.load(f + " 'GT-America'");
+    })).then(function () { draw(); }, function () {});
+  }
   if (reduce) setProgress(1, true); else setProgress(0, true);
   syncUI(); requestAnimationFrame(loop);
   root.__stream = { play: play, setProgress: setProgress, state: function () { return { emitted: emitted, landed: landed.slice(), R: R }; } };
