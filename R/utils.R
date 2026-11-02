@@ -1333,3 +1333,271 @@ function_shr_grouping_for_state_plot <- function(df, cat, state_abbr,
     hide_small_shr_groups() |>
     arrange(group_for_plot, group)
 }
+
+## city agency comparisons on the agency-level page
+
+agency_chart_caption <- "FBI UCR Program, agency crime and clearance data,"
+
+### agency rows for one offense with shown rates, highest solve rate first, with
+### each rate's side of us_rate, its color and a tooltip
+### long is city_solve_long() output from R/page-data.R; with its state
+### benchmarks, tooltips also give the agency's state rates
+agency_chart_rows <- function(long, offense, us_rate) {
+  label <- if (offense == total_label) "Violent" else offense
+  homicide <- offense == "Homicide"
+  if (!"state_solve_rate" %in% names(long)) long$state_solve_rate <- NA_real_
+  if (!"state_crime_rate" %in% names(long)) long$state_crime_rate <- NA_real_
+  long |>
+    dplyr::filter(.data$offense == .env$offense, shown) |>
+    dplyr::arrange(dplyr::desc(solved_rate)) |>
+    dplyr::mutate(
+      solve_pct = solve_rate_percent(solved_rate),
+      state_pct = solve_rate_percent(state_solve_rate),
+      side = purrr::map_chr(solved_rate, solve_rate_side, rate = us_rate),
+      color = unname(solve_rate_colors[side]),
+      rate_label = format_rate_100k(n_reported_rate, homicide),
+      tooltip = paste0(
+        "<b>", htmltools::htmlEscape(agency_name), " (", state_abbr, ")</b><br>",
+        "Solve rate: ", solve_pct, "%",
+        dplyr::if_else(is.na(state_pct), "", paste0(" (", state_abbr, " ", state_pct, "%)")), "<br>",
+        comma(n_solved), " of ", comma(n_reported), " incidents solved<br>",
+        label, " incidents per 100k: ", rate_label,
+        dplyr::if_else(is.na(state_crime_rate), "",
+                       paste0(" (", state_abbr, " ", format_rate_100k(state_crime_rate, homicide), ")")), "<br>",
+        "Population served: ", comma(population)
+      )
+    )
+}
+
+### legend name and marker for each agency's state rate on the thin-bar charts
+state_marker_name <- "State rate"
+state_marker <- list(symbol = "diamond", radius = 4.5, fillColor = site_colors[["white"]],
+                     lineColor = site_colors[["text"]], lineWidth = 1.5)
+
+### a series of diamonds at each agency's state value, drawn over the bars
+### x is each row's position, y the state value with NA where it's hidden,
+### and tooltip the hover text; description is the screen reader point format
+state_marker_series <- function(x, y, tooltip, description) {
+  keep <- !is.na(y)
+  points <- purrr::pmap(list(x[keep], y[keep], tooltip[keep]), \(x, y, tooltip) list(x = x, y = y, tooltip = tooltip))
+  list(list(
+    name = state_marker_name, type = "scatter", data = points, color = site_colors[["text"]],
+    marker = state_marker, zIndex = 6,
+    accessibility = list(point = list(valueDescriptionFormat = description))
+  ))
+}
+
+### hover text for a state marker, e.g., "Washington" and "Solve rate: 40%"
+state_marker_tooltip <- function(abbr, text) {
+  paste0("<b>", state_name_from_abbr(abbr), "</b><br>", text)
+}
+
+### subtitle note for agencies left out of an offense's charts for few incidents, or ""
+agency_left_out_note <- function(long, offense) {
+  n <- sum(long$offense == offense & !long$shown)
+  if (n == 0) return("")
+  paste0(" Leaves out ", n, if (n == 1) " agency" else " agencies", " with fewer than ",
+         min_rate_reported, " incidents.")
+}
+
+### legend names for agency chart series, by side of the U.S. rate
+agency_side_names <- c(above = "At or above the U.S. rate", below = "Below the U.S. rate")
+
+### one series per side, so the legend explains the colors
+### points is a list of point options and side holds each point's side
+agency_side_series <- function(points, side, type, names = agency_side_names, ...) {
+  purrr::map(c("above", "below"), \(s) list(
+    name = names[[s]], type = type, color = solve_rate_colors[[s]],
+    data = points[side == s], ...
+  ))
+}
+
+### dashed reference line labeled with the U.S. value
+us_plot_line <- function(value, label, ...) {
+  list(list(
+    value = value, color = site_colors[["dark_gray"]], width = 1.5, dashStyle = "Dash", zIndex = 5,
+    label = list(
+      text = label, rotation = 0, ...,
+      style = list(color = site_colors[["dark_gray"]], fontWeight = 700, fontSize = "12px")
+    )
+  ))
+}
+
+### axis top for solve rates, past 100% when a year clears older cases
+solve_pct_max <- function(pct) max(100, ceiling(max(pct) / 10) * 10)
+
+### settings shared by the thin-bar charts, one row of 13px per agency, plus
+### an empty top row that holds the U.S. line's label
+### categories label the rows; description is the screen reader point format
+thin_bar_chart <- function(series, categories, description) {
+  highchart() |>
+    hc_add_series_list(series) |>
+    hc_setup() |>
+    hc_size(height = (length(categories) + 1) * 13 + 200) |>
+    hc_xAxis(
+      categories = categories, title = list(text = NULL), min = -1,
+      labels = list(
+        step = 1, y = NULL, style = list(fontSize = "11px"),
+        formatter = JS("function() { return typeof this.value === 'string' ? this.value : ''; }")
+      )
+    ) |>
+    hc_plotOptions(bar = list(
+      grouping = FALSE, pointWidth = 7, borderWidth = 0,
+      accessibility = list(point = list(valueDescriptionFormat = description))
+    ))
+}
+
+### thin horizontal bars of every agency's solve rate for one offense, highest
+### first, colored against us_rate, with a diamond at each agency's state rate
+### and a dashed U.S. line
+agency_solve_bar_chart <- function(long, offense, us_rate, title, year) {
+  rows <- agency_chart_rows(long, offense, us_rate)
+  x <- seq_len(nrow(rows)) - 1
+  points <- purrr::pmap(list(x, rows$solve_pct, rows$tooltip), \(x, y, tooltip) list(x = x, y = y, tooltip = tooltip))
+  states <- state_marker_series(
+    x, rows$state_pct, state_marker_tooltip(rows$state_abbr, paste0("State solve rate: ", rows$state_pct, "%")),
+    "{point.category}, state solve rate: {point.y}%"
+  )
+  us_pct <- solve_rate_percent(us_rate)
+
+  thin_bar_chart(
+    c(agency_side_series(points, rows$side, "bar"), states), rows$agency_label,
+    "{point.category}, solve rate: {point.y}%"
+  ) |>
+    hc_title(text = title) |>
+    hc_subtitle(text = paste0("Percentage of incidents solved, ", year, ". Diamonds mark each agency's state rate.",
+                              agency_left_out_note(long, offense))) |>
+    hc_caption(text = paste(agency_chart_caption, year)) |>
+    hc_yAxis(
+      min = 0, max = solve_pct_max(c(rows$solve_pct, rows$state_pct[!is.na(rows$state_pct)])),
+      tickInterval = 20, endOnTick = FALSE,
+      opposite = TRUE, labels = list(format = "{value}%"),
+      plotLines = us_plot_line(us_pct, paste0("U.S. ", us_pct, "%"), x = 4, y = 14)
+    )
+}
+
+### one point per agency, crime rate per 100k against solve rate for one
+### offense, colored against us_rate, with dashed U.S. lines on both axes
+agency_solve_scatter <- function(long, offense, us_rate, us_crime_rate, title, year) {
+  rows <- agency_chart_rows(long, offense, us_rate)
+  points <- purrr::pmap(
+    list(rows$n_reported_rate, rows$solve_pct, rows$tooltip, rows$agency_label, rows$rate_label),
+    \(x, y, tooltip, name, rate_label) list(x = x, y = y, tooltip = tooltip, name = name, rate_label = rate_label)
+  )
+  us_pct <- solve_rate_percent(us_rate)
+  x_label <- if (offense == total_label) "Violent incidents" else paste(offense, "incidents")
+  marker <- list(radius = 5, symbol = "circle", lineColor = site_colors[["white"]], lineWidth = 1)
+
+  highchart() |>
+    hc_add_series_list(agency_side_series(points, rows$side, "scatter", marker = marker)) |>
+    hc_title(text = title) |>
+    hc_subtitle(text = paste0(x_label, " per 100,000 residents and percentage solved, ", year, ".",
+                              agency_left_out_note(long, offense))) |>
+    hc_caption(text = paste(agency_chart_caption, year)) |>
+    hc_setup() |>
+    hc_xAxis(
+      min = 0, gridLineWidth = 1, title = list(text = paste(x_label, "per 100k")),
+      labels = list(format = "{value:,.0f}", y = NULL),
+      plotLines = us_plot_line(
+        us_crime_rate, paste("U.S.", format_rate_100k(us_crime_rate, offense == "Homicide")), x = 4, y = 14
+      )
+    ) |>
+    hc_yAxis(
+      min = 0, max = solve_pct_max(rows$solve_pct), endOnTick = FALSE,
+      title = list(text = "Solve rate"), labels = list(format = "{value}%"),
+      plotLines = us_plot_line(us_pct, paste0("U.S. ", us_pct, "%"), align = "right", x = -4, y = -6)
+    ) |>
+    hc_plotOptions(scatter = list(accessibility = list(point = list(
+      valueDescriptionFormat = paste0(
+        "{point.name}, ", tolower(x_label), " per 100k: {point.rate_label}, solve rate: {point.y}%"
+      )
+    )))) |>
+    hc_size(height = 560)
+}
+
+### legend names for the change chart, which colors gains like rates at or
+### above the U.S. and losses like rates below it
+agency_change_names <- c(above = "Solve rate rose", below = "Solve rate fell or held steady")
+
+### thin bars of each agency's change in violent crime solve rate since
+### base_year, in points, for agencies with full reporting and at least
+### min_rate_reported incidents in both years, with a diamond at each agency's
+### state change when rows has state_solve_change; us_change is in points
+agency_solve_change_chart <- function(rows, us_change, title, base_year, year) {
+  changes <- agency_change_rows(rows, base_year, year)
+  x <- seq_len(nrow(changes)) - 1
+  points <- purrr::pmap(
+    list(x, changes$change, changes$tooltip, changes$change_label),
+    \(x, y, tooltip, label) list(x = x, y = y, tooltip = tooltip, change_label = label)
+  )
+  state_change <- half_up(changes$state_solve_change, 1)
+  states <- state_marker_series(
+    x, state_change,
+    state_marker_tooltip(changes$state_abbr, paste0(
+      "Change in state solve rate: ", purrr::map_chr(state_change, format_signed), " points"
+    )),
+    "{point.category}, state change: {point.y} points"
+  )
+  left_out <- nrow(rows) - nrow(changes)
+  extent <- ceiling(max(abs(c(changes$change, state_change, us_change)), na.rm = TRUE) / 10) * 10
+
+  thin_bar_chart(
+    c(agency_side_series(points, changes$side, "bar", names = agency_change_names), states),
+    changes$agency_label, "{point.category}, change: {point.change_label} points"
+  ) |>
+    hc_title(text = title) |>
+    hc_subtitle(text = paste0(
+      "Percentage point change in violent crime solve rate, ", base_year, "–", year, ".",
+      " Diamonds mark each agency's state change.",
+      if (left_out > 0) paste0(" Leaves out ", left_out, " agencies without full reporting or with fewer than ",
+                               min_rate_reported, " incidents in either year.")
+    )) |>
+    hc_caption(text = paste(agency_chart_caption, base_year, "and", year)) |>
+    hc_yAxis(
+      min = -extent, max = extent, tickInterval = 10, opposite = TRUE,
+      labels = list(format = "{value:+,.0f}"),
+      plotLines = c(
+        list(list(value = 0, color = site_colors[["baseline"]], width = 1, zIndex = 4)),
+        us_plot_line(us_change, paste("U.S.", format_signed(us_change)), x = 4, y = 14)
+      )
+    )
+}
+
+### agencies with a change the change chart shows, largest gain first
+### rows may carry state_solve_change, the state's change in points
+agency_change_rows <- function(rows, base_year, year) {
+  if (!"state_solve_change" %in% names(rows)) rows$state_solve_change <- NA_real_
+  rows |>
+    dplyr::filter(!is.na(solved_rate_change), pmin(n_reported, n_reported_base) >= min_rate_reported) |>
+    dplyr::arrange(dplyr::desc(solved_rate_change)) |>
+    dplyr::mutate(
+      change = half_up(solved_rate_change, 1),
+      side = dplyr::if_else(change > 0, "above", "below"),
+      change_label = purrr::map_chr(change, format_signed),
+      tooltip = paste0(
+        "<b>", htmltools::htmlEscape(agency_name), " (", state_abbr, ")</b><br>",
+        "Change in solve rate: ", change_label, " points",
+        dplyr::if_else(is.na(state_solve_change), "", paste0(
+          " (", state_abbr, " ", purrr::map_chr(half_up(state_solve_change, 1), format_signed), ")"
+        )), "<br>",
+        "Solve rate (", year, "): ", solve_rate_percent(solved_rate), "%<br>",
+        "Solve rate (", base_year, "): ", solve_rate_percent(solved_rate - solved_rate_change / 100), "%"
+      )
+    )
+}
+
+### "21 percent (Columbus Police Department, OH) to 69 percent (New York City
+### Police Department, NY)" for the lowest and highest shown rates of an offense
+agency_range_text <- function(long, offense) {
+  rows <- dplyr::filter(long, .data$offense == .env$offense, shown)
+  if (nrow(rows) == 0) stop("No agency has a shown ", offense, " solve rate", call. = FALSE)
+  pick <- function(i) {
+    paste0(solve_rate_text(rows$solved_rate[i]), " (", rows$agency_name[i], ", ", rows$state_abbr[i], ")")
+  }
+  paste(pick(which.min(rows$solved_rate)), "to", pick(which.max(rows$solved_rate)))
+}
+
+### count of agencies whose shown rate for an offense is below us_rate, as the charts compare them
+agencies_below <- function(long, offense, us_rate) {
+  sum(agency_chart_rows(long, offense, us_rate)$side == "below")
+}

@@ -1,0 +1,287 @@
+---
+pagetitle: "Solved violent crime in major cities"
+---
+
+```{r}
+library(tidyverse)
+library(scales)
+library(csgjcr)
+library(highcharter)
+library(htmlwidgets)
+library(reactable)
+
+source("R/page-data.R")
+source("R/utils.R")
+
+# htmlwidgets seeds its element IDs from this, so rerenders give identical HTML
+set.seed(2019)
+```
+
+```{r}
+srs_state_new <- read_srs_state()
+latest_year <- max(srs_state_new$year)
+first_year <- latest_year - 10
+
+### U.S. benchmarks match the national page: solve rates leave out the
+### excluded states but apply to U.S. reported counts
+srs_by_cat_us <- violent_totals(srs_state_new, first_year)
+srs_us <- violent_by_offense(srs_state_new, first_year)
+srs_by_cat_us_solve <- us_solve_trend(srs_state_new, first_year)
+us_total <- total_rate_benchmark(srs_by_cat_us, base_year, latest_year, solves = srs_by_cat_us_solve)
+us_solved_rate_latest <- us_solve_benchmark(srs_state_new, latest_year)
+```
+
+```{r}
+### city police departments from the agency tables built by
+### R/01-prep-agency-county-data.R
+agency_table_all <- read_rds("data/agency_table.rds")
+agency_year <- agency_table_all$agency_year[1]
+agency_base_year <- agency_table_all$base_year[1]
+
+### the city charts compare agency rates with the U.S. rates of the same year
+if (agency_year != latest_year || agency_base_year != base_year) {
+  stop("The agency tables use ", agency_base_year, " and ", agency_year, " but the page uses ",
+       base_year, " and ", latest_year, ". Update the agency data and rerun ",
+       "R/01-prep-agency-county-data.R.", call. = FALSE)
+}
+
+### each city's state rates, from the same state estimates as the state pages
+city_rows <- city_solve_rows(agency_table_all, read_rds("data/agency_offense_table.rds"))
+city_state_rates <- state_city_benchmarks(srs_state_new, city_rows$state_abbr, latest_year)
+city_long <- city_solve_long(city_rows, benchmarks = city_state_rates)
+city_rows <- city_rows |>
+  left_join(
+    city_state_rates |> filter(offense == total_label) |> select(state_abbr, state_solve_change),
+    by = "state_abbr"
+  )
+n_cities <- nrow(city_rows)
+```
+
+# Solved violent crime in major cities, `r agency_year`
+
+```{r}
+### U.S. solve rate and crime rate per 100k for an offense, or for all violent
+### crime when offense is total_label
+us_offense_rates <- offense_rate_benchmark(srs_us, latest_year)
+offense_key <- function(offense) names(table_offenses)[table_offenses == offense]
+us_city_solve_rate <- function(offense) {
+  if (offense == total_label) us_total$solve_rate else us_solved_rate_latest[[offense_key(offense)]]
+}
+us_city_crime_rate <- function(offense) {
+  if (offense == total_label) us_total$rate_100k else us_offense_rates[[offense_key(offense)]]
+}
+
+city_bar_chart <- function(offense, title) {
+  agency_solve_bar_chart(city_long, offense, us_city_solve_rate(offense), title, agency_year)
+}
+city_scatter <- function(offense, title) {
+  agency_solve_scatter(city_long, offense, us_city_solve_rate(offense), us_city_crime_rate(offense),
+                       title, agency_year)
+}
+
+n_cities_below <- agencies_below(city_long, total_label, us_total$solve_rate)
+
+### departments with a higher violent crime rate and a lower solve rate than the U.S.
+n_cities_high_low <- agency_chart_rows(city_long, total_label, us_total$solve_rate) |>
+  filter(n_reported_rate > us_total$rate_100k, side == "below") |>
+  nrow()
+
+city_changes <- agency_change_rows(city_rows, agency_base_year, agency_year)
+n_cities_rose <- sum(city_changes$side == "above")
+```
+
+State solve rates can mask large differences between the cities within a state. The following charts compare `r n_cities` city police departments that each serve at least `r comma(min_city_population)` residents and reported full data to the FBI in `r agency_year`. Violent crime solve rates among these departments ranged from `r agency_range_text(city_long, total_label)`, compared with `r solve_rate_text(us_total$solve_rate)` in the United States. Of these departments, `r n_cities_below` solved a smaller share of violent crime than the nation as a whole.
+
+Solve rates also vary by offense. Homicide solve rates ranged from `r agency_range_text(city_long, "Homicide")`. Rape solve rates ranged from `r agency_range_text(city_long, "Rape")`.
+
+Agency names come from the FBI and describe each department's own jurisdiction, which may not match a city's boundaries. For more information, see the [data sources and methodology](#methodology) section below.
+
+## Solve rates by agency
+
+Each bar shows one department's solve rate. The diamond on each bar marks the solve rate for the department's state, and the dashed line marks the U.S. solve rate. Hover over a bar to see how many incidents the department solved.
+
+::: {.panel-tabset}
+
+### All violent crime
+
+```{r}
+city_bar_chart(total_label, paste0("Violent crime solve rate by city police department, ", agency_year))
+```
+
+### Homicide
+
+```{r}
+city_bar_chart("Homicide", paste0("Homicide solve rate by city police department, ", agency_year))
+```
+
+### Aggravated assault
+
+```{r}
+city_bar_chart("Aggravated assault", paste0("Aggravated assault solve rate by city police department, ", agency_year))
+```
+
+### Robbery
+
+```{r}
+city_bar_chart("Robbery", paste0("Robbery solve rate by city police department, ", agency_year))
+```
+
+### Rape
+
+```{r}
+city_bar_chart("Rape", paste0("Rape solve rate by city police department, ", agency_year))
+```
+
+:::
+
+## Crime rates and solve rates
+
+Each point is one department. Departments to the right of the vertical line have higher crime rates than the United States, and departments below the horizontal line have lower solve rates. Hover over a point to compare the department with its state. In `r agency_year`, `r n_cities_high_low` of the `r n_cities` departments had both a higher violent crime rate and a lower violent crime solve rate than the United States.
+
+::: {.panel-tabset}
+
+### All violent crime
+
+```{r}
+city_scatter(total_label, paste0("Violent crime and solve rates by city police department, ", agency_year))
+```
+
+### Homicide
+
+```{r}
+city_scatter("Homicide", paste0("Homicide and solve rates by city police department, ", agency_year))
+```
+
+### Aggravated assault
+
+```{r}
+city_scatter("Aggravated assault", paste0("Aggravated assault and solve rates by city police department, ", agency_year))
+```
+
+### Robbery
+
+```{r}
+city_scatter("Robbery", paste0("Robbery and solve rates by city police department, ", agency_year))
+```
+
+### Rape
+
+```{r}
+city_scatter("Rape", paste0("Rape and solve rates by city police department, ", agency_year))
+```
+
+:::
+
+## Change since `r agency_base_year`
+
+Of the `r nrow(city_changes)` departments with full reporting in both `r agency_base_year` and `r agency_year`, `r n_cities_rose` solved a larger share of violent crime in `r agency_year` than in `r agency_base_year`, and `r nrow(city_changes) - n_cities_rose` solved the same or a smaller share. Diamonds mark the change in each department's state solve rate.
+
+```{r}
+agency_solve_change_chart(
+  city_rows, us_total$solve_change,
+  paste0("Change in violent crime solve rate by city police department, ", agency_base_year, "–", agency_year),
+  agency_base_year, agency_year
+)
+```
+
+## Solve rates by city police department
+
+The following tables list each department's crime rates and solve rates. Search by agency name or state to compare departments.
+
+::: {.panel-tabset .column-body-outset}
+
+### Overall rates
+
+`r solve_rate_legend("below", "indicates a solve rate less than the U.S. rate.")`
+
+`r solve_rate_legend("above", "indicates a solve rate greater than or equal to the U.S. rate.")`
+
+[Gray solve rates and changes are based on fewer than `r min_rate_reported` reported incidents in a year.]{.small-n-note}
+
+```{r}
+city_rows |>
+  select(agency_name, state_abbr, population, n_reported_rate, n_reported, solved_rate, solved_rate_change) |>
+  reactable_template(
+    sort_col = list("population" = "desc"),
+    columnGroups = list(
+      colGroup(name = paste("Violent crime,", agency_year),
+               columns = c("n_reported_rate", "n_reported", "solved_rate")),
+      colGroup(name = paste("Change since", agency_base_year), columns = "solved_rate_change")
+    ),
+    columns = list(
+      agency_name = sticky_name_column("Agency", footer = "U.S. total"),
+      state_abbr = colDef(name = "State", minWidth = 70),
+      population = colDef(
+        name = "Population", minWidth = table_widths$population,
+        footer = comma(us_total$population)
+      ),
+      n_reported_rate = colDef(
+        name = "Per 100k", cell = rate_100k_cell,
+        footer = rate_100k_cell(us_total$rate_100k)
+      ),
+      n_reported = colDef(name = "Incidents", footer = comma(us_total$incidents)),
+      solved_rate = solve_rate_column(
+        us_total$solve_rate, reported = city_rows$n_reported, solved = city_rows$n_solved
+      ),
+      solved_rate_change = colDef(
+        name = "Solve rate (points)",
+        html = TRUE,
+        footer = format_signed(us_total$solve_change),
+        ### a change is as shaky as the smaller of its two years
+        cell = small_n_cell(pmin(city_rows$n_reported, city_rows$n_reported_base), format_signed)
+      )
+    )
+  )
+```
+
+[A dash (—) marks a solve-rate change left out because the department lacked full reporting in `r agency_base_year` or reported no violent crime or no solved crimes in `r agency_base_year`.]{.small-n-note}
+
+### By offense
+
+`r solve_rate_legend("below", "indicates a solve rate less than the U.S. rate.")`
+
+`r solve_rate_legend("above", "indicates a solve rate greater than or equal to the U.S. rate.")`
+
+[Gray solve rates are based on fewer than `r min_rate_reported` reported incidents. Solve rates above 100% mean the department solved more incidents in `r agency_year` than were reported that year, because it also solved incidents from earlier years.]{.small-n-note}
+
+```{r}
+city_rows |>
+  select(agency_name, state_abbr, population, all_of(offense_column_names())) |>
+  reactable_template(
+    sort_col = list("population" = "desc"),
+    columnGroups = offense_column_groups(),
+    columns = c(
+      list(
+        agency_name = sticky_name_column("Agency", footer = "U.S. total"),
+        state_abbr = colDef(name = "State", minWidth = 70),
+        population = colDef(
+          name = "Population", minWidth = table_widths$population,
+          footer = comma(us_total$population)
+        )
+      ),
+      offense_columns(us_solved_rate_latest, crime_rates = us_offense_rates, counts = city_rows)
+    )
+  )
+```
+
+[A dash (—) marks a solve rate left out because the department reported no incidents of that offense.]{.small-n-note}
+
+:::
+
+<br>
+
+::: {#methodology .callout-note icon=false collapse=true}
+
+## Data sources and methodology
+
+Data on crime and solve rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr){target="_parent"}. Violent crime includes homicide, aggravated assault, robbery, and rape. Crime rates divide reported crimes by the population served.
+
+{{< include _methodology-exceptional-clearance.qmd >}}
+
+City solve rates come from the incidents each law enforcement agency reported to the FBI, available on the [Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/downloads){target="_parent"}, rather than from the FBI's state estimates. The city charts and tables include agencies the FBI classifies as city agencies that served at least `r comma(min_city_population)` residents and reported all 12 months of `r agency_year`. Population is the number of residents the FBI counts in each agency's jurisdiction. Agencies that reported no violent crime or no solved crimes are left out. The Chicago Police Department is left out because Illinois did not report reliable clearance data. The St. Petersburg Police Department (FL) is left out because its `r agency_year` clearance data appear incomplete. Charts leave out an agency's rate for an offense when it rests on fewer than `r min_rate_reported` reported incidents. An agency's solve rate can exceed 100 percent when it solves incidents from earlier years. City rates are compared with U.S. and state rates from the state estimates, the same rates shown elsewhere on this site, and the change since `r agency_base_year` compares each agency with itself and needs full reporting in both years.
+
+U.S. and state solve rates come from the FBI's state estimates, the same rates shown on the national and state pages. U.S. solve rates leave out `r knitr::combine_words(states_to_exclude_from_solved_rate_viz)`, which did not report reliable clearance data.
+
+Crime counts follow the FBI's hierarchy rule, which counts only the most serious offense in each incident. Homicide ranks highest, followed by rape, robbery, and aggravated assault. An incident that includes both a robbery and an aggravated assault, for example, counts as one robbery.
+
+:::

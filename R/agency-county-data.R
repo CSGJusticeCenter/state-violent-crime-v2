@@ -16,8 +16,8 @@ agency_offense_counts <- function(raw, years) {
     ) |>
     mutate(indicator = if_else(indicator == "Incidents reported", "reported", "cleared")) |>
     select(
-      year, state_name, state_abbr, ori, agency_name, county_fips, county_fips_all,
-      county_method, group, indicator, n, pop_covered
+      year, state_name, state_abbr, ori, agency_name, agency_type, county_fips,
+      county_fips_all, county_method, group, indicator, n, pop_covered
     ) |>
     pivot_wider(names_from = indicator, values_from = n)
 }
@@ -97,7 +97,7 @@ build_agency_county_data <- function(raw, agency_year, base_year) {
   lookup <- county_name_lookup(raw)
 
   agency_total <- counts |>
-    group_by(year, state_name, state_abbr, ori, agency_name, county_fips,
+    group_by(year, state_name, state_abbr, ori, agency_name, agency_type, county_fips,
              county_fips_all, county_method) |>
     summarize(
       population = first(na.omit(pop_covered)),
@@ -132,8 +132,8 @@ build_agency_county_data <- function(raw, agency_year, base_year) {
       base_year = base_year
     ) |>
     select(
-      state_name, state_abbr, ori, agency_name, county, county_fips, county_fips_all,
-      county_method, population, n_reported, n_reported_rate, n_solved, solved_rate,
+      state_name, state_abbr, ori, agency_name, agency_type, county, county_fips,
+      county_fips_all, county_method, population, n_reported, n_reported_rate, n_solved, solved_rate,
       n_reported_base, solved_rate_change, data_flag, agency_year, base_year
     )
 
@@ -161,7 +161,7 @@ build_agency_county_data <- function(raw, agency_year, base_year) {
       solved_rate = if_else(reported > 0, cleared / reported, NA_real_),
       reported_rate = if_else(pop_covered > 0, reported / pop_covered * 1e5, NA_real_)
     ) |>
-    select(state_name, state_abbr, ori, agency_name, county_fips, offense,
+    select(state_name, state_abbr, ori, agency_name, agency_type, county_fips, offense,
            n_reported = reported, n_solved = cleared, n_reported_rate = reported_rate,
            solved_rate) |>
     pivot_wider(

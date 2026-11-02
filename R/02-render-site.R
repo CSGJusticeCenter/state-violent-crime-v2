@@ -1,6 +1,6 @@
-## render 51 state violent crime pages, 51 state backlog pages and the US page
-## to _site for netlify deploy
-## Rscript R/02-render-site.R NY IL US BACKLOG-NY renders only those pages, for testing
+## render 51 state violent crime pages, 51 state backlog pages, the US page and
+## the agency-level page to _site for netlify deploy
+## Rscript R/02-render-site.R NY IL US AGENCY BACKLOG-NY renders only those pages, for testing
 
 source("R/site-checks.R")
 
@@ -12,8 +12,10 @@ max_attempts <- 2
 backlog_qmd    <- "state-backlog-viz-only.qmd"
 backlog_prefix <- "state-backlog-viz-only"
 
+agency_qmd <- "index-agency-level-analysis.qmd"
+
 state_pages <- c(state.abb, "DC")
-all_pages <- c("US", state_pages, paste0("BACKLOG-", state_pages))
+all_pages <- c("US", "AGENCY", state_pages, paste0("BACKLOG-", state_pages))
 pages <- unique(toupper(commandArgs(trailingOnly = TRUE)))
 if (length(pages) == 0) {
   pages <- all_pages
@@ -57,6 +59,8 @@ make_slot <- function() {
 start_render <- function(page, slot) {
   args <- if (page == "US") {
     c("render", "index.qmd", "--output", "index.html")
+  } else if (page == "AGENCY") {
+    c("render", agency_qmd, "--output", sub("\\.qmd$", ".html", agency_qmd))
   } else if (startsWith(page, "BACKLOG-")) {
     abb <- sub("^BACKLOG-", "", page)
     c(

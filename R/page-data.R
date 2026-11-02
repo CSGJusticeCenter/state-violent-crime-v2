@@ -66,6 +66,15 @@ min_pop_no_violent_crime <- 10000
 ### agency tables and drop from the homicide panels
 min_rate_reported <- 10
 
+### the agency-level page compares city police departments serving at least this
+### many residents
+min_city_population <- 250000
+
+### city agencies left out of the agency-level page, by ORI
+### St. Petersburg PD's 2025 clearances look incomplete: 4% of violent crime
+### solved, down from 35% in 2019, with no robbery or aggravated assault solved
+city_agencies_excluded <- c("FL0521400")
+
 ### repaired offenses the pages show. The others count toward the violent crime
 ### total but have no solve rate of their own
 repaired_offenses_shown <- c("Robbery", "Aggravated assault")
@@ -499,4 +508,89 @@ add_officer_rates <- function(lee) {
     officer_pop_rate_per_10k = rate_covered * 10000,
     officer_per_violent_offense_1k = rate_covered / violent_rate * 1000
   )
+}
+
+### one row per city police department serving min_population or more residents,
+### from the agency tables built by R/01-prep-agency-county-data.R
+### excluded states, excluded agencies and flagged agencies are left out
+### agency_label adds the state, since some agency names repeat across states
+city_solve_rows <- function(agencies, agency_offenses, min_population = min_city_population,
+                            exclude = states_to_exclude_from_solved_rate_viz,
+                            exclude_ori = city_agencies_excluded) {
+  offense_counts <- agency_offenses |>
+    select(ori, matches("^(n_reported|n_solved|n_reported_rate|solved_rate)_[a-z_]+$"))
+
+  rows <- agencies |>
+    mutate(across(c(state_name, state_abbr), as.character)) |>
+    filter(
+      agency_type == "City",
+      population >= min_population,
+      !state_name %in% exclude,
+      !ori %in% exclude_ori,
+      is.na(data_flag)
+    ) |>
+    select(ori, agency_name, state_name, state_abbr, population, n_reported, n_reported_rate,
+           n_solved, solved_rate, n_reported_base, solved_rate_change) |>
+    left_join(offense_counts, by = "ori") |>
+    mutate(agency_label = paste0(agency_name, " (", state_abbr, ")"), .after = agency_name) |>
+    arrange(desc(population))
+
+  if (anyDuplicated(rows$agency_label)) {
+    stop("Two city agencies share the label ", rows$agency_label[anyDuplicated(rows$agency_label)], call. = FALSE)
+  }
+  rows
+}
+
+### each state's solve rate and crime rate per 100k in year, by offense and for
+### total_label, plus the total solve-rate change in points since from, from the
+### same state estimates as the state pages; hidden solve rates are NA
+### srs is read_srs_state() output; states holds abbreviations
+state_city_benchmarks <- function(srs, states, year, from = base_year) {
+  keys <- str_replace_all(str_to_lower(violent_offenses), " ", "_")
+  purrr::map(unique(states), \(abbr) {
+    state <- state_name_from_abbr(abbr)
+    totals <- total_rate_benchmark(violent_totals(srs, from, state), from, year)
+    solve <- state_solve_benchmark(srs, state, year)
+    crime <- offense_rate_benchmark(violent_by_offense(srs, from, state), year)
+    tibble(
+      state_abbr = abbr,
+      offense = c(total_label, violent_offenses),
+      state_solve_rate = c(totals$solve_rate, unname(solve[keys])),
+      state_crime_rate = c(totals$rate_100k, unname(crime[keys])),
+      state_solve_change = c(totals$solve_change, rep(NA_real_, length(keys)))
+    )
+  }) |>
+    purrr::list_rbind()
+}
+
+### one row per city agency and offense, plus a total_label row for all violent
+### crime; shown marks rates from at least min_reported incidents
+### benchmarks, when given, is state_city_benchmarks() output joined by state
+city_solve_long <- function(rows, min_reported = min_rate_reported, benchmarks = NULL) {
+  offense_names <- rlang::set_names(violent_offenses, str_replace_all(str_to_lower(violent_offenses), " ", "_"))
+  id_cols <- c("ori", "agency_name", "agency_label", "state_abbr", "population")
+
+  by_offense <- rows |>
+    select(all_of(id_cols), matches(paste0("_(", paste(names(offense_names), collapse = "|"), ")$"))) |>
+    pivot_longer(
+      -all_of(id_cols),
+      names_to = c(".value", "offense"),
+      names_pattern = "^(n_reported_rate|n_reported|n_solved|solved_rate)_(.+)$"
+    ) |>
+    mutate(offense = unname(offense_names[offense]))
+
+  long <- rows |>
+    select(all_of(id_cols), n_reported, n_solved, n_reported_rate, solved_rate) |>
+    mutate(offense = total_label) |>
+    bind_rows(by_offense)
+  if (!is.null(benchmarks)) {
+    long <- left_join(long, select(benchmarks, -state_solve_change), by = c("state_abbr", "offense"))
+  }
+
+  long |>
+    mutate(
+      offense = factor(offense, levels = c(total_label, violent_offenses)),
+      shown = !is.na(solved_rate) & n_reported >= min_reported
+    ) |>
+    arrange(offense, desc(solved_rate))
 }

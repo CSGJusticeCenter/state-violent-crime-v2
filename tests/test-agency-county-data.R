@@ -9,7 +9,7 @@ row <- function(ori, year, group, indicator, n, county_fips, status = "full", po
                 method = "single county", fips_all = county_fips, state = "NY") {
   tibble(
     year = year, state_name = state, state_abbr = state, ori = ori, agency_name = ori,
-    county_fips = county_fips, county_name = "X", county_fips_all = fips_all,
+    agency_type = "City", county_fips = county_fips, county_name = "X", county_fips_all = fips_all,
     county_method = method, indicator = indicator, group = group, n = n,
     pop_covered = pop, reporting_status = status
   )
@@ -38,6 +38,11 @@ built <- build_agency_county_data(raw, 2025, 2019)
 test_that("only full-reporting violent rows are counted", {
   expect_false("D" %in% built$agency_table$ori)
   expect_equal(built$agency_table$n_reported[built$agency_table$ori == "A"], 10)
+})
+
+test_that("agency type carries into both agency tables", {
+  expect_equal(unique(built$agency_table$agency_type), "City")
+  expect_equal(unique(built$agency_offense_table$agency_type), "City")
 })
 
 test_that("solve rate change compares an agency with itself", {

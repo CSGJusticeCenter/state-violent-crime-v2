@@ -13,6 +13,8 @@ Quarto site of violent crime and solve-rate pages for each state, DC and the US.
 quarto::quarto_render("state-viol-crime.qmd", execute_params = list(state = "NY"),
                       output_file = "state-viol-crime-ny.html", quiet = TRUE)
 quarto::quarto_render("index.qmd", output_file = "index.html", quiet = TRUE)
+quarto::quarto_render("index-agency-level-analysis.qmd",
+                      output_file = "index-agency-level-analysis.html", quiet = TRUE)
 ```
 
 - Don't run a bare project-wide `quarto render`. `R/02-render-site.R` is the supported path.
@@ -47,6 +49,13 @@ quarto::quarto_render("index.qmd", output_file = "index.html", quiet = TRUE)
 - Offenses hidden in a year whose total solve rate shows (New York's 2022 homicide and rape) join one gray "not broken out" slice, so the backlog matches the shown total. The caption says so.
 - State totals come from `backlog_totals()`, the sum of the offense rows, so the total line always equals the stacked offenses. `backlog_charts()` stops the render if they differ by more than 0.5%. The U.S. total uses the pooled solve rate and differs from its offenses by about 0.1%.
 - Pages without solve-rate data show `no_solve_data_text` in place of the charts.
+
+## City comparison rules
+
+- The agency-level page (`index-agency-level-analysis.qmd`, rendered as `AGENCY` in 02) uses `city_solve_rows()` from `R/page-data.R`. It covers agencies the FBI types as "City" that serve at least `min_city_population` residents, leaving out excluded states (so Chicago), agencies listed by ORI in `city_agencies_excluded` (St. Petersburg PD, for incomplete 2025 clearances) and flagged agencies.
+- Labels keep the FBI agency name, not a city name, because jurisdictions don't match city limits. Charts add the state in parentheses because names repeat across states.
+- Charts drop an offense rate from fewer than `min_rate_reported` incidents and say how many they drop. Tables show it in gray.
+- City rates are compared with U.S. and state rates from the state estimates (`state_city_benchmarks()`). The thin-bar charts mark state rates with diamonds.
 
 ## Table rules
 
