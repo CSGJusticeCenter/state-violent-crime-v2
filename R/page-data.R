@@ -63,7 +63,7 @@ clearance_repairs_path <- "data/clearance_repairs.rds"
 min_pop_no_violent_crime <- 10000
 
 ### solve rates from fewer than min_rate_reported incidents show in gray in the
-### agency tables and drop from the homicide panels
+### agency tables and drop from the homicide panels and city charts
 min_rate_reported <- 10
 
 ### the agency-level page compares city police departments serving at least this

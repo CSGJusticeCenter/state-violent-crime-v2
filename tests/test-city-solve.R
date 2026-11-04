@@ -108,6 +108,15 @@ test_that("agency charts plot one point per shown agency", {
   scatter <- agency_solve_scatter(long, total_label, 0.46, 400, "Title", 2025)
   expect_equal(n_points(scatter), 4)
   expect_equal(map_chr(scatter$x$hc_opts$series, "name"), unname(agency_side_names))
+  expect_equal(unique(map_chr(scatter$x$hc_opts$series, "type")), "bubble")
+  above <- scatter$x$hc_opts$series[[1]]$data
+  expect_equal(map_chr(above, "name"), c("NYC Police Department (NY)", "Glendale Police Department (CA)"))
+  expect_equal(map_dbl(above, "z"), c(8e6, 500000))
+  no_nyc_homicide <- mutate(long, shown = shown & !(ori == "NYC" & offense == "Homicide"))
+  homicide <- agency_solve_scatter(no_nyc_homicide, "Homicide", 0.7, 4, "Title", 2025)
+  expect_equal(homicide$x$hc_opts$plotOptions$bubble$zMax, scatter$x$hc_opts$plotOptions$bubble$zMax)
+  key <- map_dbl(scatter$x$hc_opts$legend$bubbleLegend$ranges, "value")
+  expect_equal(key, c(1e6, 8e6))
 })
 
 benchmarks <- tibble(

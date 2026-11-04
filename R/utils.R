@@ -1336,7 +1336,8 @@ function_shr_grouping_for_state_plot <- function(df, cat, state_abbr,
 
 ## city agency comparisons on the agency-level page
 
-agency_chart_caption <- "FBI UCR Program, agency crime and clearance data,"
+### caption source text; charts append the year
+agency_chart_caption <-"FBI UCR Program, agency crime and clearance data,"
 
 ### agency rows for one offense with shown rates, highest solve rate first, with
 ### each rate's side of us_rate, its color and a tooltip
@@ -1426,6 +1427,14 @@ us_plot_line <- function(value, label, ...) {
 ### axis top for solve rates, past 100% when a year clears older cases
 solve_pct_max <- function(pct) max(100, ceiling(max(pct) / 10) * 10)
 
+### widget height in pixels; unlike hc_size(), it leaves the chart height to
+### Highcharts, which fills the widget, because the rendered page can draw the
+### widget shorter than asked and a fixed chart height then clips the caption
+hc_widget_height <- function(chart, height) {
+  chart$height <- height
+  chart
+}
+
 ### settings shared by the thin-bar and dot charts, one row of 13px per agency,
 ### plus an empty top row that holds the U.S. line's label; inverted, so
 ### dot-only charts also run their rows down the page
@@ -1435,7 +1444,7 @@ thin_bar_chart <- function(series, categories, description) {
     hc_add_series_list(series) |>
     hc_setup() |>
     hc_chart(inverted = TRUE) |>
-    hc_size(height = (length(categories) + 1) * 13 + 200) |>
+    hc_widget_height((length(categories) + 1) * 13 + 200) |>
     hc_xAxis(
       categories = categories, title = list(text = NULL), min = -1,
       labels = list(
@@ -1478,23 +1487,26 @@ agency_solve_bar_chart <- function(long, offense, us_rate, title, year) {
     )
 }
 
-### one point per agency, crime rate per 100k against solve rate for one
-### offense, colored against us_rate, with dashed U.S. lines on both axes
+### one bubble per agency, crime rate per 100k against solve rate for one
+### offense, sized by population served and colored against us_rate, with
+### dashed U.S. lines on both axes; largest agencies first so small ones draw on top
 agency_solve_scatter <- function(long, offense, us_rate, us_crime_rate, title, year) {
-  rows <- agency_chart_rows(long, offense, us_rate)
+  rows <- agency_chart_rows(long, offense, us_rate) |> dplyr::arrange(dplyr::desc(population))
   points <- purrr::pmap(
-    list(rows$n_reported_rate, rows$solve_pct, rows$tooltip, rows$agency_label, rows$rate_label),
-    \(x, y, tooltip, name, rate_label) list(x = x, y = y, tooltip = tooltip, name = name, rate_label = rate_label)
+    list(rows$n_reported_rate, rows$solve_pct, rows$population, rows$tooltip, rows$agency_label, rows$rate_label),
+    \(x, y, z, tooltip, name, rate_label) list(x = x, y = y, z = z, tooltip = tooltip, name = name, rate_label = rate_label)
   )
   us_pct <- solve_rate_percent(us_rate)
   x_label <- if (offense == total_label) "Violent incidents" else paste(offense, "incidents")
-  marker <- list(radius = 5, symbol = "circle", lineColor = site_colors[["white"]], lineWidth = 1)
+  marker <- list(symbol = "circle", fillOpacity = 0.75, lineColor = site_colors[["white"]], lineWidth = 1)
+  ### one size scale across offenses, from every agency in long
+  z_max <- max(long$population)
 
   highchart() |>
-    hc_add_series_list(agency_side_series(points, rows$side, "scatter", marker = marker)) |>
+    hc_add_series_list(agency_side_series(points, rows$side, "bubble", marker = marker)) |>
     hc_title(text = title) |>
-    hc_subtitle(text = paste0(x_label, " per 100,000 residents and percentage solved, ", year, ".",
-                              agency_left_out_note(long, offense))) |>
+    hc_subtitle(text = paste0(x_label, " per 100,000 residents and percentage solved, ", year,
+                              ". Circle size shows population served.", agency_left_out_note(long, offense))) |>
     hc_caption(text = paste(agency_chart_caption, year)) |>
     hc_setup() |>
     hc_xAxis(
@@ -1509,12 +1521,20 @@ agency_solve_scatter <- function(long, offense, us_rate, us_crime_rate, title, y
       title = list(text = "Solve rate"), labels = list(format = "{value}%"),
       plotLines = us_plot_line(us_pct, paste0("U.S. ", us_pct, "%"), align = "right", x = -4, y = -6)
     ) |>
-    hc_plotOptions(scatter = list(accessibility = list(point = list(
-      valueDescriptionFormat = paste0(
-        "{point.name}, ", tolower(x_label), " per 100k: {point.rate_label}, solve rate: {point.y}%"
-      )
-    )))) |>
-    hc_size(height = 560)
+    hc_plotOptions(bubble = list(
+      sizeBy = "area", zMin = 0, zMax = z_max, minSize = 6, maxSize = 40,
+      accessibility = list(point = list(valueDescriptionFormat = paste0(
+        "{point.name}, ", tolower(x_label), " per 100k: {point.rate_label}, solve rate: {point.y}%, ",
+        "population served: {point.z:,.0f}"
+      )))
+    )) |>
+    hc_legend(bubbleLegend = list(
+      enabled = TRUE, minSize = 6, maxSize = 40,
+      ranges = purrr::map(unique(c(1e6, max(1e6, floor(z_max / 1e6) * 1e6))), \(v) list(value = v)),
+      labels = list(format = "{value:,.0f}"), color = site_colors[["grid"]],
+      borderColor = site_colors[["dark_gray"]], connectorColor = site_colors[["dark_gray"]]
+    )) |>
+    hc_widget_height(600)
 }
 
 ### legend names for the change chart, which colors gains like rates at or
@@ -1551,7 +1571,7 @@ agency_solve_change_chart <- function(rows, us_change, title, base_year, year) {
     hc_subtitle(text = paste0(
       "Percentage point change in violent crime solve rate, ", base_year, "–", year, ".",
       " Diamonds mark each agency's state change.",
-      if (left_out > 0) paste0(" Leaves out ", left_out, " agencies without full reporting or with fewer than ",
+      if (left_out > 0) paste0(" Leaves out ", left_out, if (left_out == 1) " agency" else " agencies", " without full reporting or with fewer than ",
                                min_rate_reported, " incidents in either year.")
     )) |>
     hc_caption(text = paste(agency_chart_caption, base_year, "and", year)) |>
@@ -1707,7 +1727,7 @@ agency_region_scatter <- function(long, region, us_rate, us_crime_rate, x_max, y
     hc_plotOptions(scatter = list(accessibility = list(point = list(
       valueDescriptionFormat = "{point.name}, violent incidents per 100k: {point.rate_label}, solve rate: {point.y}%"
     )))) |>
-    hc_size(height = 420)
+    hc_widget_height(420)
 }
 
 ### median violent crime solve rate among each region's agencies, as text, e.g.,

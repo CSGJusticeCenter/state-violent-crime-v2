@@ -56,6 +56,7 @@ quarto::quarto_render("index-agency-level-analysis.qmd",
 - Labels keep the FBI agency name, not a city name, because jurisdictions don't match city limits. Charts add the state in parentheses because names repeat across states.
 - Charts drop an offense rate from fewer than `min_rate_reported` incidents and say how many they drop. Tables show it in gray.
 - City rates are compared with U.S. and state rates from the state estimates (`state_city_benchmarks()`). The thin-bar charts mark state rates with diamonds.
+- The crime-rate scatter sizes each agency's circle by population served, by area.
 - Regional panels use `data/csg-regions.csv` and share axes, with other regions' agencies in gray.
 
 ## Table rules
