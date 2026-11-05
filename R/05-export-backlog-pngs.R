@@ -76,7 +76,7 @@ arkansas_chart <- ggplot(arkansas, aes(year)) +
   scale_y_continuous(limits = c(0, max(arkansas$incidents_reported) * 1.2),
                      labels = label_number(accuracy = 0.1, drop0trailing = TRUE, scale_cut = cut_short_scale()),
                      expand = expansion(0)) +
-  labs(title = "Violent crime reported, solved, and unsolved in Arkansas",
+  labs(title = paste0("Violent crime reported, solved, and unsolved in Arkansas, ", first_year, "-", last_year),
        x = NULL, y = NULL, caption = caption_text) +
   coord_cartesian(clip = "off") +
   theme_minimal(base_family = chart_font, base_size = 10) +
@@ -129,7 +129,7 @@ us_chart <- ggplot(us, aes(year)) +
   scale_y_continuous(limits = c(0, max(us$incidents_reported) * 1.2),
                      labels = label_number(accuracy = 0.1, drop0trailing = TRUE, scale_cut = cut_short_scale()),
                      expand = expansion(0)) +
-  labs(title = "Violent crime reported, solved, and unsolved in the U.S.",
+  labs(title = paste0("Violent crime reported, solved, and unsolved in the U.S., ", first_year, "-", last_year),
        x = NULL, y = NULL, caption = caption_text) +
   coord_cartesian(clip = "off") +
   theme_minimal(base_family = chart_font, base_size = 10) +
