@@ -70,6 +70,12 @@ min_rate_reported <- 10
 ### many residents
 min_city_population <- 250000
 
+### the arrest vs exceptional means charts leave out departments whose NIBRS
+### violent incidents fall below this share of their summary-count violent
+### crimes, a sign of incomplete incident data; in 2025 that drops Phoenix
+### (27%) and eight departments at 61-75%, and the typical one is near 85%
+min_nibrs_share <- 0.75
+
 ### city agencies left out of the agency-level page, by ORI
 ### St. Petersburg PD's 2025 clearances look incomplete: 4% of violent crime
 ### solved, down from 35% in 2019, with no robbery or aggravated assault solved
@@ -136,6 +142,25 @@ backlog_colors <- c(reported = site_colors[["navy"]], solved = site_colors[["blu
 ### violent offenses in the order of the agency data columns and data exports
 ### page tables order offenses by table_offenses in R/utils.R
 violent_offenses <- c("Homicide", "Rape", "Robbery", "Aggravated assault")
+
+### NIBRS offense codes for each violent offense, following the FBI's
+### definitions: homicide leaves out negligent manslaughter (09B) and rape
+### leaves out fondling (11D)
+nibrs_offense_codes <- list(
+  Homicide = "09A",
+  Rape = c("11A", "11B", "11C"),
+  Robbery = "120",
+  `Aggravated assault` = "13A"
+)
+
+### the most serious violent offense among an incident's NIBRS codes, under the
+### hierarchy rule (violent_offenses order), or NA when none is violent
+nibrs_top_offense <- function(codes) {
+  for (offense in violent_offenses) {
+    if (any(codes %in% nibrs_offense_codes[[offense]])) return(offense)
+  }
+  NA_character_
+}
 
 ### one row per state, year and offense with reported, unsolved and cleared counts
 ### raw is fbi_srs_estimated_crimes_state.rds from jr_data_library

@@ -132,6 +132,10 @@ city_region_scatter <- function(region) {
 }
 ```
 
+::: {.callout-note icon=false title="City police departments only"}
+This page currently includes only city police departments, so it can compare trends across cities. Sheriffs' offices, county police departments and state police are left out for now, even where they serve at least `r comma(min_city_population)` residents.
+:::
+
 The following visuals compare `r n_cities` police departments that each serve at least `r comma(min_city_population)` residents and reported full data to the FBI in `r agency_year`. Violent crime solve rates among these departments ranged from `r agency_range_text(city_long, total_label)`, compared with `r solve_rate_text(us_total$solve_rate)` in the United States. Of these departments, `r n_cities_below` solved a smaller share of violent crime than the nation as a whole.
 
 For more information, see the [data sources and methodology](#methodology) section below.
@@ -212,6 +216,108 @@ city_scatter("Robbery", paste0("Robbery and solve rates by police department, ",
 
 ```{r}
 city_scatter("Rape", paste0("Rape and solve rates by police department, ", agency_year))
+```
+
+:::
+
+## Solved by arrest or by exceptional means
+
+```{r}
+### outcome of each 2025 violent incident for the city police departments
+### charted above, by offense, from the FBI's incident-level data; the file
+### covers agencies of any type; see R/download-nibrs-clearance.R
+nibrs_clearance <- read_csv(paste0("data/nibrs_clearance_", agency_year, ".csv"), show_col_types = FALSE)
+if (any(nibrs_clearance$year != agency_year)) stop("data/nibrs_clearance_", agency_year, ".csv has other years", call. = FALSE)
+nibrs_clearance <- filter(nibrs_clearance, ori %in% city_rows$ori)
+
+### departments whose incident data look partial; see min_nibrs_share
+nibrs_partial <- nibrs_clearance |>
+  filter(offense == total_label, n_incidents < min_nibrs_share * n_srs_reported) |>
+  mutate(pct_of_srs = n_incidents / n_srs_reported * 100) |>
+  arrange(desc(population))
+nibrs_clearance <- filter(nibrs_clearance, !ori %in% nibrs_partial$ori)
+n_nibrs_agencies <- nrow(clearance_rows(nibrs_clearance, total_label, "cleared"))
+nibrs_median_pct <- with(filter(nibrs_clearance, offense == total_label), median(n_incidents / n_srs_reported) * 100)
+
+### departments from the charts above with no NIBRS incidents, because they
+### report to the FBI in summary form
+nibrs_missing <- filter(city_rows, !ori %in% c(nibrs_clearance$ori, nibrs_partial$ori)) |>
+  arrange(desc(population))
+
+agency_list <- function(rows) {
+  knitr::combine_words(paste0(rows$agency_name, " (", rows$state_abbr, ")"))
+}
+nibrs_missing_text <- if (nrow(nibrs_missing) == 0) "" else {
+  paste0(" The ", agency_list(nibrs_missing), " did not report incident-level data.")
+}
+nibrs_partial_text <- if (nrow(nibrs_partial) == 0) "" else {
+  paste0(" The ", agency_list(nibrs_partial), " are also left out because their incident data look incomplete: ",
+         "they reported between ", round(min(nibrs_partial$pct_of_srs)), " and ",
+         floor(max(nibrs_partial$pct_of_srs)), " percent as many violent incidents as the violent crimes in ",
+         "their summary counts, below the ", round(min_nibrs_share * 100), " percent threshold used here. ",
+         "For the typical department the share is ", round(nibrs_median_pct), " percent, because summary ",
+         "counts record one crime per victim and incident counts record one per incident.")
+}
+
+nibrs_clearance_chart <- function(offense, title) {
+  clearance_chart(nibrs_clearance, offense, "cleared", title, agency_year)
+}
+### the sentence above each tab's chart; plural is the offense in the plural
+nibrs_clearance_text <- function(offense, plural) {
+  rows <- clearance_rows(nibrs_clearance, offense, "cleared")
+  n_more <- sum(rows$n_exceptional > rows$n_arrest)
+  paste0("Of the ", nrow(rows), " departments that recorded at least ", min_rate_reported, " ", plural,
+         ", ", if (n_more == 0) "none" else n_more, " solved more ", plural,
+         " by exceptional means than by arrest.")
+}
+```
+
+The solve rates above count a crime as solved whether the agency solved it by arrest or by exceptional means. The FBI's incident-level data separate the two. The charts below use those data for `r n_nibrs_agencies` of the `r n_cities` police departments charted above.`r nibrs_missing_text``r nibrs_partial_text` Each offense tab includes the departments that recorded at least `r min_rate_reported` incidents of that offense in `r agency_year`.
+
+A department's solve rate in these charts can differ from its solve rate above, because the two count different crimes. The solve rates above count every crime a department solved during `r agency_year`, including crimes committed in earlier years. These charts follow only crimes committed in `r agency_year`, each to its status when the FBI released the data. For example, a robbery committed in `r agency_year - 1` and solved in `r agency_year` counts as solved in the solve rates above but does not appear in these charts. A robbery committed in `r agency_year` and still unsolved when the FBI released the data counts as not solved here.
+
+In each bar, `r clearance_outcome_color_text("arrest", "blue")` marks incidents solved by arrest, `r clearance_outcome_color_text("exceptional", "orange")` marks incidents solved by exceptional means, and `r clearance_outcome_color_text("not_cleared", "light blue")` marks incidents not solved. Hover over each bar for more information.
+
+::: {.panel-tabset}
+
+### All violent crime
+
+`r nibrs_clearance_text(total_label, "violent crimes")`
+
+```{r}
+nibrs_clearance_chart(total_label, paste0("Violent crime incidents by outcome by agency, ", agency_year))
+```
+
+### Homicide
+
+`r nibrs_clearance_text("Homicide", "homicides")`
+
+```{r}
+nibrs_clearance_chart("Homicide", paste0("Homicide incidents by outcome by agency, ", agency_year))
+```
+
+### Aggravated assault
+
+`r nibrs_clearance_text("Aggravated assault", "aggravated assaults")`
+
+```{r}
+nibrs_clearance_chart("Aggravated assault", paste0("Aggravated assault incidents by outcome by agency, ", agency_year))
+```
+
+### Robbery
+
+`r nibrs_clearance_text("Robbery", "robberies")`
+
+```{r}
+nibrs_clearance_chart("Robbery", paste0("Robbery incidents by outcome by agency, ", agency_year))
+```
+
+### Rape
+
+`r nibrs_clearance_text("Rape", "rapes")`
+
+```{r}
+nibrs_clearance_chart("Rape", paste0("Rape incidents by outcome by agency, ", agency_year))
 ```
 
 :::
@@ -390,7 +496,9 @@ City solve rates come from the incidents each law enforcement agency reported to
 
 Regions follow the [CSG regional offices](https://www.csg.org/regional-offices){target="_parent"}.
 
-Rape solve rates are the least comparable across departments. Agencies often clear rape cases by exceptional means, for example when a victim declines to take part in prosecution. A [2018 investigation by ProPublica](`r case_cleared_url`){target="_parent"} found that nearly half of the large police departments that provided data cleared more rapes by exceptional means than by arrest. Agencies differ in how often they do so, and that difference [explains most of the variation in sexual assault clearance rates across agencies](`r rti_clearance_url`){target="_parent"} (Scott, Strom and Planty, 2022; see also [Walfield, 2016](`r walfield_url`){target="_parent"}). The FBI agency data used here do not separate clearances by arrest from exceptional clearances. In `r agency_year`, `r rape_example(head(rape_rows, 1))`, and `r rape_example(tail(rape_rows, 1))`. Such rates may reflect recording practices as much as how often cases are solved.
+Rape solve rates are the least comparable across departments. Agencies often clear rape cases by exceptional means, for example when a victim declines to take part in prosecution. A [2018 investigation by ProPublica](`r case_cleared_url`){target="_parent"} found that nearly half of the large police departments that provided data cleared more rapes by exceptional means than by arrest. Agencies differ in how often they do so, and that difference [explains most of the variation in sexual assault clearance rates across agencies](`r rti_clearance_url`){target="_parent"} (Scott, Strom and Planty, 2022; see also [Walfield, 2016](`r walfield_url`){target="_parent"}). The FBI agency data used for the solve rates do not separate clearances by arrest from exceptional clearances. In `r agency_year`, `r rape_example(head(rape_rows, 1))`, and `r rape_example(tail(rape_rows, 1))`. Such rates may reflect recording practices as much as how often cases are solved.
+
+The charts that split solved crimes by arrest and exceptional means use the FBI's incident-level data from the National Incident-Based Reporting System (NIBRS), available by state on the [Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/downloads){target="_parent"}. They count incidents in `r agency_year` that include a homicide (murder or nonnegligent manslaughter), rape (rape, sodomy, or sexual assault with an object, following the FBI's definition; fondling is not included), robbery, or aggravated assault. Following the hierarchy rule, each incident counts once, under its most serious offense, so the offense charts add up to the violent crime chart. An incident with an arrest counts as solved by arrest. An incident without one counts as solved by exceptional means when the agency recorded it that way, and as not solved otherwise. The charts include the city police departments in the charts above, except those that did not report incident-level data and those whose violent incident count was below `r round(min_nibrs_share * 100)` percent of their summary-count violent crimes, a sign of incomplete incident data; the section names them. Each offense chart leaves out departments with fewer than `r min_rate_reported` incidents of that offense. These data follow each `r agency_year` incident to its status when the FBI released the data, while the solve rates elsewhere on this page count crimes solved during `r agency_year`, including earlier crimes. The FBI's summary counts also record one homicide, rape, or aggravated assault for each victim, while these charts count incidents, so incident counts run lower than the reported counts elsewhere on this page, most of all for aggravated assault.
 
 U.S. and state solve rates come from the FBI's state estimates, the same rates shown on the national and state pages. U.S. solve rates leave out `r knitr::combine_words(states_to_exclude_from_solved_rate_viz)`, which did not report reliable clearance data.
 

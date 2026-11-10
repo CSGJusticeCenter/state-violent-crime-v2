@@ -1688,6 +1688,104 @@ agencies_above_state <- function(long, offense, us_rate) {
   c(above = sum(rows$state_side == "above"), n = nrow(rows))
 }
 
+## clearance outcomes from NIBRS incidents
+
+### lowercase noun for an offense in chart text, e.g., "violent crime incidents"
+clearance_noun <- function(offense) {
+  if (offense == total_label) "violent crime" else stringr::str_to_lower(offense)
+}
+
+### legend names and colors for each incident outcome, in stacking order
+clearance_outcome_names <- c(arrest = "Solved by arrest", exceptional = "Solved by exceptional means",
+                             not_cleared = "Not solved")
+### the solve-rate bar colors, blue for arrests and orange for exceptional means
+clearance_outcome_colors <- c(arrest = solve_rate_colors[["above"]], exceptional = solve_rate_colors[["below"]],
+                              not_cleared = site_colors[["pale_blue"]])
+
+### page text naming an outcome's color, in bold in that color; light blue is too
+### pale for text on white, so not_cleared is dark text on a light blue highlight
+clearance_outcome_color_text <- function(outcome, text) {
+  style <- if (outcome == "not_cleared") {
+    paste0("color:", site_colors[["text"]], ";background-color:", clearance_outcome_colors[[outcome]],
+           ";padding:0 0.25em;border-radius:3px")
+  } else {
+    paste0("color:", clearance_outcome_colors[[outcome]])
+  }
+  paste0('<span style="font-weight:600;', style, '">', text, "</span>")
+}
+
+### hover text lines for an agency's exceptional clearances by reason, e.g.,
+### "Prosecution declined: 47"; reasons is a one-row frame of n_exceptional_* counts
+clearance_reason_lines <- function(reasons) {
+  counts <- unlist(reasons)
+  counts <- sort(counts[!is.na(counts) & counts > 0], decreasing = TRUE)
+  if (length(counts) == 0) return("")
+  labels <- stringr::str_to_sentence(stringr::str_replace_all(
+    stringr::str_remove(names(counts), "^n_exceptional_"), "_", " "
+  ))
+  paste0("<br>&nbsp;&nbsp;", labels, ": ", comma(counts), collapse = "")
+}
+
+### one row per agency with at least min_reported incidents of offense, with
+### each outcome's share in percent, sorted by sort_by ("cleared", "exceptional"
+### or "arrest"), highest first, and hover text
+### df is data/nibrs_clearance_<year>.csv from R/download-nibrs-clearance.R
+clearance_rows <- function(df, offense, sort_by, min_reported = min_rate_reported) {
+  sort_by <- match.arg(sort_by, c("cleared", "exceptional", "arrest"))
+  df <- dplyr::filter(df, .data$offense == .env$offense, n_incidents >= min_reported)
+  reasons <- dplyr::select(df, dplyr::starts_with("n_exceptional_"))
+  noun <- clearance_noun(offense)
+  df |>
+    dplyr::mutate(
+      pct_arrest = n_arrest / n_incidents * 100,
+      pct_exceptional = n_exceptional / n_incidents * 100,
+      pct_not_cleared = n_not_cleared / n_incidents * 100,
+      pct_cleared = pct_arrest + pct_exceptional,
+      reason_lines = purrr::map_chr(seq_len(nrow(reasons)), \(i) clearance_reason_lines(reasons[i, ])),
+      tooltip = paste0(
+        "<b>", htmltools::htmlEscape(agency_name), "</b><br>",
+        comma(n_incidents), " ", noun, " incidents<br>",
+        "Solved: ", round(pct_cleared), "% (", comma(n_arrest + n_exceptional), ")<br>",
+        clearance_outcome_names[["arrest"]], ": ", round(pct_arrest), "% (", comma(n_arrest), ")<br>",
+        clearance_outcome_names[["exceptional"]], ": ", round(pct_exceptional), "% (", comma(n_exceptional), ")",
+        reason_lines, "<br>",
+        clearance_outcome_names[["not_cleared"]], ": ", round(pct_not_cleared), "% (", comma(n_not_cleared), ")<br>",
+        "Population served: ", comma(population)
+      )
+    ) |>
+    dplyr::arrange(dplyr::desc(.data[[paste0("pct_", sort_by)]]), dplyr::desc(pct_cleared))
+}
+
+### one 100% bar per agency split into arrest, exceptional and not cleared, in
+### the order clearance_rows() sorts them; row height, bar width, labels and
+### axis follow thin_bar_chart() so the bars match the page's other agency charts
+clearance_chart <- function(df, offense, sort_by, title, year) {
+  rows <- clearance_rows(df, offense, sort_by)
+  series <- purrr::map(names(clearance_outcome_names), \(outcome) list(
+    name = clearance_outcome_names[[outcome]], type = "bar", color = clearance_outcome_colors[[outcome]],
+    data = purrr::map2(rows[[paste0("pct_", outcome)]], rows$tooltip, \(y, tooltip) list(y = y, tooltip = tooltip))
+  ))
+
+  highchart() |>
+    hc_add_series_list(series) |>
+    hc_setup() |>
+    hc_widget_height((nrow(rows) + 1) * 13 + 200) |>
+    hc_title(text = title) |>
+    hc_subtitle(text = paste0("Percentage of ", clearance_noun(offense), " incidents by outcome, ", year,
+                              ". Agencies with at least ", min_rate_reported, " incidents.")) |>
+    hc_caption(text = paste("FBI NIBRS incident data,", year)) |>
+    hc_xAxis(
+      categories = paste0(rows$agency_name, " (", rows$state_abbr, ")"), title = list(text = NULL),
+      labels = list(step = 1, y = NULL, style = list(fontSize = "11px"))
+    ) |>
+    hc_yAxis(min = 0, max = 100, tickInterval = 20, endOnTick = FALSE, opposite = TRUE,
+             reversedStacks = FALSE, labels = list(format = "{value}%")) |>
+    hc_plotOptions(bar = list(
+      stacking = "normal", pointWidth = 7, borderWidth = 0,
+      accessibility = list(point = list(valueDescriptionFormat = "{point.category}, {series.name}: {point.y:.0f}%"))
+    ))
+}
+
 ## regional panels
 
 ### one region's agencies in color over every other agency in gray, crime rate

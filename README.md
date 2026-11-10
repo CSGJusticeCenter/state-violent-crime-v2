@@ -102,6 +102,7 @@ The latest SRS year comes from the data, so the state pages pick it up automatic
 | `R/download-nypd-clearance.R` | Refreshes `data/nypd_clearance_2022.csv`, NYPD's 2022 citywide clearance rates, the average of its four quarterly Local Law 42 reports |
 | `R/cde-api.R` | CDE API helper for the download scripts |
 | `R/download-ucr-coverage.R` | Refreshes `data/ucr_coverage_2021.csv`, 2021 UCR population coverage by state from the CDE API. Needs `DATA_GOV_API_KEY` |
+| `R/download-nibrs-clearance.R` | Refreshes `data/nibrs_clearance_2025.csv`, 2025 violent incidents by offense and outcome (arrest, exceptional clearance, not cleared) for large agencies nationwide, from the FBI's NIBRS state files. Downloads each state's file to `jr_data_library` on first run. Rerun after step 1 |
 | `R/04-export-data.R` | Writes US and state CSVs of reported, solved and unsolved violent crime and solve rates to `exports/` |
 | `data/` | Prepped agency data and state reporting coverage, CSG regions, inflation index, US hex grid, and `ucr_participation_1960_2025.csv` (UCR agency participation by state and year from the [CDE downloads page](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/downloads), for reference; the pages don't read it) |
 | `maps/` | Highcharts county maps (see `maps/README.md`) |

@@ -1,0 +1,674 @@
+year,ori,agency_name,state_abbr,agency_type,offense,population,n_srs_reported,n_srs_cleared,n_incidents,n_arrest,n_exceptional,n_not_cleared,n_exceptional_death_of_offender,n_exceptional_in_custody_of_other_jurisdiction,n_exceptional_juvenile_no_custody,n_exceptional_prosecution_declined,n_exceptional_victim_refused_to_cooperate
+2025,NY0303000,New York City Police Department,NY,City,Violent crime,8496850,56081,38442,55266,36543,7,18716,3,0,1,0,3
+2025,NY0303000,New York City Police Department,NY,City,Homicide,8496850,283,221,280,192,1,87,1,0,0,0,0
+2025,NY0303000,New York City Police Department,NY,City,Rape,8496850,3541,1486,3428,1310,0,2118,0,0,0,0,0
+2025,NY0303000,New York City Police Department,NY,City,Robbery,8496850,14909,8893,14870,8469,1,6400,0,0,0,0,1
+2025,NY0303000,New York City Police Department,NY,City,Aggravated assault,8496850,37348,27842,36688,26572,5,10111,2,0,1,0,2
+2025,CA0194200,Los Angeles Police Department,CA,City,Violent crime,3874484,25944,8943,23639,6324,1414,15901,10,6,7,1139,252
+2025,CA0194200,Los Angeles Police Department,CA,City,Homicide,3874484,226,182,219,162,1,56,1,0,0,0,0
+2025,CA0194200,Los Angeles Police Department,CA,City,Rape,3874484,1422,310,1356,143,132,1081,0,1,1,122,8
+2025,CA0194200,Los Angeles Police Department,CA,City,Robbery,3874484,7222,1598,7230,1441,151,5638,1,0,0,129,21
+2025,CA0194200,Los Angeles Police Department,CA,City,Aggravated assault,3874484,17074,6853,14834,4578,1130,9126,8,5,6,888,223
+2025,TXHPD0000,Houston Police Department,TX,City,Violent crime,2413559,21345,6061,19181,3960,736,14485,26,5,0,483,222
+2025,TXHPD0000,Houston Police Department,TX,City,Homicide,2413559,270,207,263,115,11,137,8,0,0,3,0
+2025,TXHPD0000,Houston Police Department,TX,City,Rape,2413559,1377,408,1346,78,94,1174,2,0,0,77,15
+2025,TXHPD0000,Houston Police Department,TX,City,Robbery,2413559,4859,862,4848,691,75,4082,2,1,0,35,37
+2025,TXHPD0000,Houston Police Department,TX,City,Aggravated assault,2413559,14839,4584,12724,3076,556,9092,14,4,0,368,170
+2025,TX1010000,Harris County Sheriff's Office,TX,County,Violent crime,2178104,6890,3786,6012,1761,1035,3216,15,3,1,846,170
+2025,TX1010000,Harris County Sheriff's Office,TX,County,Homicide,2178104,108,93,98,62,10,26,10,0,0,0,0
+2025,TX1010000,Harris County Sheriff's Office,TX,County,Rape,2178104,921,239,849,42,61,746,0,0,0,32,29
+2025,TX1010000,Harris County Sheriff's Office,TX,County,Robbery,2178104,1098,346,1097,234,58,805,1,2,1,31,23
+2025,TX1010000,Harris County Sheriff's Office,TX,County,Aggravated assault,2178104,4763,3108,3968,1423,906,1639,4,1,0,783,118
+2025,NV0020100,Las Vegas Metropolitan Police Department,NV,City,Violent crime,1712136,7055,4492,6195,3426,49,2720,13,0,0,17,19
+2025,NV0020100,Las Vegas Metropolitan Police Department,NV,City,Homicide,1712136,93,98,87,67,11,9,11,0,0,0,0
+2025,NV0020100,Las Vegas Metropolitan Police Department,NV,City,Rape,1712136,961,169,914,124,9,781,0,0,0,3,6
+2025,NV0020100,Las Vegas Metropolitan Police Department,NV,City,Robbery,1712136,935,559,927,490,9,428,0,0,0,3,6
+2025,NV0020100,Las Vegas Metropolitan Police Department,NV,City,Aggravated assault,1712136,5066,3666,4267,2745,20,1502,2,0,0,11,7
+2025,AZ0072300,Phoenix Police Department,AZ,City,Violent crime,1688662,11752,3507,3177,802,7,2368,7,0,0,0,0
+2025,AZ0072300,Phoenix Police Department,AZ,City,Homicide,1688662,125,91,50,28,2,20,2,0,0,0,0
+2025,AZ0072300,Phoenix Police Department,AZ,City,Rape,1688662,1041,64,341,16,0,325,0,0,0,0,0
+2025,AZ0072300,Phoenix Police Department,AZ,City,Robbery,1688662,2411,687,700,179,0,521,0,0,0,0,0
+2025,AZ0072300,Phoenix Police Department,AZ,City,Aggravated assault,1688662,8175,2665,2086,579,5,1502,5,0,0,0,0
+2025,PAPEP0000,Philadelphia Police Department,PA,City,Violent crime,1562379,12966,5680,12159,4380,458,7321,27,0,8,119,304
+2025,PAPEP0000,Philadelphia Police Department,PA,City,Homicide,1562379,229,172,217,132,4,81,4,0,0,0,0
+2025,PAPEP0000,Philadelphia Police Department,PA,City,Rape,1562379,676,349,653,137,112,404,1,0,6,89,16
+2025,PAPEP0000,Philadelphia Police Department,PA,City,Robbery,1562379,3570,1018,3528,898,61,2569,2,0,0,4,55
+2025,PAPEP0000,Philadelphia Police Department,PA,City,Aggravated assault,1562379,8491,4141,7761,3213,281,4267,20,0,2,26,233
+2025,TXSPD0000,San Antonio Police Department,TX,City,Violent crime,1549306,8241,1992,7162,1385,386,5391,15,1,0,26,344
+2025,TXSPD0000,San Antonio Police Department,TX,City,Homicide,1549306,106,41,98,25,7,66,6,0,0,1,0
+2025,TXSPD0000,San Antonio Police Department,TX,City,Rape,1549306,1249,151,1196,53,80,1063,0,1,0,18,61
+2025,TXSPD0000,San Antonio Police Department,TX,City,Robbery,1549306,1380,286,1377,235,48,1094,5,0,0,1,42
+2025,TXSPD0000,San Antonio Police Department,TX,City,Aggravated assault,1549306,5506,1514,4491,1072,251,3168,4,0,0,6,241
+2025,CA0371100,San Diego Police Department,CA,City,Violent crime,1409432,5275,2386,4957,2180,12,2765,1,0,0,8,3
+2025,CA0371100,San Diego Police Department,CA,City,Homicide,1409432,25,25,24,19,1,4,1,0,0,0,0
+2025,CA0371100,San Diego Police Department,CA,City,Rape,1409432,338,33,330,30,1,299,0,0,0,1,0
+2025,CA0371100,San Diego Police Department,CA,City,Robbery,1409432,819,259,818,253,0,565,0,0,0,0,0
+2025,CA0371100,San Diego Police Department,CA,City,Aggravated assault,1409432,4093,2069,3785,1878,10,1897,0,0,0,7,3
+2025,TXDPD0000,Dallas Police Department,TX,City,Violent crime,1331217,7674,2390,6529,1902,8,4619,5,0,1,2,0
+2025,TXDPD0000,Dallas Police Department,TX,City,Homicide,1331217,140,72,132,57,5,70,5,0,0,0,0
+2025,TXDPD0000,Dallas Police Department,TX,City,Rape,1331217,370,124,350,80,1,269,0,0,0,1,0
+2025,TXDPD0000,Dallas Police Department,TX,City,Robbery,1331217,2020,445,2019,427,2,1590,0,0,1,1,0
+2025,TXDPD0000,Dallas Police Department,TX,City,Aggravated assault,1331217,5144,1749,4028,1338,0,2690,0,0,0,0,0
+2025,FL0130000,Miami-Dade County Police Department,FL,County,Violent crime,1200003,4026,1836,3327,1285,78,1964,7,1,1,44,25
+2025,FL0130000,Miami-Dade County Police Department,FL,County,Homicide,1200003,59,34,51,23,3,25,3,0,0,0,0
+2025,FL0130000,Miami-Dade County Police Department,FL,County,Rape,1200003,379,207,359,53,22,284,0,0,0,17,5
+2025,FL0130000,Miami-Dade County Police Department,FL,County,Robbery,1200003,873,494,876,416,17,443,0,1,0,5,11
+2025,FL0130000,Miami-Dade County Police Department,FL,County,Aggravated assault,1200003,2715,1101,2041,793,36,1212,4,0,1,22,9
+2025,VA0290100,Fairfax County Police Department,VA,County,Violent crime,1125193,1232,547,1032,391,32,609,0,0,0,15,17
+2025,VA0290100,Fairfax County Police Department,VA,County,Homicide,1125193,11,7,9,6,0,3,0,0,0,0,0
+2025,VA0290100,Fairfax County Police Department,VA,County,Rape,1125193,144,44,120,16,7,97,0,0,0,7,0
+2025,VA0290100,Fairfax County Police Department,VA,County,Robbery,1125193,355,149,324,111,12,201,0,0,0,3,9
+2025,VA0290100,Fairfax County Police Department,VA,County,Aggravated assault,1125193,722,347,579,258,13,308,0,0,0,5,8
+2025,FL0290000,Hillsborough County Sheriff's Office,FL,County,Violent crime,1092535,1377,1272,1169,742,242,185,11,0,0,126,105
+2025,FL0290000,Hillsborough County Sheriff's Office,FL,County,Homicide,1092535,22,25,22,12,6,4,5,0,0,1,0
+2025,FL0290000,Hillsborough County Sheriff's Office,FL,County,Rape,1092535,214,235,192,16,114,62,1,0,0,63,50
+2025,FL0290000,Hillsborough County Sheriff's Office,FL,County,Robbery,1092535,111,93,113,84,5,24,0,0,0,3,2
+2025,FL0290000,Hillsborough County Sheriff's Office,FL,County,Aggravated assault,1092535,1030,919,842,630,117,95,5,0,0,59,53
+2025,NC0600100,Charlotte-Mecklenburg Police Department,NC,City,Violent crime,1035037,5787,1791,3978,929,250,2799,12,0,0,38,200
+2025,NC0600100,Charlotte-Mecklenburg Police Department,NC,City,Homicide,1035037,93,31,89,22,3,64,2,0,0,1,0
+2025,NC0600100,Charlotte-Mecklenburg Police Department,NC,City,Rape,1035037,190,94,189,19,58,112,1,0,0,2,55
+2025,NC0600100,Charlotte-Mecklenburg Police Department,NC,City,Robbery,1035037,979,266,979,231,23,725,5,0,0,3,15
+2025,NC0600100,Charlotte-Mecklenburg Police Department,NC,City,Aggravated assault,1035037,4525,1400,2721,657,166,1898,4,0,0,32,130
+2025,TX2201200,Fort Worth Police Department,TX,City,Violent crime,1030410,3859,1919,3165,1431,35,1699,4,0,0,0,31
+2025,TX2201200,Fort Worth Police Department,TX,City,Homicide,1030410,78,65,72,63,0,9,0,0,0,0,0
+2025,TX2201200,Fort Worth Police Department,TX,City,Rape,1030410,505,161,472,84,5,383,1,0,0,0,4
+2025,TX2201200,Fort Worth Police Department,TX,City,Robbery,1030410,620,258,620,246,4,370,0,0,0,0,4
+2025,TX2201200,Fort Worth Police Department,TX,City,Aggravated assault,1030410,2656,1435,2001,1038,26,937,3,0,0,0,23
+2025,FL0160000,Jacksonville Sheriff's Office,FL,County,Violent crime,1008920,5231,2556,4260,1731,173,2356,10,0,0,163,0
+2025,FL0160000,Jacksonville Sheriff's Office,FL,County,Homicide,1008920,80,62,77,40,4,33,3,0,0,1,0
+2025,FL0160000,Jacksonville Sheriff's Office,FL,County,Rape,1008920,376,124,345,49,16,280,2,0,0,14,0
+2025,FL0160000,Jacksonville Sheriff's Office,FL,County,Robbery,1008920,539,224,539,187,12,340,0,0,0,12,0
+2025,FL0160000,Jacksonville Sheriff's Office,FL,County,Aggravated assault,1008920,4236,2146,3299,1455,141,1703,5,0,0,136,0
+2025,TX2270100,Austin Police Department,TX,City,Violent crime,1000639,4221,2338,3805,1906,15,1884,5,0,0,1,9
+2025,TX2270100,Austin Police Department,TX,City,Homicide,1000639,51,51,48,39,3,6,3,0,0,0,0
+2025,TX2270100,Austin Police Department,TX,City,Rape,1000639,749,189,717,94,1,622,0,0,0,1,0
+2025,TX2270100,Austin Police Department,TX,City,Robbery,1000639,787,517,788,473,2,313,1,0,0,0,1
+2025,TX2270100,Austin Police Department,TX,City,Aggravated assault,1000639,2634,1581,2252,1300,9,943,1,0,0,0,8
+2025,CA0431300,San Jose Police Department,CA,City,Violent crime,994435,5024,1990,4534,1701,7,2826,6,0,0,0,1
+2025,CA0431300,San Jose Police Department,CA,City,Homicide,994435,24,18,22,15,0,7,0,0,0,0,0
+2025,CA0431300,San Jose Police Department,CA,City,Rape,994435,555,86,538,70,3,465,3,0,0,0,0
+2025,CA0431300,San Jose Police Department,CA,City,Robbery,994435,1106,353,1097,354,2,741,1,0,0,0,1
+2025,CA0431300,San Jose Police Department,CA,City,Aggravated assault,994435,3339,1533,2877,1262,2,1613,2,0,0,0,0
+2025,HI0020000,Honolulu Police Department,HI,City,Violent crime,987000,1789,734,1519,517,21,981,1,0,0,10,10
+2025,HI0020000,Honolulu Police Department,HI,City,Homicide,987000,15,18,4,2,1,1,1,0,0,0,0
+2025,HI0020000,Honolulu Police Department,HI,City,Rape,987000,239,71,197,33,5,159,0,0,0,4,1
+2025,HI0020000,Honolulu Police Department,HI,City,Robbery,987000,456,143,412,116,3,293,0,0,0,1,2
+2025,HI0020000,Honolulu Police Department,HI,City,Aggravated assault,987000,1079,502,906,366,12,528,0,0,0,5,7
+2025,FL0480000,Orange County Sheriff's Office,FL,County,Violent crime,955709,3865,1390,3408,1200,13,2195,0,0,0,0,13
+2025,FL0480000,Orange County Sheriff's Office,FL,County,Homicide,955709,35,10,32,9,0,23,0,0,0,0,0
+2025,FL0480000,Orange County Sheriff's Office,FL,County,Rape,955709,361,26,344,23,1,320,0,0,0,0,1
+2025,FL0480000,Orange County Sheriff's Office,FL,County,Robbery,955709,611,167,606,157,4,445,0,0,0,0,4
+2025,FL0480000,Orange County Sheriff's Office,FL,County,Aggravated assault,955709,2858,1187,2426,1011,8,1407,0,0,0,0,8
+2025,OHCOP0000,Columbus Police Department,OH,City,Violent crime,940106,3575,740,3237,561,37,2639,3,0,0,0,34
+2025,OHCOP0000,Columbus Police Department,OH,City,Homicide,940106,85,65,79,54,0,25,0,0,0,0,0
+2025,OHCOP0000,Columbus Police Department,OH,City,Rape,940106,1033,56,967,41,0,926,0,0,0,0,0
+2025,OHCOP0000,Columbus Police Department,OH,City,Robbery,940106,969,203,968,163,23,782,1,0,0,0,22
+2025,OHCOP0000,Columbus Police Department,OH,City,Aggravated assault,940106,1488,416,1223,303,14,906,2,0,0,0,12
+2025,MD0160400,Montgomery County Police Department,MD,County,Violent crime,924573,1545,623,1371,493,1,877,1,0,0,0,0
+2025,MD0160400,Montgomery County Police Department,MD,County,Homicide,924573,23,19,21,16,1,4,1,0,0,0,0
+2025,MD0160400,Montgomery County Police Department,MD,County,Rape,924573,305,54,300,39,0,261,0,0,0,0,0
+2025,MD0160400,Montgomery County Police Department,MD,County,Robbery,924573,438,200,438,176,0,262,0,0,0,0,0
+2025,MD0160400,Montgomery County Police Department,MD,County,Aggravated assault,924573,779,350,612,262,0,350,0,0,0,0,0
+2025,INIPD0000,Indianapolis Police Department,IN,City,Violent crime,903574,6947,2920,4230,1027,679,2524,11,2,5,226,435
+2025,INIPD0000,Indianapolis Police Department,IN,City,Homicide,903574,139,98,98,49,7,42,3,0,0,4,0
+2025,INIPD0000,Indianapolis Police Department,IN,City,Rape,903574,506,277,364,33,128,203,0,0,1,29,98
+2025,INIPD0000,Indianapolis Police Department,IN,City,Robbery,903574,1048,369,776,134,108,534,3,0,3,34,68
+2025,INIPD0000,Indianapolis Police Department,IN,City,Aggravated assault,903574,5254,2176,2992,811,436,1745,5,2,1,159,269
+2025,GA0670200,Gwinnett County Police Department,GA,County,Violent crime,858237,1736,568,1458,428,3,1027,0,0,1,1,1
+2025,GA0670200,Gwinnett County Police Department,GA,County,Homicide,858237,19,5,19,4,0,15,0,0,0,0,0
+2025,GA0670200,Gwinnett County Police Department,GA,County,Rape,858237,328,49,291,28,0,263,0,0,0,0,0
+2025,GA0670200,Gwinnett County Police Department,GA,County,Robbery,858237,229,64,230,62,0,168,0,0,0,0,0
+2025,GA0670200,Gwinnett County Police Department,GA,County,Aggravated assault,858237,1160,450,918,334,3,581,0,0,1,1,1
+2025,MD0030100,Baltimore County Police Department,MD,County,Violent crime,849486,3406,2044,2965,1513,172,1280,15,24,18,109,6
+2025,MD0030100,Baltimore County Police Department,MD,County,Homicide,849486,28,29,25,14,7,4,6,1,0,0,0
+2025,MD0030100,Baltimore County Police Department,MD,County,Rape,849486,268,221,257,70,103,84,0,5,7,91,0
+2025,MD0030100,Baltimore County Police Department,MD,County,Robbery,849486,687,387,683,358,20,305,0,14,1,2,3
+2025,MD0030100,Baltimore County Police Department,MD,County,Aggravated assault,849486,2423,1407,2000,1071,42,887,9,4,10,16,3
+2025,WASPD0000,Seattle Police Department,WA,City,Violent crime,791503,5584,1845,4928,1437,43,3448,1,0,1,22,19
+2025,WASPD0000,Seattle Police Department,WA,City,Homicide,791503,34,19,30,15,0,15,0,0,0,0,0
+2025,WASPD0000,Seattle Police Department,WA,City,Rape,791503,424,58,410,45,0,365,0,0,0,0,0
+2025,WASPD0000,Seattle Police Department,WA,City,Robbery,791503,1420,331,1416,303,7,1106,0,0,0,4,3
+2025,WASPD0000,Seattle Police Department,WA,City,Aggravated assault,791503,3706,1437,3072,1074,36,1962,1,0,1,18,16
+2025,MD0172100,Prince George's County Police Department,MD,County,Violent crime,741477,1968,814,1679,541,56,1082,5,0,1,25,25
+2025,MD0172100,Prince George's County Police Department,MD,County,Homicide,741477,61,51,57,39,1,17,1,0,0,0,0
+2025,MD0172100,Prince George's County Police Department,MD,County,Rape,741477,180,80,170,16,31,123,1,0,0,13,17
+2025,MD0172100,Prince George's County Police Department,MD,County,Robbery,741477,643,224,630,179,6,445,1,0,0,4,1
+2025,MD0172100,Prince George's County Police Department,MD,County,Aggravated assault,741477,1084,459,822,307,18,497,2,0,1,8,7
+2025,CODPD0000,Denver Police Department,CO,City,Violent crime,733212,6463,3673,5497,2300,511,2686,11,0,1,404,95
+2025,CODPD0000,Denver Police Department,CO,City,Homicide,733212,44,32,40,25,6,9,3,0,0,3,0
+2025,CODPD0000,Denver Police Department,CO,City,Rape,733212,718,316,679,71,119,489,1,0,1,105,12
+2025,CODPD0000,Denver Police Department,CO,City,Robbery,733212,1015,390,1015,325,41,649,2,0,0,23,16
+2025,CODPD0000,Denver Police Department,CO,City,Aggravated assault,733212,4686,2935,3763,1879,345,1539,5,0,0,273,67
+2025,OK0550600,Oklahoma City Police Department,OK,City,Violent crime,720580,4907,1757,3942,1347,44,2551,1,0,0,24,19
+2025,OK0550600,Oklahoma City Police Department,OK,City,Homicide,720580,70,59,65,49,1,15,1,0,0,0,0
+2025,OK0550600,Oklahoma City Police Department,OK,City,Rape,720580,507,60,487,37,21,429,0,0,0,15,6
+2025,OK0550600,Oklahoma City Police Department,OK,City,Robbery,720580,589,168,586,163,5,418,0,0,0,0,5
+2025,OK0550600,Oklahoma City Police Department,OK,City,Aggravated assault,720580,3741,1470,2804,1098,17,1689,0,0,0,9,8
+2025,TN0190100,Metropolitan Nashville Police Department,TN,City,Violent crime,718499,6908,2850,5428,1399,555,3474,18,0,17,120,400
+2025,TN0190100,Metropolitan Nashville Police Department,TN,City,Homicide,718499,57,63,57,28,5,24,4,0,0,1,0
+2025,TN0190100,Metropolitan Nashville Police Department,TN,City,Rape,718499,528,197,499,38,62,399,1,0,2,57,2
+2025,TN0190100,Metropolitan Nashville Police Department,TN,City,Robbery,718499,802,194,783,117,37,629,4,0,0,6,27
+2025,TN0190100,Metropolitan Nashville Police Department,TN,City,Aggravated assault,718499,5521,2396,4089,1216,451,2422,9,0,15,56,371
+2025,DCMPD0000,Washington Police Department,DC,City,Violent crime,693645,5197,2666,4729,1726,379,2624,13,5,1,190,170
+2025,DCMPD0000,Washington Police Department,DC,City,Homicide,693645,115,89,112,57,2,53,2,0,0,0,0
+2025,DCMPD0000,Washington Police Department,DC,City,Rape,693645,171,137,159,43,14,102,0,0,0,12,2
+2025,DCMPD0000,Washington Police Department,DC,City,Robbery,693645,2200,925,2197,606,176,1415,4,2,0,76,94
+2025,DCMPD0000,Washington Police Department,DC,City,Aggravated assault,693645,2711,1515,2261,1020,187,1054,7,3,1,102,74
+2025,KY0568000,Louisville Metro Police Department,KY,City,Violent crime,691630,4659,1976,3977,1403,204,2370,1,56,0,111,36
+2025,KY0568000,Louisville Metro Police Department,KY,City,Homicide,691630,19,26,19,10,2,7,0,2,0,0,0
+2025,KY0568000,Louisville Metro Police Department,KY,City,Rape,691630,282,49,260,17,15,228,0,1,0,2,12
+2025,KY0568000,Louisville Metro Police Department,KY,City,Robbery,691630,736,191,735,170,12,553,1,2,0,4,5
+2025,KY0568000,Louisville Metro Police Department,KY,City,Aggravated assault,691630,3622,1710,2963,1206,175,1582,0,51,0,105,19
+2025,TX0710200,El Paso Police Department,TX,City,Violent crime,682310,1969,751,1670,587,27,1056,2,0,0,16,9
+2025,TX0710200,El Paso Police Department,TX,City,Homicide,682310,26,16,25,13,2,10,2,0,0,0,0
+2025,TX0710200,El Paso Police Department,TX,City,Rape,682310,250,22,246,12,7,227,0,0,0,4,3
+2025,TX0710200,El Paso Police Department,TX,City,Robbery,682310,226,96,226,88,3,135,0,0,0,0,3
+2025,TX0710200,El Paso Police Department,TX,City,Aggravated assault,682310,1467,617,1173,474,15,684,0,0,0,12,3
+2025,MA0130100,Boston Police Department,MA,City,Violent crime,671262,3915,1585,3426,982,192,2252,0,1,9,25,157
+2025,MA0130100,Boston Police Department,MA,City,Homicide,671262,24,11,24,11,0,13,0,0,0,0,0
+2025,MA0130100,Boston Police Department,MA,City,Rape,671262,153,82,150,15,29,106,0,1,0,13,15
+2025,MA0130100,Boston Police Department,MA,City,Robbery,671262,762,200,762,146,18,598,0,0,2,1,15
+2025,MA0130100,Boston Police Department,MA,City,Aggravated assault,671262,2976,1292,2490,810,145,1535,0,0,7,11,127
+2025,MI8234900,Detroit Police Department,MI,City,Violent crime,642155,10622,5831,8657,1934,2314,4409,13,3,4,2291,3
+2025,MI8234900,Detroit Police Department,MI,City,Homicide,642155,165,130,149,101,8,40,6,0,0,2,0
+2025,MI8234900,Detroit Police Department,MI,City,Rape,642155,553,208,529,68,66,395,0,0,0,65,1
+2025,MI8234900,Detroit Police Department,MI,City,Robbery,642155,937,352,935,202,106,627,1,0,0,105,0
+2025,MI8234900,Detroit Police Department,MI,City,Aggravated assault,642155,8967,5141,7044,1563,2134,3347,6,3,4,2119,2
+2025,TX0790000,Fort Bend County Sheriff's Office,TX,County,Violent crime,637444,759,460,654,183,139,332,1,1,0,34,103
+2025,TX0790000,Fort Bend County Sheriff's Office,TX,County,Homicide,637444,6,7,6,5,0,1,0,0,0,0,0
+2025,TX0790000,Fort Bend County Sheriff's Office,TX,County,Rape,637444,126,90,117,7,37,73,0,0,0,3,34
+2025,TX0790000,Fort Bend County Sheriff's Office,TX,County,Robbery,637444,104,43,103,20,12,71,0,1,0,0,11
+2025,TX0790000,Fort Bend County Sheriff's Office,TX,County,Aggravated assault,637444,523,320,428,151,90,187,1,0,0,31,58
+2025,OR0260200,Portland Police Department,OR,City,Violent crime,631483,4435,1717,3931,1365,41,2525,4,0,7,5,25
+2025,OR0260200,Portland Police Department,OR,City,Homicide,631483,50,37,49,24,0,25,0,0,0,0,0
+2025,OR0260200,Portland Police Department,OR,City,Rape,631483,320,37,304,13,9,282,2,0,0,2,5
+2025,OR0260200,Portland Police Department,OR,City,Robbery,631483,965,268,962,236,7,719,0,0,3,0,4
+2025,OR0260200,Portland Police Department,OR,City,Aggravated assault,631483,3100,1375,2616,1092,25,1499,2,0,4,3,16
+2025,TX1700000,Montgomery County Sheriff's Office,TX,County,Violent crime,622789,965,594,853,359,131,363,5,0,2,78,46
+2025,TX1700000,Montgomery County Sheriff's Office,TX,County,Homicide,622789,15,12,11,7,1,3,1,0,0,0,0
+2025,TX1700000,Montgomery County Sheriff's Office,TX,County,Rape,622789,287,130,267,50,55,162,2,0,2,35,16
+2025,TX1700000,Montgomery County Sheriff's Office,TX,County,Robbery,622789,68,31,69,23,8,38,0,0,0,2,6
+2025,TX1700000,Montgomery County Sheriff's Office,TX,County,Aggravated assault,622789,595,421,506,279,67,160,2,0,0,41,24
+2025,FL0510000,Pasco County Sheriff's Office,FL,County,Violent crime,617158,1349,745,1148,509,46,593,7,0,4,12,23
+2025,FL0510000,Pasco County Sheriff's Office,FL,County,Homicide,617158,20,30,18,14,3,1,3,0,0,0,0
+2025,FL0510000,Pasco County Sheriff's Office,FL,County,Rape,617158,130,67,126,34,3,89,0,0,0,2,1
+2025,FL0510000,Pasco County Sheriff's Office,FL,County,Robbery,617158,119,62,119,54,6,59,0,0,2,0,4
+2025,FL0510000,Pasco County Sheriff's Office,FL,County,Aggravated assault,617158,1080,586,885,407,34,444,4,0,2,10,18
+2025,TNMPD0000,Memphis Police Department,TN,City,Violent crime,606629,11239,2862,7689,1761,195,5733,32,0,0,20,143
+2025,TNMPD0000,Memphis Police Department,TN,City,Homicide,606629,188,82,182,68,6,108,6,0,0,0,0
+2025,TNMPD0000,Memphis Police Department,TN,City,Rape,606629,345,46,331,38,1,292,0,0,0,1,0
+2025,TNMPD0000,Memphis Police Department,TN,City,Robbery,606629,1473,291,1473,235,32,1206,9,0,0,4,19
+2025,TNMPD0000,Memphis Police Department,TN,City,Aggravated assault,606629,9233,2443,5703,1420,156,4127,17,0,0,15,124
+2025,CA0340000,Sacramento County Sheriff's Office,CA,County,Violent crime,602628,2851,1054,2584,915,19,1650,5,0,0,1,13
+2025,CA0340000,Sacramento County Sheriff's Office,CA,County,Homicide,602628,12,13,12,7,3,2,3,0,0,0,0
+2025,CA0340000,Sacramento County Sheriff's Office,CA,County,Rape,602628,224,28,211,13,2,196,0,0,0,1,1
+2025,CA0340000,Sacramento County Sheriff's Office,CA,County,Robbery,602628,587,200,585,191,9,385,0,0,0,0,9
+2025,CA0340000,Sacramento County Sheriff's Office,CA,County,Aggravated assault,602628,2028,813,1776,704,5,1067,2,0,0,0,3
+2025,GA0330200,Cobb County Police Department,GA,County,Violent crime,581877,1056,501,894,324,53,517,4,0,1,15,33
+2025,GA0330200,Cobb County Police Department,GA,County,Homicide,581877,21,16,19,9,4,6,3,0,0,1,0
+2025,GA0330200,Cobb County Police Department,GA,County,Rape,581877,139,14,134,6,7,121,0,0,0,4,3
+2025,GA0330200,Cobb County Police Department,GA,County,Robbery,581877,113,53,115,45,1,69,0,0,0,0,1
+2025,GA0330200,Cobb County Police Department,GA,County,Aggravated assault,581877,783,418,626,264,41,321,1,0,1,10,29
+2025,MDBPD0000,Baltimore Police Department,MD,City,Violent crime,562811,7601,4808,6894,3904,104,2886,14,0,0,85,5
+2025,MDBPD0000,Baltimore Police Department,MD,City,Homicide,562811,136,85,131,57,3,71,3,0,0,0,0
+2025,MDBPD0000,Baltimore Police Department,MD,City,Rape,562811,276,78,270,63,3,204,1,0,0,2,0
+2025,MDBPD0000,Baltimore Police Department,MD,City,Robbery,562811,2344,1087,2342,1027,15,1300,3,0,0,10,2
+2025,MDBPD0000,Baltimore Police Department,MD,City,Aggravated assault,562811,4845,3558,4151,2757,83,1311,7,0,0,73,3
+2025,MD0020200,Anne Arundel County Police Department,MD,County,Violent crime,562033,1538,865,1342,663,44,635,1,0,5,26,12
+2025,MD0020200,Anne Arundel County Police Department,MD,County,Homicide,562033,11,8,10,7,1,2,1,0,0,0,0
+2025,MD0020200,Anne Arundel County Police Department,MD,County,Rape,562033,174,70,159,14,32,113,0,0,0,23,9
+2025,MD0020200,Anne Arundel County Police Department,MD,County,Robbery,562033,196,84,195,78,0,117,0,0,0,0,0
+2025,MD0020200,Anne Arundel County Police Department,MD,County,Aggravated assault,562033,1157,703,978,564,11,403,0,0,5,3,3
+2025,WIMPD0000,Milwaukee Police Department,WI,City,Violent crime,559717,6409,2649,5393,1906,187,3300,4,0,0,183,0
+2025,WIMPD0000,Milwaukee Police Department,WI,City,Homicide,559717,142,98,132,82,1,49,1,0,0,0,0
+2025,WIMPD0000,Milwaukee Police Department,WI,City,Rape,559717,318,173,297,107,8,182,0,0,0,8,0
+2025,WIMPD0000,Milwaukee Police Department,WI,City,Robbery,559717,1258,379,1258,327,12,919,1,0,0,11,0
+2025,WIMPD0000,Milwaukee Police Department,WI,City,Aggravated assault,559717,4691,1999,3706,1390,166,2150,2,0,0,164,0
+2025,NM0010100,Albuquerque Police Department,NM,City,Violent crime,559192,5724,1851,4879,1571,10,3298,6,2,1,1,0
+2025,NM0010100,Albuquerque Police Department,NM,City,Homicide,559192,75,48,70,33,5,32,4,1,0,0,0
+2025,NM0010100,Albuquerque Police Department,NM,City,Rape,559192,323,15,301,13,1,287,0,0,1,0,0
+2025,NM0010100,Albuquerque Police Department,NM,City,Robbery,559192,698,106,691,107,0,584,0,0,0,0,0
+2025,NM0010100,Albuquerque Police Department,NM,City,Aggravated assault,559192,4628,1682,3817,1418,4,2395,2,1,0,1,0
+2025,AZ0100300,Tucson Police Department,AZ,City,Violent crime,556898,2050,1481,1506,1077,2,427,2,0,0,0,0
+2025,AZ0100300,Tucson Police Department,AZ,City,Homicide,556898,38,32,36,26,2,8,2,0,0,0,0
+2025,AZ0100300,Tucson Police Department,AZ,City,Rape,556898,103,28,86,24,0,62,0,0,0,0,0
+2025,AZ0100300,Tucson Police Department,AZ,City,Robbery,556898,251,169,236,170,0,66,0,0,0,0,0
+2025,AZ0100300,Tucson Police Department,AZ,City,Aggravated assault,556898,1658,1252,1148,857,0,291,0,0,0,0,0
+2025,CA0100500,Fresno Police Department,CA,City,Violent crime,551969,3972,1804,3679,1606,19,2054,1,0,0,18,0
+2025,CA0100500,Fresno Police Department,CA,City,Homicide,551969,24,22,22,18,0,4,0,0,0,0,0
+2025,CA0100500,Fresno Police Department,CA,City,Rape,551969,278,56,259,46,0,213,0,0,0,0,0
+2025,CA0100500,Fresno Police Department,CA,City,Robbery,551969,863,330,860,324,1,535,0,0,0,1,0
+2025,CA0100500,Fresno Police Department,CA,City,Aggravated assault,551969,2807,1396,2538,1218,18,1302,1,0,0,17,0
+2025,CA0340400,Sacramento Police Department,CA,City,Violent crime,538389,3875,1764,3488,1552,2,1934,2,0,0,0,0
+2025,CA0340400,Sacramento Police Department,CA,City,Homicide,538389,41,35,40,27,1,12,1,0,0,0,0
+2025,CA0340400,Sacramento Police Department,CA,City,Rape,538389,150,34,145,28,0,117,0,0,0,0,0
+2025,CA0340400,Sacramento Police Department,CA,City,Robbery,538389,887,297,885,297,1,587,1,0,0,0,0
+2025,CA0340400,Sacramento Police Department,CA,City,Aggravated assault,538389,2797,1398,2418,1200,0,1218,0,0,0,0,0
+2025,GAAPD0000,Atlanta Police Department,GA,City,Violent crime,525939,3869,1405,3126,1009,153,1964,7,0,2,41,103
+2025,GAAPD0000,Atlanta Police Department,GA,City,Homicide,525939,100,60,97,46,3,48,3,0,0,0,0
+2025,GAAPD0000,Atlanta Police Department,GA,City,Rape,525939,130,50,126,15,28,83,0,0,0,9,19
+2025,GAAPD0000,Atlanta Police Department,GA,City,Robbery,525939,652,165,647,137,29,481,1,0,1,5,22
+2025,GAAPD0000,Atlanta Police Department,GA,City,Aggravated assault,525939,2987,1130,2256,811,93,1352,3,0,1,27,62
+2025,AZ0071700,Mesa Police Department,AZ,City,Violent crime,519990,2204,1318,1748,948,5,795,4,0,0,0,1
+2025,AZ0071700,Mesa Police Department,AZ,City,Homicide,519990,18,15,17,10,2,5,2,0,0,0,0
+2025,AZ0071700,Mesa Police Department,AZ,City,Rape,519990,165,37,149,15,2,132,1,0,0,0,1
+2025,AZ0071700,Mesa Police Department,AZ,City,Robbery,519990,247,135,246,129,0,117,0,0,0,0,0
+2025,AZ0071700,Mesa Police Department,AZ,City,Aggravated assault,519990,1774,1131,1336,794,1,541,1,0,0,0,0
+2025,GA0440200,DeKalb County Police Department,GA,County,Violent crime,519559,3722,331,2469,259,7,2203,1,0,1,3,2
+2025,GA0440200,DeKalb County Police Department,GA,County,Homicide,519559,82,35,76,26,1,49,1,0,0,0,0
+2025,GA0440200,DeKalb County Police Department,GA,County,Rape,519559,206,31,200,23,4,173,0,0,0,3,1
+2025,GA0440200,DeKalb County Police Department,GA,County,Robbery,519559,584,20,581,17,1,563,0,0,0,0,1
+2025,GA0440200,DeKalb County Police Department,GA,County,Aggravated assault,519559,2850,245,1612,193,1,1418,0,0,1,0,0
+2025,FL0360000,Lee County Sheriff's Office,FL,County,Violent crime,519074,977,764,833,550,91,192,4,0,0,5,82
+2025,FL0360000,Lee County Sheriff's Office,FL,County,Homicide,519074,15,15,12,8,4,0,4,0,0,0,0
+2025,FL0360000,Lee County Sheriff's Office,FL,County,Rape,519074,109,42,101,23,11,67,0,0,0,0,11
+2025,FL0360000,Lee County Sheriff's Office,FL,County,Robbery,519074,147,121,147,111,11,25,0,0,0,1,10
+2025,FL0360000,Lee County Sheriff's Office,FL,County,Aggravated assault,519074,706,586,573,408,65,100,0,0,0,4,61
+2025,MOKPD0000,Kansas City Police Department,MO,City,Violent crime,518039,7126,1650,5107,956,185,3966,18,0,15,69,83
+2025,MOKPD0000,Kansas City Police Department,MO,City,Homicide,518039,134,100,119,44,20,55,6,0,3,11,0
+2025,MOKPD0000,Kansas City Police Department,MO,City,Rape,518039,377,129,349,16,43,290,2,0,6,13,22
+2025,MOKPD0000,Kansas City Police Department,MO,City,Robbery,518039,1041,158,1036,128,23,885,3,0,1,8,11
+2025,MOKPD0000,Kansas City Police Department,MO,City,Aggravated assault,518039,5574,1263,3603,768,99,2736,7,0,5,37,50
+2025,NC0920100,Raleigh Police Department,NC,City,Violent crime,508719,2007,578,1600,313,0,1287,0,0,0,0,0
+2025,NC0920100,Raleigh Police Department,NC,City,Homicide,508719,25,18,25,18,0,7,0,0,0,0,0
+2025,NC0920100,Raleigh Police Department,NC,City,Rape,508719,181,9,175,6,0,169,0,0,0,0,0
+2025,NC0920100,Raleigh Police Department,NC,City,Robbery,508719,379,96,376,61,0,315,0,0,0,0,0
+2025,NC0920100,Raleigh Police Department,NC,City,Aggravated assault,508719,1422,455,1024,228,0,796,0,0,0,0,0
+2025,FL0130600,Miami Police Department,FL,City,Violent crime,498792,1787,1335,1621,1000,83,538,7,1,0,54,21
+2025,FL0130600,Miami Police Department,FL,City,Homicide,498792,26,18,22,13,4,5,4,0,0,0,0
+2025,FL0130600,Miami Police Department,FL,City,Rape,498792,95,95,97,27,51,19,0,0,0,47,4
+2025,FL0130600,Miami Police Department,FL,City,Robbery,498792,388,280,386,240,3,143,1,0,0,0,2
+2025,FL0130600,Miami Police Department,FL,City,Aggravated assault,498792,1278,942,1116,720,25,371,2,1,0,7,15
+2025,CA0370000,San Diego County Sheriff's Office,CA,County,Violent crime,498387,832,545,766,367,121,278,0,0,0,115,6
+2025,CA0370000,San Diego County Sheriff's Office,CA,County,Homicide,498387,4,4,4,4,0,0,0,0,0,0,0
+2025,CA0370000,San Diego County Sheriff's Office,CA,County,Rape,498387,47,22,40,4,13,23,0,0,0,13,0
+2025,CA0370000,San Diego County Sheriff's Office,CA,County,Robbery,498387,99,47,98,37,8,53,0,0,0,7,1
+2025,CA0370000,San Diego County Sheriff's Office,CA,County,Aggravated assault,498387,682,472,624,322,100,202,0,0,0,95,5
+2025,CO0210100,Colorado Springs Police Department,CO,City,Violent crime,496560,3428,1656,2871,1230,16,1625,4,1,1,5,5
+2025,CO0210100,Colorado Springs Police Department,CO,City,Homicide,496560,25,16,21,9,3,9,3,0,0,0,0
+2025,CO0210100,Colorado Springs Police Department,CO,City,Rape,496560,482,48,444,29,2,413,0,0,1,1,0
+2025,CO0210100,Colorado Springs Police Department,CO,City,Robbery,496560,322,152,321,134,3,184,0,0,0,0,3
+2025,CO0210100,Colorado Springs Police Department,CO,City,Aggravated assault,496560,2599,1440,2085,1058,8,1019,1,1,0,4,2
+2025,VA0750300,Prince William County Police Department,VA,County,Violent crime,492615,1052,726,902,508,74,320,3,0,1,25,45
+2025,VA0750300,Prince William County Police Department,VA,County,Homicide,492615,8,9,8,8,0,0,0,0,0,0,0
+2025,VA0750300,Prince William County Police Department,VA,County,Rape,492615,101,75,96,24,16,56,0,0,0,7,9
+2025,VA0750300,Prince William County Police Department,VA,County,Robbery,492615,173,102,172,86,9,77,0,0,0,3,6
+2025,VA0750300,Prince William County Police Department,VA,County,Aggravated assault,492615,770,540,626,390,49,187,3,0,1,15,30
+2025,NB0280200,Omaha Police Department,NE,City,Violent crime,488395,1707,1155,1484,738,174,572,6,0,0,58,110
+2025,NB0280200,Omaha Police Department,NE,City,Homicide,488395,26,25,26,24,2,0,2,0,0,0,0
+2025,NB0280200,Omaha Police Department,NE,City,Rape,488395,232,90,210,48,21,141,0,0,0,5,16
+2025,NB0280200,Omaha Police Department,NE,City,Robbery,488395,180,100,180,70,22,88,0,0,0,4,18
+2025,NB0280200,Omaha Police Department,NE,City,Aggravated assault,488395,1269,940,1068,596,129,343,4,0,0,49,76
+2025,CTCSP0000,Connecticut State Police,CT,State Police,Violent crime,477608,187,124,161,80,2,79,0,0,0,2,0
+2025,CTCSP0000,Connecticut State Police,CT,State Police,Homicide,477608,3,5,2,2,0,0,0,0,0,0,0
+2025,CTCSP0000,Connecticut State Police,CT,State Police,Rape,477608,65,30,60,15,2,43,0,0,0,2,0
+2025,CTCSP0000,Connecticut State Police,CT,State Police,Robbery,477608,18,14,17,9,0,8,0,0,0,0,0
+2025,CTCSP0000,Connecticut State Police,CT,State Police,Aggravated assault,477608,101,75,82,54,0,28,0,0,0,0,0
+2025,VA1280000,Virginia Beach Police Department,VA,City,Violent crime,454805,453,301,420,229,27,164,0,0,0,18,9
+2025,VA1280000,Virginia Beach Police Department,VA,City,Homicide,454805,15,15,14,11,0,3,0,0,0,0,0
+2025,VA1280000,Virginia Beach Police Department,VA,City,Rape,454805,81,49,70,11,18,41,0,0,0,11,7
+2025,VA1280000,Virginia Beach Police Department,VA,City,Robbery,454805,139,95,140,86,2,52,0,0,0,2,0
+2025,VA1280000,Virginia Beach Police Department,VA,City,Aggravated assault,454805,218,142,196,121,7,68,0,0,0,5,2
+2025,CA0194100,Long Beach Police Department,CA,City,Violent crime,447317,2777,1032,2530,754,63,1713,1,1,0,27,34
+2025,CA0194100,Long Beach Police Department,CA,City,Homicide,447317,29,22,28,21,1,6,0,1,0,0,0
+2025,CA0194100,Long Beach Police Department,CA,City,Rape,447317,171,59,168,24,12,132,0,0,0,6,6
+2025,CA0194100,Long Beach Police Department,CA,City,Robbery,447317,756,188,756,138,27,591,1,0,0,6,20
+2025,CA0194100,Long Beach Police Department,CA,City,Aggravated assault,447317,1821,763,1578,571,23,984,0,0,0,15,8
+2025,WA0270000,Pierce County Sheriff's Office,WA,County,Violent crime,442612,1002,566,872,401,64,407,1,0,0,34,29
+2025,WA0270000,Pierce County Sheriff's Office,WA,County,Homicide,442612,14,9,11,5,0,6,0,0,0,0,0
+2025,WA0270000,Pierce County Sheriff's Office,WA,County,Rape,442612,107,70,98,13,35,50,1,0,0,18,16
+2025,WA0270000,Pierce County Sheriff's Office,WA,County,Robbery,442612,131,61,131,55,4,72,0,0,0,0,4
+2025,WA0270000,Pierce County Sheriff's Office,WA,County,Aggravated assault,442612,750,426,632,328,25,279,0,0,0,16,9
+2025,DE0020300,New Castle County Police Department,DE,County,Violent crime,439696,644,563,540,402,21,117,0,0,0,17,4
+2025,DE0020300,New Castle County Police Department,DE,County,Homicide,439696,8,4,7,4,0,3,0,0,0,0,0
+2025,DE0020300,New Castle County Police Department,DE,County,Rape,439696,44,51,41,9,13,19,0,0,0,12,1
+2025,DE0020300,New Castle County Police Department,DE,County,Robbery,439696,38,27,38,21,1,16,0,0,0,0,1
+2025,DE0020300,New Castle County Police Department,DE,County,Aggravated assault,439696,554,481,454,368,7,79,0,0,0,5,2
+2025,TX0150000,Bexar County Sheriff's Office,TX,County,Violent crime,429159,864,526,772,439,19,314,1,0,0,12,6
+2025,TX0150000,Bexar County Sheriff's Office,TX,County,Homicide,429159,13,11,13,10,1,2,1,0,0,0,0
+2025,TX0150000,Bexar County Sheriff's Office,TX,County,Rape,429159,83,31,83,25,3,55,0,0,0,1,2
+2025,TX0150000,Bexar County Sheriff's Office,TX,County,Robbery,429159,105,43,105,35,7,63,0,0,0,4,3
+2025,TX0150000,Bexar County Sheriff's Office,TX,County,Aggravated assault,429159,663,441,571,369,8,194,0,0,0,7,1
+2025,MN0271100,Minneapolis Police Department,MN,City,Violent crime,428057,4297,1846,3788,1099,302,2387,9,1,0,266,26
+2025,MN0271100,Minneapolis Police Department,MN,City,Homicide,428057,62,59,58,35,4,19,4,0,0,0,0
+2025,MN0271100,Minneapolis Police Department,MN,City,Rape,428057,409,79,387,29,8,350,0,0,0,7,1
+2025,MN0271100,Minneapolis Police Department,MN,City,Robbery,428057,1078,223,1078,173,19,886,0,0,0,6,13
+2025,MN0271100,Minneapolis Police Department,MN,City,Aggravated assault,428057,2748,1485,2265,862,271,1132,5,1,0,253,12
+2025,FL0290200,Tampa Police Department,FL,City,Violent crime,421313,1405,976,1188,682,92,414,4,0,0,68,20
+2025,FL0290200,Tampa Police Department,FL,City,Homicide,421313,17,7,16,5,0,11,0,0,0,0,0
+2025,FL0290200,Tampa Police Department,FL,City,Rape,421313,128,26,125,11,0,114,0,0,0,0,0
+2025,FL0290200,Tampa Police Department,FL,City,Robbery,421313,177,112,177,100,6,71,1,0,0,4,1
+2025,FL0290200,Tampa Police Department,FL,City,Aggravated assault,421313,1083,831,870,566,86,218,3,0,0,64,19
+2025,CA0150200,Bakersfield Police Department,CA,City,Violent crime,420589,2087,1074,1890,868,36,986,3,0,0,5,28
+2025,CA0150200,Bakersfield Police Department,CA,City,Homicide,420589,33,28,30,24,0,6,0,0,0,0,0
+2025,CA0150200,Bakersfield Police Department,CA,City,Rape,420589,103,37,97,18,9,70,0,0,0,0,9
+2025,CA0150200,Bakersfield Police Department,CA,City,Robbery,420589,483,207,482,192,6,284,0,0,0,1,5
+2025,CA0150200,Bakersfield Police Department,CA,City,Aggravated assault,420589,1468,802,1281,634,21,626,3,0,0,4,14
+2025,OK0720500,Tulsa Police Department,OK,City,Violent crime,415528,3463,1415,3410,1083,204,2123,35,0,8,22,139
+2025,OK0720500,Tulsa Police Department,OK,City,Homicide,415528,26,23,27,24,0,3,0,0,0,0,0
+2025,OK0720500,Tulsa Police Department,OK,City,Rape,415528,473,74,471,34,17,420,1,0,1,7,8
+2025,OK0720500,Tulsa Police Department,OK,City,Robbery,415528,362,146,360,108,18,234,1,0,1,1,15
+2025,OK0720500,Tulsa Police Department,OK,City,Aggravated assault,415528,2602,1172,2552,917,169,1466,33,0,6,14,116
+2025,CO0010100,Aurora Police Department,CO,City,Violent crime,407319,3108,1273,2560,814,55,1691,9,0,0,29,17
+2025,CO0010100,Aurora Police Department,CO,City,Homicide,407319,36,34,31,18,3,10,2,0,0,1,0
+2025,CO0010100,Aurora Police Department,CO,City,Rape,407319,283,31,269,22,5,242,0,0,0,5,0
+2025,CO0010100,Aurora Police Department,CO,City,Robbery,407319,360,103,360,83,3,274,1,0,0,0,2
+2025,CO0010100,Aurora Police Department,CO,City,Aggravated assault,407319,2429,1105,1900,691,44,1165,6,0,0,23,15
+2025,TX2200100,Arlington Police Department,TX,City,Violent crime,406035,1650,816,1392,551,83,758,2,0,0,45,36
+2025,TX2200100,Arlington Police Department,TX,City,Homicide,406035,14,8,12,5,1,6,1,0,0,0,0
+2025,TX2200100,Arlington Police Department,TX,City,Rape,406035,273,49,254,22,14,218,0,0,0,8,6
+2025,TX2200100,Arlington Police Department,TX,City,Robbery,406035,181,64,181,55,9,117,0,0,0,2,7
+2025,TX2200100,Arlington Police Department,TX,City,Aggravated assault,406035,1182,695,945,469,59,417,1,0,0,35,23
+2025,KS0870300,Wichita Police Department,KS,City,Violent crime,401730,4857,1868,3694,1065,306,2323,5,0,0,278,23
+2025,KS0870300,Wichita Police Department,KS,City,Homicide,401730,36,30,36,29,1,6,1,0,0,0,0
+2025,KS0870300,Wichita Police Department,KS,City,Rape,401730,403,80,380,25,29,326,0,0,0,27,2
+2025,KS0870300,Wichita Police Department,KS,City,Robbery,401730,381,133,380,106,20,254,0,0,0,16,4
+2025,KS0870300,Wichita Police Department,KS,City,Aggravated assault,401730,4037,1625,2898,905,256,1737,4,0,0,235,17
+2025,MO0950000,St. Louis County Police Department,MO,County,Violent crime,400341,1761,1158,1432,670,103,659,4,0,1,91,7
+2025,MO0950000,St. Louis County Police Department,MO,County,Homicide,400341,28,21,28,13,2,13,2,0,0,0,0
+2025,MO0950000,St. Louis County Police Department,MO,County,Rape,400341,89,54,84,13,9,62,0,0,0,9,0
+2025,MO0950000,St. Louis County Police Department,MO,County,Robbery,400341,197,82,196,66,3,127,0,0,0,3,0
+2025,MO0950000,St. Louis County Police Department,MO,County,Aggravated assault,400341,1447,1001,1124,578,89,457,2,0,1,79,7
+2025,VA0210100,Chesterfield County Police Department,VA,County,Violent crime,397206,638,478,550,295,59,196,2,0,0,15,42
+2025,VA0210100,Chesterfield County Police Department,VA,County,Homicide,397206,16,15,14,10,0,4,0,0,0,0,0
+2025,VA0210100,Chesterfield County Police Department,VA,County,Rape,397206,78,44,74,10,10,54,1,0,0,4,5
+2025,VA0210100,Chesterfield County Police Department,VA,County,Robbery,397206,73,54,73,41,7,25,0,0,0,0,7
+2025,VA0210100,Chesterfield County Police Department,VA,County,Aggravated assault,397206,471,365,389,234,42,113,1,0,0,11,30
+2025,SC0230000,Greenville County Sheriff's Office,SC,County,Violent crime,390870,1262,964,1014,510,255,249,8,0,2,128,117
+2025,SC0230000,Greenville County Sheriff's Office,SC,County,Homicide,390870,19,22,19,17,2,0,2,0,0,0,0
+2025,SC0230000,Greenville County Sheriff's Office,SC,County,Rape,390870,149,132,135,53,42,40,0,0,0,27,15
+2025,SC0230000,Greenville County Sheriff's Office,SC,County,Robbery,390870,91,53,91,39,13,39,1,0,0,4,8
+2025,SC0230000,Greenville County Sheriff's Office,SC,County,Aggravated assault,390870,1003,757,769,401,198,170,5,0,2,97,94
+2025,VA0530000,Loudoun County Sheriff's Office,VA,County,Violent crime,390033,281,197,238,111,33,94,0,0,3,12,18
+2025,VA0530000,Loudoun County Sheriff's Office,VA,County,Homicide,390033,4,4,3,3,0,0,0,0,0,0,0
+2025,VA0530000,Loudoun County Sheriff's Office,VA,County,Rape,390033,88,56,73,10,20,43,0,0,0,10,10
+2025,VA0530000,Loudoun County Sheriff's Office,VA,County,Robbery,390033,31,22,31,16,6,9,0,0,1,2,3
+2025,VA0530000,Loudoun County Sheriff's Office,VA,County,Aggravated assault,390033,158,115,131,82,7,42,0,0,2,0,5
+2025,FL0110000,Collier County Sheriff's Office,FL,County,Violent crime,382493,361,189,308,136,16,156,1,0,1,0,14
+2025,FL0110000,Collier County Sheriff's Office,FL,County,Homicide,382493,4,2,4,2,0,2,0,0,0,0,0
+2025,FL0110000,Collier County Sheriff's Office,FL,County,Rape,382493,30,11,25,6,0,19,0,0,0,0,0
+2025,FL0110000,Collier County Sheriff's Office,FL,County,Robbery,382493,60,29,60,24,4,32,0,0,0,0,4
+2025,FL0110000,Collier County Sheriff's Office,FL,County,Aggravated assault,382493,267,147,219,104,12,103,1,0,1,0,10
+2025,WA0310000,Snohomish County Sheriff's Office,WA,County,Violent crime,377021,392,281,350,239,0,111,0,0,0,0,0
+2025,WA0310000,Snohomish County Sheriff's Office,WA,County,Homicide,377021,1,2,1,0,0,1,0,0,0,0,0
+2025,WA0310000,Snohomish County Sheriff's Office,WA,County,Rape,377021,46,24,40,11,0,29,0,0,0,0,0
+2025,WA0310000,Snohomish County Sheriff's Office,WA,County,Robbery,377021,55,28,54,28,0,26,0,0,0,0,0
+2025,WA0310000,Snohomish County Sheriff's Office,WA,County,Aggravated assault,377021,290,227,255,200,0,55,0,0,0,0,0
+2025,AZ0100000,Pima County Sheriff's Office,AZ,County,Violent crime,366196,784,315,619,227,0,392,0,0,0,0,0
+2025,AZ0100000,Pima County Sheriff's Office,AZ,County,Homicide,366196,7,7,6,6,0,0,0,0,0,0,0
+2025,AZ0100000,Pima County Sheriff's Office,AZ,County,Rape,366196,49,3,48,3,0,45,0,0,0,0,0
+2025,AZ0100000,Pima County Sheriff's Office,AZ,County,Robbery,366196,58,26,58,24,0,34,0,0,0,0,0
+2025,AZ0100000,Pima County Sheriff's Office,AZ,County,Aggravated assault,366196,670,279,507,194,0,313,0,0,0,0,0
+2025,OHCLP0000,Cleveland Police Department,OH,City,Violent crime,363659,4965,998,4224,685,90,3449,2,0,0,16,72
+2025,OHCLP0000,Cleveland Police Department,OH,City,Homicide,363659,102,39,98,29,0,69,0,0,0,0,0
+2025,OHCLP0000,Cleveland Police Department,OH,City,Rape,363659,424,37,404,24,1,379,0,0,0,1,0
+2025,OHCLP0000,Cleveland Police Department,OH,City,Robbery,363659,1050,117,1048,90,16,942,0,0,0,3,13
+2025,OHCLP0000,Cleveland Police Department,OH,City,Aggravated assault,363659,3389,805,2674,542,73,2059,2,0,0,12,59
+2025,NV0020300,Henderson Police Department,NV,City,Violent crime,358366,807,501,721,320,48,353,1,3,0,8,36
+2025,NV0020300,Henderson Police Department,NV,City,Homicide,358366,7,8,7,4,0,3,0,0,0,0,0
+2025,NV0020300,Henderson Police Department,NV,City,Rape,358366,106,58,110,10,33,67,1,0,0,5,27
+2025,NV0020300,Henderson Police Department,NV,City,Robbery,358366,173,90,172,79,6,87,0,2,0,1,3
+2025,NV0020300,Henderson Police Department,NV,City,Aggravated assault,358366,521,345,432,227,9,196,0,1,0,2,6
+2025,FL0420000,Marion County Sheriff's Office,FL,County,Violent crime,355347,796,530,716,402,45,269,3,0,0,10,32
+2025,FL0420000,Marion County Sheriff's Office,FL,County,Homicide,355347,12,6,12,3,5,4,2,0,0,3,0
+2025,FL0420000,Marion County Sheriff's Office,FL,County,Rape,355347,140,114,128,49,26,53,0,0,0,4,22
+2025,FL0420000,Marion County Sheriff's Office,FL,County,Robbery,355347,50,30,50,31,3,16,1,0,0,0,2
+2025,FL0420000,Marion County Sheriff's Office,FL,County,Aggravated assault,355347,594,380,526,319,11,196,0,0,0,3,8
+2025,CA0300100,Anaheim Police Department,CA,City,Violent crime,344040,1884,1016,1645,807,9,829,1,0,0,7,1
+2025,CA0300100,Anaheim Police Department,CA,City,Homicide,344040,9,6,9,6,0,3,0,0,0,0,0
+2025,CA0300100,Anaheim Police Department,CA,City,Rape,344040,113,48,109,13,7,89,0,0,0,6,1
+2025,CA0300100,Anaheim Police Department,CA,City,Robbery,344040,288,111,286,102,1,183,0,0,0,1,0
+2025,CA0300100,Anaheim Police Department,CA,City,Aggravated assault,344040,1474,851,1241,686,1,554,1,0,0,0,0
+2025,VA0430100,Henrico County Police Department,VA,County,Violent crime,340544,540,346,442,226,25,191,1,0,6,4,14
+2025,VA0430100,Henrico County Police Department,VA,County,Homicide,340544,5,10,4,3,0,1,0,0,0,0,0
+2025,VA0430100,Henrico County Police Department,VA,County,Rape,340544,20,16,19,1,2,16,0,0,0,1,1
+2025,VA0430100,Henrico County Police Department,VA,County,Robbery,340544,101,55,102,35,13,54,1,0,0,2,10
+2025,VA0430100,Henrico County Police Department,VA,County,Aggravated assault,340544,414,265,317,187,10,120,0,0,6,1,3
+2025,MD0140100,Howard County Police Department,MD,County,Violent crime,340315,396,215,333,137,14,182,2,4,0,1,7
+2025,MD0140100,Howard County Police Department,MD,County,Homicide,340315,10,10,7,4,1,2,1,0,0,0,0
+2025,MD0140100,Howard County Police Department,MD,County,Rape,340315,45,26,35,5,3,27,0,0,0,1,2
+2025,MD0140100,Howard County Police Department,MD,County,Robbery,340315,100,29,93,19,0,74,0,0,0,0,0
+2025,MD0140100,Howard County Police Department,MD,County,Aggravated assault,340315,241,150,198,109,10,79,1,4,0,0,5
+2025,KY0340200,Lexington Police Department,KY,City,Violent crime,330994,755,369,706,296,22,388,4,0,0,1,17
+2025,KY0340200,Lexington Police Department,KY,City,Homicide,330994,15,18,12,10,2,0,2,0,0,0,0
+2025,KY0340200,Lexington Police Department,KY,City,Rape,330994,178,37,170,20,4,146,1,0,0,1,2
+2025,KY0340200,Lexington Police Department,KY,City,Robbery,330994,193,85,193,78,3,112,0,0,0,0,3
+2025,KY0340200,Lexington Police Department,KY,City,Aggravated assault,330994,369,229,331,188,13,130,1,0,0,0,12
+2025,LA0260000,Jefferson Parish Sheriff's Office,LA,County,Violent crime,327213,861,379,763,291,0,472,0,0,0,0,0
+2025,LA0260000,Jefferson Parish Sheriff's Office,LA,County,Homicide,327213,21,13,22,14,0,8,0,0,0,0,0
+2025,LA0260000,Jefferson Parish Sheriff's Office,LA,County,Rape,327213,63,23,55,17,0,38,0,0,0,0,0
+2025,LA0260000,Jefferson Parish Sheriff's Office,LA,County,Robbery,327213,134,49,125,42,0,83,0,0,0,0,0
+2025,LA0260000,Jefferson Parish Sheriff's Office,LA,County,Aggravated assault,327213,643,294,561,218,0,343,0,0,0,0,0
+2025,SC0260400,Horry County Police Department,SC,County,Violent crime,326262,827,385,687,227,80,380,2,0,0,18,60
+2025,SC0260400,Horry County Police Department,SC,County,Homicide,326262,15,9,15,7,2,6,2,0,0,0,0
+2025,SC0260400,Horry County Police Department,SC,County,Rape,326262,109,44,100,16,20,64,0,0,0,2,18
+2025,SC0260400,Horry County Police Department,SC,County,Robbery,326262,48,15,45,11,3,31,0,0,0,0,3
+2025,SC0260400,Horry County Police Department,SC,County,Aggravated assault,326262,655,317,527,193,55,279,0,0,0,16,39
+2025,CA0390500,Stockton Police Department,CA,City,Violent crime,325985,3353,955,2702,700,0,2002,0,0,0,0,0
+2025,CA0390500,Stockton Police Department,CA,City,Homicide,325985,37,33,33,24,0,9,0,0,0,0,0
+2025,CA0390500,Stockton Police Department,CA,City,Rape,325985,162,21,156,18,0,138,0,0,0,0,0
+2025,CA0390500,Stockton Police Department,CA,City,Robbery,325985,859,195,859,177,0,682,0,0,0,0,0
+2025,CA0390500,Stockton Police Department,CA,City,Aggravated assault,325985,2295,706,1654,481,0,1173,0,0,0,0,0
+2025,CA0331300,Riverside Police Department,CA,City,Violent crime,325858,1744,721,1607,649,4,954,1,0,0,3,0
+2025,CA0331300,Riverside Police Department,CA,City,Homicide,325858,13,12,13,12,0,1,0,0,0,0,0
+2025,CA0331300,Riverside Police Department,CA,City,Rape,325858,135,18,127,14,0,113,0,0,0,0,0
+2025,CA0331300,Riverside Police Department,CA,City,Robbery,325858,314,103,313,102,0,211,0,0,0,0,0
+2025,CA0331300,Riverside Police Department,CA,City,Aggravated assault,325858,1282,588,1154,521,4,629,1,0,0,3,0
+2025,FL0550000,St. Johns County Sheriff's Office,FL,County,Violent crime,322319,245,172,199,131,5,63,0,0,1,1,3
+2025,FL0550000,St. Johns County Sheriff's Office,FL,County,Rape,322319,16,3,12,1,2,9,0,0,0,0,2
+2025,FL0550000,St. Johns County Sheriff's Office,FL,County,Robbery,322319,15,8,14,7,0,7,0,0,0,0,0
+2025,FL0550000,St. Johns County Sheriff's Office,FL,County,Aggravated assault,322319,214,161,173,123,3,47,0,0,1,1,1
+2025,CA0302600,Irvine Police Department,CA,City,Violent crime,321339,253,156,234,109,15,110,0,1,3,1,10
+2025,CA0302600,Irvine Police Department,CA,City,Rape,321339,43,10,41,3,4,34,0,0,0,0,4
+2025,CA0302600,Irvine Police Department,CA,City,Robbery,321339,57,44,57,38,2,17,0,1,0,0,1
+2025,CA0302600,Irvine Police Department,CA,City,Aggravated assault,321339,153,102,136,68,9,59,0,0,3,1,5
+2025,NJNPD0000,Newark Police Department,NJ,City,Violent crime,318638,1646,952,1608,879,20,709,0,20,0,0,0
+2025,NJNPD0000,Newark Police Department,NJ,City,Homicide,318638,33,25,31,5,19,7,0,19,0,0,0
+2025,NJNPD0000,Newark Police Department,NJ,City,Rape,318638,154,4,154,3,0,151,0,0,0,0,0
+2025,NJNPD0000,Newark Police Department,NJ,City,Robbery,318638,282,124,282,109,0,173,0,0,0,0,0
+2025,NJNPD0000,Newark Police Department,NJ,City,Aggravated assault,318638,1177,799,1141,762,1,378,0,1,0,0,0
+2025,CA0301900,Santa Ana Police Department,CA,City,Violent crime,317439,1069,353,929,275,4,650,2,0,0,0,2
+2025,CA0301900,Santa Ana Police Department,CA,City,Homicide,317439,12,4,12,4,0,8,0,0,0,0,0
+2025,CA0301900,Santa Ana Police Department,CA,City,Rape,317439,116,33,104,25,0,79,0,0,0,0,0
+2025,CA0301900,Santa Ana Police Department,CA,City,Robbery,317439,254,69,253,67,1,185,0,0,0,0,1
+2025,CA0301900,Santa Ana Police Department,CA,City,Aggravated assault,317439,687,247,560,179,3,378,2,0,0,0,1
+2025,TX1780200,Corpus Christi Police Department,TX,City,Violent crime,317077,2533,916,2033,586,94,1353,2,0,7,68,17
+2025,TX1780200,Corpus Christi Police Department,TX,City,Homicide,317077,13,14,13,11,1,1,1,0,0,0,0
+2025,TX1780200,Corpus Christi Police Department,TX,City,Rape,317077,220,69,209,20,25,164,1,0,1,21,2
+2025,TX1780200,Corpus Christi Police Department,TX,City,Robbery,317077,334,120,334,105,6,223,0,0,0,5,1
+2025,TX1780200,Corpus Christi Police Department,TX,City,Aggravated assault,317077,1966,713,1477,450,62,965,0,0,6,42,14
+2025,OHCIP0000,Cincinnati Police Department,OH,City,Violent crime,316260,2482,1197,2186,803,202,1181,7,0,0,36,159
+2025,OHCIP0000,Cincinnati Police Department,OH,City,Homicide,316260,66,45,64,34,5,25,2,0,0,3,0
+2025,OHCIP0000,Cincinnati Police Department,OH,City,Rape,316260,177,79,151,8,44,99,0,0,0,9,35
+2025,OHCIP0000,Cincinnati Police Department,OH,City,Robbery,316260,601,221,600,163,44,393,2,0,0,3,39
+2025,OHCIP0000,Cincinnati Police Department,OH,City,Aggravated assault,316260,1638,852,1371,598,109,664,3,0,0,21,85
+2025,TN0470000,Knox County Sheriff's Office,TN,County,Violent crime,313481,526,279,447,222,2,223,1,0,0,0,1
+2025,TN0470000,Knox County Sheriff's Office,TN,County,Homicide,313481,4,2,4,1,1,2,1,0,0,0,0
+2025,TN0470000,Knox County Sheriff's Office,TN,County,Rape,313481,73,8,70,7,1,62,0,0,0,0,1
+2025,TN0470000,Knox County Sheriff's Office,TN,County,Robbery,313481,11,3,11,3,0,8,0,0,0,0,0
+2025,TN0470000,Knox County Sheriff's Office,TN,County,Aggravated assault,313481,438,266,362,211,0,151,0,0,0,0,0
+2025,NC0410200,Greensboro Police Department,NC,City,Violent crime,310328,2177,736,1321,382,6,933,1,1,0,2,2
+2025,NC0410200,Greensboro Police Department,NC,City,Homicide,310328,37,24,26,11,0,15,0,0,0,0,0
+2025,NC0410200,Greensboro Police Department,NC,City,Rape,310328,87,7,69,5,0,64,0,0,0,0,0
+2025,NC0410200,Greensboro Police Department,NC,City,Robbery,310328,436,147,334,105,2,227,0,0,0,1,1
+2025,NC0410200,Greensboro Police Department,NC,City,Aggravated assault,310328,1617,558,892,261,4,627,1,1,0,1,1
+2025,MN0620900,St. Paul Police Department,MN,City,Violent crime,307657,1511,454,1372,390,1,981,1,0,0,0,0
+2025,MN0620900,St. Paul Police Department,MN,City,Homicide,307657,15,13,14,12,0,2,0,0,0,0,0
+2025,MN0620900,St. Paul Police Department,MN,City,Rape,307657,218,19,213,18,0,195,0,0,0,0,0
+2025,MN0620900,St. Paul Police Department,MN,City,Robbery,307657,259,39,259,38,0,221,0,0,0,0,0
+2025,MN0620900,St. Paul Police Department,MN,City,Aggravated assault,307657,1019,383,886,322,1,563,1,0,0,0,0
+2025,NC0320100,Durham Police Department,NC,City,Violent crime,307140,1557,455,1355,275,106,974,8,57,0,10,31
+2025,NC0320100,Durham Police Department,NC,City,Homicide,307140,33,23,34,14,6,14,2,3,0,1,0
+2025,NC0320100,Durham Police Department,NC,City,Rape,307140,161,30,155,9,14,132,0,6,0,7,1
+2025,NC0320100,Durham Police Department,NC,City,Robbery,307140,443,119,443,90,27,326,1,19,0,0,7
+2025,NC0320100,Durham Police Department,NC,City,Aggravated assault,307140,920,283,723,162,59,502,5,29,0,2,23
+2025,PAPPD0000,Pittsburgh Bureau of Police,PA,City,Violent crime,306794,1435,716,1298,616,23,659,0,1,1,8,13
+2025,PAPPD0000,Pittsburgh Bureau of Police,PA,City,Homicide,306794,31,10,29,9,0,20,0,0,0,0,0
+2025,PAPPD0000,Pittsburgh Bureau of Police,PA,City,Rape,306794,178,34,163,13,12,138,0,0,0,5,7
+2025,PAPPD0000,Pittsburgh Bureau of Police,PA,City,Robbery,306794,397,152,396,143,7,246,0,0,1,1,5
+2025,PAPPD0000,Pittsburgh Bureau of Police,PA,City,Aggravated assault,306794,829,520,710,451,4,255,0,1,0,2,1
+2025,NJ0090600,Jersey City Police Department,NJ,City,Violent crime,305249,1487,463,1384,413,0,971,0,0,0,0,0
+2025,NJ0090600,Jersey City Police Department,NJ,City,Homicide,305249,13,9,10,7,0,3,0,0,0,0,0
+2025,NJ0090600,Jersey City Police Department,NJ,City,Rape,305249,86,3,85,3,0,82,0,0,0,0,0
+2025,NJ0090600,Jersey City Police Department,NJ,City,Robbery,305249,395,69,395,71,0,324,0,0,0,0,0
+2025,NJ0090600,Jersey City Police Department,NJ,City,Aggravated assault,305249,993,382,894,332,0,562,0,0,0,0,0
+2025,NV0020200,North Las Vegas Police Department,NV,City,Violent crime,302881,1096,500,928,393,5,530,1,0,0,1,3
+2025,NV0020200,North Las Vegas Police Department,NV,City,Homicide,302881,22,9,19,7,0,12,0,0,0,0,0
+2025,NV0020200,North Las Vegas Police Department,NV,City,Rape,302881,90,15,77,12,1,64,0,0,0,0,1
+2025,NV0020200,North Las Vegas Police Department,NV,City,Robbery,302881,300,95,296,89,1,206,1,0,0,0,0
+2025,NV0020200,North Las Vegas Police Department,NV,City,Aggravated assault,302881,684,381,536,285,3,248,0,0,0,1,2
+2025,NB0550100,Lincoln Police Department,NE,City,Violent crime,302860,1293,589,1091,442,16,633,4,0,0,1,11
+2025,NB0550100,Lincoln Police Department,NE,City,Homicide,302860,6,7,6,3,3,0,3,0,0,0,0
+2025,NB0550100,Lincoln Police Department,NE,City,Rape,302860,229,29,216,17,3,196,0,0,0,0,3
+2025,NB0550100,Lincoln Police Department,NE,City,Robbery,302860,136,56,136,52,2,82,0,0,0,1,1
+2025,NB0550100,Lincoln Police Department,NE,City,Aggravated assault,302860,922,497,733,370,8,355,1,0,0,0,7
+2025,CA0150000,Kern County Sheriff's Office,CA,County,Violent crime,298272,3163,926,497,165,8,324,2,0,1,1,4
+2025,CA0150000,Kern County Sheriff's Office,CA,County,Homicide,298272,27,18,5,2,0,3,0,0,0,0,0
+2025,CA0150000,Kern County Sheriff's Office,CA,County,Rape,298272,181,34,41,2,3,36,1,0,1,0,1
+2025,CA0150000,Kern County Sheriff's Office,CA,County,Robbery,298272,349,71,80,17,0,63,0,0,0,0,0
+2025,CA0150000,Kern County Sheriff's Office,CA,County,Aggravated assault,298272,2606,803,371,144,5,222,1,0,0,1,3
+2025,TX0430600,Plano Police Department,TX,City,Violent crime,295030,433,225,387,179,10,198,2,1,0,5,2
+2025,TX0430600,Plano Police Department,TX,City,Homicide,295030,2,1,2,1,0,1,0,0,0,0,0
+2025,TX0430600,Plano Police Department,TX,City,Rape,295030,88,38,80,25,3,52,0,0,0,1,2
+2025,TX0430600,Plano Police Department,TX,City,Robbery,295030,57,25,57,21,1,35,0,1,0,0,0
+2025,TX0430600,Plano Police Department,TX,City,Aggravated assault,295030,286,161,248,132,6,110,2,0,0,4,0
+2025,AZ0071100,Gilbert Police Department,AZ,City,Violent crime,293851,345,171,292,121,0,171,0,0,0,0,0
+2025,AZ0071100,Gilbert Police Department,AZ,City,Homicide,293851,10,10,4,4,0,0,0,0,0,0,0
+2025,AZ0071100,Gilbert Police Department,AZ,City,Rape,293851,88,10,84,6,0,78,0,0,0,0,0
+2025,AZ0071100,Gilbert Police Department,AZ,City,Robbery,293851,23,15,23,12,0,11,0,0,0,0,0
+2025,AZ0071100,Gilbert Police Department,AZ,City,Aggravated assault,293851,224,136,181,99,0,82,0,0,0,0,0
+2025,TX2270000,Travis County Sheriff's Office,TX,County,Violent crime,288003,920,229,823,186,10,627,0,0,0,5,5
+2025,TX2270000,Travis County Sheriff's Office,TX,County,Homicide,288003,6,5,6,4,1,1,0,0,0,1,0
+2025,TX2270000,Travis County Sheriff's Office,TX,County,Rape,288003,146,12,142,6,2,134,0,0,0,2,0
+2025,TX2270000,Travis County Sheriff's Office,TX,County,Robbery,288003,69,9,69,8,0,61,0,0,0,0,0
+2025,TX2270000,Travis County Sheriff's Office,TX,County,Aggravated assault,288003,699,203,606,168,7,431,0,0,0,2,5
+2025,WI0130100,Madison Police Department,WI,City,Violent crime,287992,616,466,555,397,1,157,0,0,0,1,0
+2025,WI0130100,Madison Police Department,WI,City,Homicide,287992,5,6,5,3,0,2,0,0,0,0,0
+2025,WI0130100,Madison Police Department,WI,City,Rape,287992,60,24,58,18,1,39,0,0,0,1,0
+2025,WI0130100,Madison Police Department,WI,City,Robbery,287992,96,47,96,50,0,46,0,0,0,0,0
+2025,WI0130100,Madison Police Department,WI,City,Aggravated assault,287992,455,389,396,326,0,70,0,0,0,0,0
+2025,FL0580000,Sarasota County Sheriff's Office,FL,County,Violent crime,287365,273,172,231,113,20,98,2,0,0,12,6
+2025,FL0580000,Sarasota County Sheriff's Office,FL,County,Homicide,287365,5,3,5,2,0,3,0,0,0,0,0
+2025,FL0580000,Sarasota County Sheriff's Office,FL,County,Rape,287365,24,11,20,6,0,14,0,0,0,0,0
+2025,FL0580000,Sarasota County Sheriff's Office,FL,County,Robbery,287365,22,8,21,6,1,14,0,0,0,1,0
+2025,FL0580000,Sarasota County Sheriff's Office,FL,County,Aggravated assault,287365,222,150,185,99,19,67,2,0,0,11,6
+2025,NV0160100,Reno Police Department,NV,City,Violent crime,286060,1575,730,1373,568,0,805,0,0,0,0,0
+2025,NV0160100,Reno Police Department,NV,City,Homicide,286060,14,7,11,6,0,5,0,0,0,0,0
+2025,NV0160100,Reno Police Department,NV,City,Rape,286060,170,21,168,18,0,150,0,0,0,0,0
+2025,NV0160100,Reno Police Department,NV,City,Robbery,286060,292,89,291,81,0,210,0,0,0,0,0
+2025,NV0160100,Reno Police Department,NV,City,Aggravated assault,286060,1099,613,903,463,0,440,0,0,0,0,0
+2025,AZ0070500,Chandler Police Department,AZ,City,Violent crime,282191,350,138,318,115,6,197,4,0,0,1,1
+2025,AZ0070500,Chandler Police Department,AZ,City,Homicide,282191,4,2,4,1,1,2,1,0,0,0,0
+2025,AZ0070500,Chandler Police Department,AZ,City,Rape,282191,82,3,79,2,0,77,0,0,0,0,0
+2025,AZ0070500,Chandler Police Department,AZ,City,Robbery,282191,43,20,43,19,2,22,1,0,0,1,0
+2025,AZ0070500,Chandler Police Department,AZ,City,Aggravated assault,282191,221,113,192,93,3,96,2,0,0,0,1
+2025,CA0370200,Chula Vista Police Department,CA,City,Violent crime,279237,1020,563,930,507,5,418,1,0,0,2,2
+2025,CA0370200,Chula Vista Police Department,CA,City,Homicide,279237,7,3,5,2,0,3,0,0,0,0,0
+2025,CA0370200,Chula Vista Police Department,CA,City,Rape,279237,48,5,43,2,0,41,0,0,0,0,0
+2025,CA0370200,Chula Vista Police Department,CA,City,Robbery,279237,186,79,187,78,1,108,0,0,0,0,1
+2025,CA0370200,Chula Vista Police Department,CA,City,Aggravated assault,279237,779,476,695,425,4,266,1,0,0,2,1
+2025,NY0140100,Buffalo Police Department,NY,City,Violent crime,276384,2015,935,1902,834,4,1064,2,0,0,2,0
+2025,NY0140100,Buffalo Police Department,NY,City,Homicide,276384,29,21,27,13,0,14,0,0,0,0,0
+2025,NY0140100,Buffalo Police Department,NY,City,Rape,276384,132,12,130,9,0,121,0,0,0,0,0
+2025,NY0140100,Buffalo Police Department,NY,City,Robbery,276384,442,145,442,138,1,303,0,0,0,1,0
+2025,NY0140100,Buffalo Police Department,NY,City,Aggravated assault,276384,1412,757,1303,674,3,626,2,0,0,1,0
+2025,GA0580000,Forsyth County Sheriff's Office,GA,County,Violent crime,276364,153,101,136,69,21,46,3,0,1,16,1
+2025,GA0580000,Forsyth County Sheriff's Office,GA,County,Homicide,276364,4,4,4,2,2,0,2,0,0,0,0
+2025,GA0580000,Forsyth County Sheriff's Office,GA,County,Rape,276364,36,14,33,7,7,19,0,0,1,5,1
+2025,GA0580000,Forsyth County Sheriff's Office,GA,County,Robbery,276364,8,3,8,4,0,4,0,0,0,0,0
+2025,GA0580000,Forsyth County Sheriff's Office,GA,County,Aggravated assault,276364,105,80,91,56,12,23,1,0,0,11,0
+2025,TX1520200,Lubbock Police Department,TX,City,Violent crime,275713,1928,530,1414,315,70,1029,3,0,0,35,32
+2025,TX1520200,Lubbock Police Department,TX,City,Homicide,275713,12,8,11,5,1,5,1,0,0,0,0
+2025,TX1520200,Lubbock Police Department,TX,City,Rape,275713,185,26,175,5,14,156,0,0,0,13,1
+2025,TX1520200,Lubbock Police Department,TX,City,Robbery,275713,224,56,210,38,11,161,0,0,0,5,6
+2025,TX1520200,Lubbock Police Department,TX,City,Aggravated assault,275713,1507,440,1018,267,44,707,2,0,0,17,25
+2025,IN0020100,Fort Wayne Police Department,IN,City,Violent crime,275451,757,217,648,171,3,474,3,0,0,0,0
+2025,IN0020100,Fort Wayne Police Department,IN,City,Homicide,275451,32,26,29,21,3,5,3,0,0,0,0
+2025,IN0020100,Fort Wayne Police Department,IN,City,Rape,275451,135,6,134,4,0,130,0,0,0,0,0
+2025,IN0020100,Fort Wayne Police Department,IN,City,Robbery,275451,138,22,138,22,0,116,0,0,0,0,0
+2025,IN0020100,Fort Wayne Police Department,IN,City,Aggravated assault,275451,452,163,347,124,0,223,0,0,0,0,0
+2025,MOSPD0000,St. Louis Police Department,MO,City,Violent crime,274819,3380,1876,2798,1330,23,1445,13,0,0,2,8
+2025,MOSPD0000,St. Louis Police Department,MO,City,Homicide,274819,141,103,131,85,4,42,4,0,0,0,0
+2025,MOSPD0000,St. Louis Police Department,MO,City,Rape,274819,115,88,105,51,0,54,0,0,0,0,0
+2025,MOSPD0000,St. Louis Police Department,MO,City,Robbery,274819,587,257,585,228,3,354,1,0,0,0,2
+2025,MOSPD0000,St. Louis Police Department,MO,City,Aggravated assault,274819,2537,1428,1977,966,16,995,8,0,0,2,6
+2025,AKAST0100,Alaska State Troopers,AK,State Police,Violent crime,274619,1521,991,1306,755,65,486,5,26,15,4,15
+2025,AKAST0100,Alaska State Troopers,AK,State Police,Homicide,274619,15,13,14,9,1,4,1,0,0,0,0
+2025,AKAST0100,Alaska State Troopers,AK,State Police,Rape,274619,308,122,297,92,18,187,1,8,2,1,6
+2025,AKAST0100,Alaska State Troopers,AK,State Police,Robbery,274619,34,25,32,21,3,8,0,1,1,0,1
+2025,AKAST0100,Alaska State Troopers,AK,State Police,Aggravated assault,274619,1164,831,963,633,43,287,3,17,12,3,8
+2025,FL0560200,Port St. Lucie Police Department,FL,City,Violent crime,273427,349,256,290,184,28,78,0,0,0,24,4
+2025,FL0560200,Port St. Lucie Police Department,FL,City,Homicide,273427,4,1,3,1,0,2,0,0,0,0,0
+2025,FL0560200,Port St. Lucie Police Department,FL,City,Rape,273427,25,10,27,6,4,17,0,0,0,3,1
+2025,FL0560200,Port St. Lucie Police Department,FL,City,Robbery,273427,22,17,23,13,3,7,0,0,0,2,1
+2025,FL0560200,Port St. Lucie Police Department,FL,City,Aggravated assault,273427,298,228,237,164,21,52,0,0,0,19,2
+2025,MI4114100,Kent County Sheriff's Office,MI,County,Violent crime,270333,446,191,380,148,0,232,0,0,0,0,0
+2025,MI4114100,Kent County Sheriff's Office,MI,County,Homicide,270333,3,3,2,2,0,0,0,0,0,0,0
+2025,MI4114100,Kent County Sheriff's Office,MI,County,Rape,270333,101,11,95,6,0,89,0,0,0,0,0
+2025,MI4114100,Kent County Sheriff's Office,MI,County,Robbery,270333,9,4,7,3,0,4,0,0,0,0,0
+2025,MI4114100,Kent County Sheriff's Office,MI,County,Aggravated assault,270333,333,173,276,137,0,139,0,0,0,0,0
+2025,SC0400000,Richland County Sheriff's Office,SC,County,Violent crime,269173,1227,708,1002,332,216,454,0,0,0,62,154
+2025,SC0400000,Richland County Sheriff's Office,SC,County,Homicide,269173,21,20,20,15,0,5,0,0,0,0,0
+2025,SC0400000,Richland County Sheriff's Office,SC,County,Rape,269173,33,21,20,2,8,10,0,0,0,0,8
+2025,SC0400000,Richland County Sheriff's Office,SC,County,Robbery,269173,108,33,107,26,7,74,0,0,0,3,4
+2025,SC0400000,Richland County Sheriff's Office,SC,County,Aggravated assault,269173,1065,634,855,289,201,365,0,0,0,59,142
+2025,OH0480700,Toledo Police Department,OH,City,Violent crime,264490,2306,891,1837,666,23,1148,0,0,0,0,23
+2025,OH0480700,Toledo Police Department,OH,City,Homicide,264490,32,23,15,7,0,8,0,0,0,0,0
+2025,OH0480700,Toledo Police Department,OH,City,Rape,264490,278,35,262,7,15,240,0,0,0,0,15
+2025,OH0480700,Toledo Police Department,OH,City,Robbery,264490,259,92,259,85,2,172,0,0,0,0,2
+2025,OH0480700,Toledo Police Department,OH,City,Aggravated assault,264490,1737,741,1301,567,6,728,0,0,0,0,6
+2025,MI7017000,Ottawa County Sheriff's Office,MI,County,Violent crime,263814,679,513,578,226,163,189,3,0,0,159,1
+2025,MI7017000,Ottawa County Sheriff's Office,MI,County,Homicide,263814,4,4,4,2,2,0,0,0,0,2,0
+2025,MI7017000,Ottawa County Sheriff's Office,MI,County,Rape,263814,159,67,152,15,29,108,1,0,0,27,1
+2025,MI7017000,Ottawa County Sheriff's Office,MI,County,Robbery,263814,11,10,11,8,1,2,0,0,0,1,0
+2025,MI7017000,Ottawa County Sheriff's Office,MI,County,Aggravated assault,263814,505,432,411,201,131,79,2,0,0,129,0
+2025,TX2400100,Laredo Police Department,TX,City,Violent crime,262723,829,458,707,335,0,372,0,0,0,0,0
+2025,TX2400100,Laredo Police Department,TX,City,Homicide,262723,8,5,8,5,0,3,0,0,0,0,0
+2025,TX2400100,Laredo Police Department,TX,City,Rape,262723,109,35,103,18,0,85,0,0,0,0,0
+2025,TX2400100,Laredo Police Department,TX,City,Robbery,262723,93,56,93,51,0,42,0,0,0,0,0
+2025,TX2400100,Laredo Police Department,TX,City,Aggravated assault,262723,619,362,503,261,0,242,0,0,0,0,0
+2025,AZ0071300,Glendale Police Department,AZ,City,Violent crime,260498,1141,436,911,290,13,608,2,0,0,11,0
+2025,AZ0071300,Glendale Police Department,AZ,City,Homicide,260498,10,4,8,2,0,6,0,0,0,0,0
+2025,AZ0071300,Glendale Police Department,AZ,City,Rape,260498,153,14,145,9,0,136,0,0,0,0,0
+2025,AZ0071300,Glendale Police Department,AZ,City,Robbery,260498,150,57,150,48,1,101,0,0,0,1,0
+2025,AZ0071300,Glendale Police Department,AZ,City,Aggravated assault,260498,828,361,608,231,12,365,2,0,0,10,0
+2025,TX1080000,Hidalgo County Sheriff's Office,TX,County,Violent crime,260330,781,170,693,87,27,579,0,0,0,0,27
+2025,TX1080000,Hidalgo County Sheriff's Office,TX,County,Homicide,260330,9,1,9,1,0,8,0,0,0,0,0
+2025,TX1080000,Hidalgo County Sheriff's Office,TX,County,Rape,260330,137,25,126,7,5,114,0,0,0,0,5
+2025,TX1080000,Hidalgo County Sheriff's Office,TX,County,Robbery,260330,47,7,47,5,1,41,0,0,0,0,1
+2025,TX1080000,Hidalgo County Sheriff's Office,TX,County,Aggravated assault,260330,588,137,511,74,21,416,0,0,0,0,21
+2025,TX0571500,Irving Police Department,TX,City,Violent crime,258220,691,238,563,192,0,371,0,0,0,0,0
+2025,TX0571500,Irving Police Department,TX,City,Homicide,258220,4,2,3,0,0,3,0,0,0,0,0
+2025,TX0571500,Irving Police Department,TX,City,Rape,258220,112,13,110,13,0,97,0,0,0,0,0
+2025,TX0571500,Irving Police Department,TX,City,Robbery,258220,123,29,121,29,0,92,0,0,0,0,0
+2025,TX0571500,Irving Police Department,TX,City,Aggravated assault,258220,452,194,329,150,0,179,0,0,0,0,0
+2025,NC0340200,Winston-Salem Police Department,NC,City,Violent crime,257431,1915,938,1430,339,349,742,1,0,1,65,282
+2025,NC0340200,Winston-Salem Police Department,NC,City,Homicide,257431,27,19,25,12,5,8,0,0,0,5,0
+2025,NC0340200,Winston-Salem Police Department,NC,City,Rape,257431,105,21,103,2,13,88,0,0,0,5,8
+2025,NC0340200,Winston-Salem Police Department,NC,City,Robbery,257431,207,93,207,71,14,122,0,0,0,3,11
+2025,NC0340200,Winston-Salem Police Department,NC,City,Aggravated assault,257431,1576,805,1095,254,317,524,1,0,1,52,263
+2025,NY0270000,Monroe County Sheriff's Office,NY,County,Violent crime,257401,155,107,142,69,32,41,0,0,1,27,4
+2025,NY0270000,Monroe County Sheriff's Office,NY,County,Homicide,257401,2,2,1,1,0,0,0,0,0,0,0
+2025,NY0270000,Monroe County Sheriff's Office,NY,County,Rape,257401,27,16,25,4,11,10,0,0,1,7,3
+2025,NY0270000,Monroe County Sheriff's Office,NY,County,Robbery,257401,25,17,24,15,1,8,0,0,0,1,0
+2025,NY0270000,Monroe County Sheriff's Office,NY,County,Aggravated assault,257401,101,72,92,49,20,23,0,0,0,19,1
+2025,FL0520000,Pinellas County Sheriff's Office,FL,County,Violent crime,257198,386,249,348,193,23,132,1,0,0,2,20
+2025,FL0520000,Pinellas County Sheriff's Office,FL,County,Homicide,257198,8,8,6,5,0,1,0,0,0,0,0
+2025,FL0520000,Pinellas County Sheriff's Office,FL,County,Rape,257198,81,16,79,6,6,67,0,0,0,1,5
+2025,FL0520000,Pinellas County Sheriff's Office,FL,County,Robbery,257198,34,18,34,17,3,14,0,0,0,0,3
+2025,FL0520000,Pinellas County Sheriff's Office,FL,County,Aggravated assault,257198,263,207,229,165,14,50,1,0,0,1,12
+2025,VA1030000,Chesapeake Police Department,VA,City,Violent crime,257012,821,326,667,239,15,413,2,0,0,5,8
+2025,VA1030000,Chesapeake Police Department,VA,City,Homicide,257012,11,9,11,8,0,3,0,0,0,0,0
+2025,VA1030000,Chesapeake Police Department,VA,City,Rape,257012,74,20,67,4,5,58,0,0,0,3,2
+2025,VA1030000,Chesapeake Police Department,VA,City,Robbery,257012,77,25,77,20,3,54,0,0,0,1,2
+2025,VA1030000,Chesapeake Police Department,VA,City,Aggravated assault,257012,659,272,512,207,7,298,2,0,0,1,4
+2025,AL0020100,Mobile Police Department,AL,City,Violent crime,255927,1506,1062,1247,504,399,344,2,0,0,358,39
+2025,AL0020100,Mobile Police Department,AL,City,Homicide,255927,37,36,29,25,1,3,1,0,0,0,0
+2025,AL0020100,Mobile Police Department,AL,City,Rape,255927,17,16,14,6,2,6,1,0,0,1,0
+2025,AL0020100,Mobile Police Department,AL,City,Robbery,255927,105,80,104,71,6,27,0,0,0,3,3
+2025,AL0020100,Mobile Police Department,AL,City,Aggravated assault,255927,1347,930,1100,402,390,308,0,0,0,354,36
+2025,TX0571100,Garland Police Department,TX,City,Violent crime,251332,479,335,436,236,32,168,3,0,0,0,29
+2025,TX0571100,Garland Police Department,TX,City,Homicide,251332,6,5,6,4,1,1,1,0,0,0,0
+2025,TX0571100,Garland Police Department,TX,City,Rape,251332,81,49,77,14,16,47,0,0,0,0,16
+2025,TX0571100,Garland Police Department,TX,City,Robbery,251332,128,59,128,52,3,73,0,0,0,0,3
+2025,TX0571100,Garland Police Department,TX,City,Aggravated assault,251332,264,222,225,166,12,47,2,0,0,0,10
