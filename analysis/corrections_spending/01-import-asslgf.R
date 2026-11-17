@@ -7,7 +7,7 @@
 library(tidyverse)
 source("R/page-data.R")
 
-asslgf_path <- jr_data_path("data", "raw", "census", "asslgf", "GOVTIMESERIES",
+asslgf_path <- jr_data_path("raw", "census", "asslgf", "GOVTIMESERIES",
                             "GS00LOCALFIN-2017_2024-20260928-Data.csv")
 
 ### one row per year, state, level of government and item. The file's second

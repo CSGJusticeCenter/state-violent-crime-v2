@@ -1272,7 +1272,7 @@ change_by <- function(x) {
 ### create function to clean up and visualize SHR data
 ### this function will prepare a df for plotting -- grouping by
 ### varying incident or demographic characteristics
-### df is fbi_shr_state.rds from jr_data_library; cat is a group_cat value
+### df is fbi_shr_state.rds from Public_Data_Library; cat is a group_cat value
 ### pools years from first_year on and excludes unknown values
 function_shr_grouping_for_national_plot <- function(df, cat, first_year){
 

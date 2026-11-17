@@ -108,6 +108,7 @@ Chart, table and page improvements from the October 2026 design audit. All fit t
   - The CSG site embeds pages in a cross-origin iframe 6,000px tall. Pages fit inside it, so the iframe never scrolls, and Chrome won't let an anchor jump inside it scroll the parent page.
   - The methodology links from PR #29 did nothing in the embed for this reason.
   - A script in `_quarto.yaml` handles every in-page link with `scrollIntoView()`, which does scroll the parent. Tested in a local cross-origin harness that copies the CSG embed.
+  - The iframe is about 853px wide. Below 992px, `styles.css` replaces Quarto's 752px content column with one that fills the width with a 16px edge (about 821px in the iframe).
 
 ### 3.2 Summary row — on hold
 
@@ -127,8 +128,8 @@ Chart, table and page improvements from the October 2026 design audit. All fit t
 ### 3.4 Titles — done in PR #29
 
 - State page titles read "[State] data on violent crime and solve rates". Pages without solve-rate data still read "[State] data on violent crime".
-- The U.S. page H1 reads "Trends in violent crime and accountability".
-- The U.S. page `<title>` uses the same text through `pagetitle`. It read "index" before.
+- The U.S. page has no "Trends in violent crime and accountability" H1; its first heading is the backlog header.
+- The U.S. page `<title>` reads "Trends in violent crime and accountability" through `pagetitle`. It read "index" before.
 
 ### 3.5 Resources section — done in PR #29
 

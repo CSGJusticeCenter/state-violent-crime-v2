@@ -5,7 +5,7 @@
 # Writes one row per agency and offense, plus a total_label row for all
 # violent crime. Each incident counts once, under its most serious offense
 # (nibrs_top_offense() in R/page-data.R), so the offense rows sum to the total.
-# Downloads each state's file to jr_data_library on first run, which takes a
+# Downloads each state's file to Public_Data_Library on first run, which takes a
 # while; later runs read the saved files. Needs data/agency_table.rds and
 # data/agency_offense_table.rds from R/01-prep-agency-county-data.R.
 
@@ -19,7 +19,7 @@ destination <- sprintf("data/nibrs_clearance_%d.csv", nibrs_year)
 # endpoint, which answers with a short-lived link; no API key needed
 signed_url_endpoint <- "https://cde.ucr.cjis.gov/LATEST/s3/signedurl?key="
 
-nibrs_dir <- jr_data_path("data", "raw", "fbi", "nibrs", "incident", nibrs_year)
+nibrs_dir <- jr_data_path("raw", "fbi", "nibrs", "incident", nibrs_year)
 
 # large agencies from the site's agency tables, as on the agency-level page,
 # of any agency type, leaving out the states without reliable clearance data

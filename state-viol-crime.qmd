@@ -127,7 +127,7 @@ csg_region <- csg_regions$csg_region[csg_regions$state_abbr == state_abbr_params
 csg_region_full <- paste0("CSG ", csg_region, " Region")
 
 ### homicide case characteristics from state-level SHR data
-shr_state <- read_rds(jr_data_path("data", "analysis", "fbi", "shr", "fbi_shr_state.rds"))
+shr_state <- read_rds(jr_data_path("analysis", "fbi", "shr", "fbi_shr_state.rds"))
 shr_years <- paste0(shr_first_year, "–", max(shr_state$year))
 shr_region_abbr <- csg_regions$state_abbr[csg_regions$csg_region == csg_region &
                                             csg_regions$state_abbr != state_abbr_params]
@@ -160,7 +160,7 @@ us_state_rate_text_crime <- change_phrase((state_total$rate_100k - us_total$rate
 change_text_clear <- if (show_solved) change_phrase(state_total$solve_change / 100, "point") else ""
 ```
 
-## Most violent crimes don’t get solved. They pile up, year after year
+## Most violent crimes don’t get solved. They pile up, year after year.
 
 ```{r}
 crime_ball_stream_chart(srs_state, place = state_name_text)

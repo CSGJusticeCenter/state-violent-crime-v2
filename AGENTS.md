@@ -21,7 +21,7 @@ quarto::quarto_render("index-agency-level-analysis.qmd",
 
 ## Data
 
-- Source data lives in SharePoint `jr_data_library`, read with `jr_data_path(...)` from `R/page-data.R`, which finds the library folder in any capitalization under `CSG_SP_PATH`. If a path fails, ask before guessing a new one.
+- Source data lives in SharePoint `Public_Data_Library` (formerly `jr_data_library`, without its `data/` level), read with `jr_data_path(...)` from `R/page-data.R`, which finds the library folder in any capitalization under `CSG_SP_PATH`. If a path fails, ask before guessing a new one.
 - `data/csg-regions.csv` and the inflation `.xls` are vendored. Their old SharePoint sources moved to `z_ARCHIVE`.
 
 ## Site output and deploy

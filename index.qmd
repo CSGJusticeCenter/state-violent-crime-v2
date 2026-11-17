@@ -162,7 +162,7 @@ ucr_employee_data_national_clean <- read_lee_officers("US") |>
 
 ```{r }
 ### import shr homicide incidents and clearances by state, year, and group
-shr_state <- read_rds(jr_data_path("data", "analysis", "fbi", "shr", "fbi_shr_state.rds"))
+shr_state <- read_rds(jr_data_path("analysis", "fbi", "shr", "fbi_shr_state.rds"))
 
 shr_years <- paste0(shr_first_year, "–", max(shr_state$year))
 
@@ -172,15 +172,13 @@ shr_us <- function(category) {
 }
 ```
 
-# Most violent crimes don’t get solved. They pile up, year after year
+# Most violent crimes don’t get solved. They pile up, year after year.
 
 ```{r}
 crime_ball_stream_chart(srs_us_solve, place = "the U.S.")
 
 ```
 
-
-# Trends in violent crime and accountability
 
 ```{r}
 us_backlog_offenses <- add_backlog(srs_us_solve, solve_coverage)

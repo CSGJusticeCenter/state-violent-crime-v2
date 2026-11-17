@@ -8,7 +8,7 @@ Site: https://csg-state-violent-crime.netlify.app/ (password-protected; ask the 
 
 - R 4.6.1. Packages are managed with renv, which activates when R starts in the project root.
 - Run `renv::restore()` once after cloning to install the locked package versions.
-- Data comes from the CSG SharePoint `jr_data_library`, read through `jr_data_path()` (which wraps `csgjcr::csg_sp_path()`), so SharePoint must be synced locally.
+- Data comes from the CSG SharePoint `Public_Data_Library`, read through `jr_data_path()` (which wraps `csgjcr::csg_sp_path()`), so SharePoint must be synced locally.
 - Deploying needs access to the site in the CSG Netlify team and the Netlify CLI. Install the CLI with Node.js and log in once:
 
 ```sh
@@ -18,13 +18,13 @@ netlify login
 
 ### Build
 
-1. `R/01-prep-agency-county-data.R` builds the county map, agency tables and state reporting coverage in `data/` from the CDE agency file in `jr_data_library`. It also writes the clearance screen (`data/clearance_screen.rds`) and New York's repaired 2022 clearance rates (`data/clearance_repairs.rds`), and prints the state-years the screen flags. Rerun when that file refreshes. State pages stop rendering when the agency year differs from the latest year in the state estimates.
+1. `R/01-prep-agency-county-data.R` builds the county map, agency tables and state reporting coverage in `data/` from the CDE agency file in `Public_Data_Library`. It also writes the clearance screen (`data/clearance_screen.rds`) and New York's repaired 2022 clearance rates (`data/clearance_repairs.rds`), and prints the state-years the screen flags. Rerun when that file refreshes. State pages stop rendering when the agency year differs from the latest year in the state estimates.
 2. `R/02-render-site.R` empties `_site/`, renders the 51 state pages, the 51 backlog pages, the national page and the agency-level page four at a time, then copies `styles.css`, `img/` and `fonts/` into `_site/`. It prints each page's render time. A page that fails is retried once, and a second failure stops the script. Each failure prints the exit status, the last knitr chunk reached and Quarto's output.
    - `Rscript R/02-render-site.R NY US BACKLOG-NY` renders only the listed pages. Unknown page names stop the script before `_site/` is touched.
    - Set `n_parallel <- 1` at the top of the script to render one page at a time.
    - After rendering, it warns about NA, NaN or Inf in page text and in `alt`, `title` and `aria-label` attributes. Chart and table contents are not checked, because widget data holds many legitimate NA values.
 
-Run from the project root, in the R console or with `Rscript R/02-render-site.R`. The pages also read state-level SRS, SHR, LEE and ASSLGF files directly from `jr_data_library`.
+Run from the project root, in the R console or with `Rscript R/02-render-site.R`. The pages also read state-level SRS, SHR, LEE and ASSLGF files directly from `Public_Data_Library`.
 
 ### Deploy
 
@@ -102,7 +102,7 @@ The latest SRS year comes from the data, so the state pages pick it up automatic
 | `R/download-nypd-clearance.R` | Refreshes `data/nypd_clearance_2022.csv`, NYPD's 2022 citywide clearance rates, the average of its four quarterly Local Law 42 reports |
 | `R/cde-api.R` | CDE API helper for the download scripts |
 | `R/download-ucr-coverage.R` | Refreshes `data/ucr_coverage_2021.csv`, 2021 UCR population coverage by state from the CDE API. Needs `DATA_GOV_API_KEY` |
-| `R/download-nibrs-clearance.R` | Refreshes `data/nibrs_clearance_2025.csv`, 2025 violent incidents by offense and outcome (arrest, exceptional clearance, not cleared) for large agencies nationwide, from the FBI's NIBRS state files. Downloads each state's file to `jr_data_library` on first run. Rerun after step 1 |
+| `R/download-nibrs-clearance.R` | Refreshes `data/nibrs_clearance_2025.csv`, 2025 violent incidents by offense and outcome (arrest, exceptional clearance, not cleared) for large agencies nationwide, from the FBI's NIBRS state files. Downloads each state's file to `Public_Data_Library` on first run. Rerun after step 1 |
 | `R/04-export-data.R` | Writes US and state CSVs of reported, solved and unsolved violent crime and solve rates to `exports/` |
 | `data/` | Prepped agency data and state reporting coverage, CSG regions, inflation index, US hex grid, and `ucr_participation_1960_2025.csv` (UCR agency participation by state and year from the [CDE downloads page](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/downloads), for reference; the pages don't read it) |
 | `maps/` | Highcharts county maps (see `maps/README.md`) |

@@ -12,9 +12,9 @@ source("R/agency-county-data.R")
 
 agency_year <- 2025
 
-raw <- read_rds(jr_data_path("data", "analysis", "fbi", "srs", "fbi_srs_agency.rds"))
+raw <- read_rds(jr_data_path("analysis", "fbi", "srs", "fbi_srs_agency.rds"))
 
-pep <- read_rds(jr_data_path("data", "analysis", "census", "pep", "census_pep_state.rds")) |>
+pep <- read_rds(jr_data_path("analysis", "census", "pep", "census_pep_state.rds")) |>
   filter(group == "Total", year == agency_year) |>
   distinct(state_abbr, state_name, pop_total)
 

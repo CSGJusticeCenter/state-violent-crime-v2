@@ -4,9 +4,9 @@
 ### differently on different synced machines
 jr_data_path <- function(...) {
   root <- csgjcr::csg_sp_path()
-  lib <- grep("^jr_data_library$", list.files(root), ignore.case = TRUE, value = TRUE)
+  lib <- grep("^public_data_library$", list.files(root), ignore.case = TRUE, value = TRUE)
   if (length(lib) == 0) {
-    stop("No jr_data_library folder found in ", root, call. = FALSE)
+    stop("No Public_Data_Library folder found in ", root, call. = FALSE)
   }
   file.path(root, lib[1], ...)
 }
@@ -163,7 +163,7 @@ nibrs_top_offense <- function(codes) {
 }
 
 ### one row per state, year and offense with reported, unsolved and cleared counts
-### raw is fbi_srs_estimated_crimes_state.rds from jr_data_library
+### raw is fbi_srs_estimated_crimes_state.rds from Public_Data_Library
 ### pop_total in raw is Census PEP state population, not an FBI figure
 prep_srs_state <- function(raw) {
   raw |>
@@ -181,7 +181,7 @@ prep_srs_state <- function(raw) {
 
 read_srs_state <- function(screen = read_rds(clearance_screen_path),
                            repairs = read_rds(clearance_repairs_path)) {
-  read_rds(jr_data_path("data", "analysis", "fbi", "srs", "fbi_srs_estimated_crimes_state.rds")) |>
+  read_rds(jr_data_path("analysis", "fbi", "srs", "fbi_srs_estimated_crimes_state.rds")) |>
     prep_srs_state() |>
     repair_clearances(repairs) |>
     flag_screened_solve_rates(screen, repairs)
@@ -509,7 +509,7 @@ adjust_for_inflation <- function(df, inflation_index) {
 
 ### state and local police protection expenditures for the last 11 survey years
 read_police_spending <- function(geo, inflation_index) {
-  read_rds(jr_data_path("data", "analysis", "census", "asslgf", "census_asslgf_state.rds")) |>
+  read_rds(jr_data_path("analysis", "census", "asslgf", "census_asslgf_state.rds")) |>
     filter(
       indicator == "Expenditures",
       group == "Police Protection",
@@ -521,7 +521,7 @@ read_police_spending <- function(geo, inflation_index) {
 
 ### sworn officer counts and rates for the last 11 years
 read_lee_officers <- function(geo) {
-  read_rds(jr_data_path("data", "analysis", "fbi", "lee", "fbi_lee_state.rds")) |>
+  read_rds(jr_data_path("analysis", "fbi", "lee", "fbi_lee_state.rds")) |>
     filter(geo_abbr %in% geo, group == "Officers", year >= max(year) - 10)
 }
 

@@ -44,16 +44,16 @@
 
 h1 {
   font-weight: 700;
-  color: #005FAD;
+  color: #000000;
 }
 
 h2, h3 {
   font-weight: 700;
-  color: #005FAD;
+  color: #000000;
 }
 
 h4 {
-  color: #005FAD;
+  color: #000000;
 }
 
 .nav-link {
@@ -133,4 +133,40 @@ h2.microsite-h2-spaced {
 .rt-align-right {
   text-align-last: right !important;
   text-align: -webkit-right !important;
+}
+
+/* the methodology box matches the microsite's state dropdown: teal border, light teal fill */
+#methodology.callout {
+  border: 2px solid #2DEBC3;
+  border-left: 2px solid #2DEBC3;
+  border-radius: 4px;
+  background-color: #E7FBF6;
+}
+
+#methodology .callout-header {
+  background-color: #E7FBF6;
+}
+
+/* the CSG site embeds pages in an iframe about 853px wide; below Bootstrap's lg
+   breakpoint, content fills the width with a 16px edge instead of Quarto's
+   752px column */
+@media (max-width: 991.98px) {
+  body.fullcontent:not(.floating):not(.docked) .page-columns {
+    grid-template-columns:
+      [screen-start] 16px
+      [screen-start-inset page-start page-start-inset body-start-outset body-start body-content-start]
+      minmax(0, 1fr)
+      [body-content-end body-end body-end-outset page-end-inset page-end screen-end-inset]
+      16px [screen-end];
+  }
+}
+
+/* where Quarto stacks side-by-side layouts on phones, each cell takes the full
+   width; otherwise a cell sizes to its chart, which then falls back to
+   Highcharts' 600px default and overflows the screen */
+@media (max-width: 767.98px) {
+  .quarto-layout-cell {
+    width: 100%;
+    margin-right: 0;
+  }
 }

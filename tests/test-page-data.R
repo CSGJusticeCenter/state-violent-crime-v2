@@ -439,10 +439,10 @@ test_that("jr_data_path finds the data library whatever its case", {
   skip_if_not_installed("csgjcr")
   root <- withr::local_tempdir()
   withr::local_envvar(CSG_SP_PATH = root)
-  expect_error(jr_data_path("data"), "No jr_data_library folder")
+  expect_error(jr_data_path("analysis"), "No Public_Data_Library folder")
 
-  dir.create(file.path(root, "JR_DATA_LIBRARY"))
-  expect_equal(jr_data_path("data", "x.rds"), file.path(root, "JR_DATA_LIBRARY", "data", "x.rds"))
+  dir.create(file.path(root, "PUBLIC_DATA_LIBRARY"))
+  expect_equal(jr_data_path("analysis", "x.rds"), file.path(root, "PUBLIC_DATA_LIBRARY", "analysis", "x.rds"))
 })
 
 test_that("state page setup names DC and flags states without solve rates", {
