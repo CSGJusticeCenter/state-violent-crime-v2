@@ -79,7 +79,7 @@ test_that("solve rates compare at the whole percents the table shows", {
 
 test_that("solve rate cells, footers and page text round halves up the same way", {
   for (x in c(0.625, 0.125, 0.355, 0.3549, 1.25)) {
-    expect_equal(solve_rate_text(x), sub("%", " percent", format_solve_rate(x), fixed = TRUE))
+    expect_equal(solve_rate_text(x), format_solve_rate(x))
   }
   expect_error(solve_rate_text(NA_real_), "finite")
 
@@ -531,15 +531,11 @@ backlog_fixture <- function(hidden_year = NULL) {
   list(totals = totals, offenses = offenses)
 }
 
-test_that("backlog headline names the offense with the largest share", {
-  expect_equal(backlog_headline(backlog_fixture()$offenses), "Aggravated assaults make up 70% of the backlog.")
-})
-
 test_that("backlog charts title the place and describe both charts", {
   fx <- backlog_fixture()
   charts <- backlog_charts(fx$totals, fx$offenses, "State A")
-  expect_equal(charts$trend$x$hc_opts$title$text, "Violent crime reported, solved, and unsolved in State A")
-  expect_match(charts$backlog$x$hc_opts$accessibility$description, "aggravated assault 70 percent", fixed = TRUE)
+  expect_equal(charts$trend$x$hc_opts$title$text, "Violent Crime Reported, Solved, and Unsolved in State A")
+  expect_match(charts$backlog$x$hc_opts$accessibility$description, "aggravated assault 70%", fixed = TRUE)
   expect_length(charts$backlog$x$hc_opts$series, length(offense_colors) + 1)
   expect_no_match(charts$backlog$x$hc_opts$caption$text, "minimum")
 })
@@ -620,7 +616,6 @@ test_that("an unsplit slice stacks on top and replaces its offenses in the toolt
   caption <- charts$backlog$x$hc_opts$caption$text
   expect_match(caption, "In 2021, homicide and rape are counted together", fixed = TRUE)
   expect_no_match(caption, "minimum")
-  expect_equal(backlog_headline(offenses), "Aggravated assaults make up 70% of the backlog.")
 })
 
 test_that("a partly hidden year's slices still add up to state totals", {
@@ -630,4 +625,17 @@ test_that("a partly hidden year's slices still add up to state totals", {
     mutate(backlog = cumsum(coalesce(incidents_unsolved, 0)), .by = group)
   charts <- backlog_charts(backlog_totals(offenses), offenses, "State A")
   expect_match(charts$backlog$x$hc_opts$caption$text, "rape in 2021", fixed = TRUE)
+})
+
+test_that("subtitles are in title case only on charts with an empty title", {
+  titled <- highchart() |> hc_chart_title("a chart title") |> hc_chart_subtitle("rate per 100,000 residents")
+  expect_equal(titled$x$hc_opts$title$text, "A Chart Title")
+  expect_equal(titled$x$hc_opts$subtitle$text, "rate per 100,000 residents")
+
+  untitled <- highchart() |> hc_chart_title("") |> hc_chart_subtitle("rate per 100,000 residents")
+  expect_equal(untitled$x$hc_opts$subtitle$text, "Rate per 100,000 Residents")
+
+  ### a title emptied after the subtitle is set also recases it
+  emptied <- titled |> hc_chart_title("")
+  expect_equal(emptied$x$hc_opts$subtitle$text, "Rate per 100,000 Residents")
 })

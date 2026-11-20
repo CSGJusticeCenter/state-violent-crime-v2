@@ -454,3 +454,19 @@ test_that("state page setup names DC and flags states without solve rates", {
   expect_match(no_solve_data_sentence("Illinois"), "^Illinois did not report enough data")
   expect_output(show_solved_meta(FALSE), "---\nshow-solved: false\n---", fixed = TRUE)
 })
+
+test_that("handout map classes bin the share solved", {
+  expect_equal(
+    solved_share_class(c(0.404, 0.406, 0.494, 0.496, 0.594, 0.596, NA)),
+    c("40% or less", "41–49%", "41–49%", "50–59%", "50–59%", "60% or more", "No reliable data")
+  )
+  expect_equal(
+    unsolved_share_class(c(0.49, 0.5, 0.51, NA)),
+    c("More than half unsolved", "Half or fewer unsolved", "Half or fewer unsolved", "No reliable data")
+  )
+})
+
+test_that("SHR years name the skipped years inside the range", {
+  expect_equal(shr_years_text(2025, 2020, 2021), "2020–2025, excluding 2021")
+  expect_equal(shr_years_text(2025, 2022, 2021), "2022–2025")
+})

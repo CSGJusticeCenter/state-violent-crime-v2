@@ -11,8 +11,9 @@ jr_data_path <- function(...) {
   file.path(root, lib[1], ...)
 }
 
-### pre-pandemic year that maps, tables and agency changes compare against
-base_year <- 2019
+### year that maps, tables and agency changes compare against, the start of
+### the 2020–2025 period the pages report on
+base_year <- 2020
 
 ### states without reliable clearance data in the base or latest year
 states_to_exclude_from_solved_rate_viz <- c("Illinois")
@@ -44,8 +45,16 @@ low_coverage_solve_year <- 2021
 min_solve_coverage <- 0.7
 solve_coverage_path <- "data/ucr_coverage_2021.csv"
 
-### homicide charts pool SHR from this year on because coverage is low in 2021
-shr_first_year <- 2022
+### homicide charts pool SHR from shr_first_year on, leaving out shr_skip_years,
+### where the NIBRS transition left coverage low
+shr_first_year <- 2020
+shr_skip_years <- 2021
+
+### SHR years as charts and text show them, e.g., "2020–2025, excluding 2021"
+shr_years_text <- function(last_year, first_year = shr_first_year, skip = shr_skip_years) {
+  skip <- skip[skip >= first_year & skip <= last_year]
+  paste0(first_year, "–", last_year, if (length(skip) > 0) paste0(", excluding ", paste(skip, collapse = " and ")))
+}
 
 ### the clearance screen hides solve rates for state-years where agencies that
 ### reported at least min_screen_reported violent offenses but no clearances hold
@@ -107,7 +116,11 @@ site_colors <- c(
   teal = "#2DEBC3", dark_teal = "#17B894", light_teal = "#C8F5EA", pale_blue = "#D7E3EE",
   white = "#FFFFFF", text = "#000000", dark_gray = "#33404D", muted = "#5A6470",
   baseline = "#9FB0C0", border = "#C9D3DC", grid = "#DDE3E9",
-  orange = "#9A4A0A", light_orange = "#FBE8DA"
+  ### the gray of Bootstrap's tab boxes, so untabbed charts get the same frame
+  frame = "#DEDEDF",
+  orange = "#9A4A0A", light_orange = "#FBE8DA",
+  ### handout charts: black, white and grays, since teal and blue carry meaning elsewhere
+  gray_dark = "#4D4D4D", gray_mid = "#9E9E9E", gray_light = "#D9D9D9", gray_pale = "#F0F0F0"
 )
 
 ### map palettes, diverging for changes (navy to teal) and sequential for rates
@@ -618,4 +631,31 @@ city_solve_long <- function(rows, min_reported = min_rate_reported, benchmarks =
       shown = !is.na(solved_rate) & n_reported >= min_reported
     ) |>
     arrange(offense, desc(solved_rate))
+}
+
+### Handout charts -------------------------------------------------------------
+
+### handout map classes for a share of violent crime solved; NA has no data
+### the solved map bins the rounded percent it prints, and the unsolved map
+### splits at half, so a state just over half solved is "half or fewer unsolved"
+solved_share_classes <- c("40% or less", "41–49%", "50–59%", "60% or more", "No reliable data")
+unsolved_share_classes <- c("More than half unsolved", "Half or fewer unsolved", "No reliable data")
+
+solved_share_class <- function(pct) {
+  shown <- round(100 * pct)
+  case_when(
+    is.na(shown) ~ "No reliable data",
+    shown <= 40 ~ "40% or less",
+    shown < 50 ~ "41–49%",
+    shown < 60 ~ "50–59%",
+    .default = "60% or more"
+  )
+}
+
+unsolved_share_class <- function(pct) {
+  case_when(
+    is.na(pct) ~ "No reliable data",
+    pct < 0.5 ~ "More than half unsolved",
+    .default = "Half or fewer unsolved"
+  )
 }

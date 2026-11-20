@@ -116,20 +116,6 @@ h4 {
   overflow-x: clip;
 }
 
-/* backlog chart headings match the Crime Without Consequence microsite, in the site font */
-h2.microsite-h2 {
-  margin: 0;
-  font-size: 28px;
-  line-height: 1.2;
-  font-weight: 700;
-  color: #000000;
-}
-
-h2.microsite-h2-spaced {
-  margin-top: 28px;
-  line-height: 1.5;
-}
-
 .rt-align-right {
   text-align-last: right !important;
   text-align: -webkit-right !important;
@@ -169,4 +155,39 @@ h2.microsite-h2-spaced {
     width: 100%;
     margin-right: 0;
   }
+}
+
+/* space between graphics */
+.cell-output-display,
+.panel-tabset {
+  margin-bottom: 2.5rem;
+}
+
+/* inside a tab the tab box already sets the graphic apart */
+.tab-pane .cell-output-display {
+  margin-bottom: 0;
+}
+
+/* headings without the rule Quarto draws under h2 */
+h2.no-rule,
+h2.teal-header {
+  border-bottom: none;
+}
+
+/* section heading on a teal band, as on the microsite */
+h2.teal-header {
+  background-color: #2DEBC3;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+}
+
+/* the handout page stacks its charts with no tabs, so they get more room */
+body.handout .cell-output-display {
+  margin-bottom: 4rem;
+}
+
+/* a table's note sits just under it, in italics */
+.table-note {
+  font-style: italic;
+  margin-top: 0.5rem;
 }

@@ -1,0 +1,244 @@
+---
+pagetitle: "Crime Without Consequence handout charts"
+body-classes: handout
+---
+
+```{r}
+library(tidyverse)
+library(scales)
+library(csgjcr)
+library(highcharter)
+library(htmlwidgets)
+library(reactable)
+
+source("R/page-data.R")
+source("R/utils.R")
+source("analysis/crime_wo_conseq/helpers.R")
+
+# htmlwidgets seeds its element IDs from this, so rerenders give identical HTML
+set.seed(2019)
+```
+
+```{r}
+### interactive versions of the Crime Without Consequence handout's charts,
+### pages 1-5, national only
+handout_source <- "CSG Justice Center analysis of FBI Uniform Crime Reporting (UCR) Program data"
+missing_2021_note <- "* Missing 2021 data. Illinois has no reliable clearance data."
+
+### page 1 uses the site's backlog charts, built as on index.qmd, with the
+### trend chart in black and gray
+srs_state_new <- read_srs_state()
+first_year <- max(srs_state_new$year) - 10
+solve_coverage <- read_solve_coverage()
+us_backlog_charts <- backlog_charts(
+  add_backlog(us_solve_trend(srs_state_new, first_year), solve_coverage),
+  add_backlog(us_solve_trend(srs_state_new, first_year, by_offense = TRUE), solve_coverage),
+  "the U.S.",
+  trend_colors = c(reported = site_colors[["text"]], solved = site_colors[["text"]], unsolved = site_colors[["gray_pale"]])
+)
+
+### pages 2-4 use the handout's own series, from analysis/crime_wo_conseq
+national <- read_national()
+recent <- recent_years(national)
+states <- read_states() |>
+  mutate(
+    pct = if_else(no_data, NA_real_, pct_solved),
+    star = if_else(year_missing & !no_data, "*", "")
+  )
+
+### hex map of states, as on index.qmd
+hex_gj <- sf::read_sf("data/us_states_hexgrid.geojson") |>
+  select(state_abb = iso3166_2) |>
+  sf::st_transform(3857) |>
+  geojsonsf::sf_geojson() |>
+  jsonlite::fromJSON(simplifyVector = FALSE)
+
+no_data_tooltip <- function(name) paste0("<b>", name, "</b><br>No reliable clearance data")
+```
+
+## Page 1
+
+```{r}
+#| fig-height: 5.5
+us_backlog_charts$trend |>
+  hc_chart_title("Violent Crime Reported, Solved, and Unsolved in the U.S., 2020–2025")
+```
+
+```{r}
+#| fig-height: 5.5
+us_backlog_charts$backlog |>
+  hc_chart_title("Backlog of Unsolved Violent Crime, 2020–2025")
+```
+
+## Page 2
+
+```{r}
+#| fig-height: 6
+solved_map_colors <- setNames(
+  site_colors[c("text", "gray_dark", "gray_mid", "gray_light", "white")],
+  solved_share_classes
+)
+
+states |>
+  transmute(
+    state_abbr, state_name,
+    class = solved_share_class(pct),
+    label = if_else(no_data, "—", solved_label(pct, year_missing)),
+    tooltip = if_else(
+      no_data, no_data_tooltip(state_name),
+      paste0("<b>", state_name, "</b><br>Share of violent crimes solved, 2020–2025: ", label,
+             if_else(year_missing, "<br>* Leaves out 2021, which lacks reliable data", ""))
+    )
+  ) |>
+  state_class_map(
+    hex_gj, solved_map_colors,
+    title = "Share of Violent Crimes Solved, 2020–2025",
+    caption = paste(missing_2021_note, handout_source, sep = "<br>"),
+    description = paste(
+      "Hex map of the share of violent crimes solved in each state, 2020 to 2025, in four groups:",
+      "40% or less, 41 to 49%, 50 to 59%, and 60% or more. Illinois has no reliable data."
+    ),
+    dark_classes = c("40% or less", "41–49%")
+  )
+```
+
+```{r}
+#| fig-height: 6
+unsolved_map_colors <- setNames(site_colors[c("text", "white", "gray_light")], unsolved_share_classes)
+
+states |>
+  transmute(
+    state_abbr, state_name,
+    class = unsolved_share_class(pct),
+    label = if_else(no_data, "—", paste0(round(100 * (1 - pct)), "%", star)),
+    tooltip = if_else(
+      no_data, no_data_tooltip(state_name),
+      paste0("<b>", state_name, "</b><br>Share of violent crimes unsolved, 2020–2025: ", label,
+             if_else(year_missing, "<br>* Leaves out 2021, which lacks reliable data", ""))
+    )
+  ) |>
+  state_class_map(
+    hex_gj, unsolved_map_colors,
+    title = "Share of Violent Crimes Unsolved, 2020–2025",
+    caption = paste(missing_2021_note, handout_source, sep = "<br>"),
+    description = paste(
+      "Hex map of the share of violent crimes left unsolved in each state, 2020 to 2025,",
+      "split into states where more than half went unsolved and states where half or fewer did.",
+      "Illinois has no reliable data."
+    ),
+    dark_classes = "More than half unsolved"
+  )
+```
+
+```{r}
+### "≥" marks a count that leaves out a year without reliable data
+at_least_cell <- function(flag) {
+  function(value, index) {
+    if (is.na(value)) return(na_text)
+    paste0(if (flag[index]) "≥ " else "", comma(value))
+  }
+}
+
+state_table <- states |>
+  transmute(
+    state_name,
+    unsolved = if_else(no_data, NA_real_, unsolved),
+    homicide_unsolved = if_else(no_data, NA_real_, homicide_unsolved),
+    flag = year_missing & !no_data,
+    homicide_flag = homicide_year_missing & !no_data
+  ) |>
+  arrange(state_name)
+
+### the note prints with the table, so the space after graphics falls below it
+table <- state_table |>
+  select(state_name, unsolved, homicide_unsolved) |>
+  reactable_template(
+    sort_col = "state_name",
+    columns = list(
+      state_name = sticky_name_column("State"),
+      unsolved = colDef(name = "Unsolved violent crimes, 2020–2025", cell = at_least_cell(state_table$flag)),
+      homicide_unsolved = colDef(name = "Unsolved homicides, 2020–2025", cell = at_least_cell(state_table$homicide_flag))
+    )
+  )
+
+htmltools::tagList(
+  table,
+  htmltools::p(
+    class = "table-note",
+    "States marked ≥ leave out 2021, which lacks reliable clearance data, so their counts are a minimum.",
+    "New York's 2022 homicide clearances are also left out.",
+    "A dash means Illinois, which has no reliable clearance data.",
+    paste0("Source: ", handout_source, ".")
+  )
+)
+```
+
+## Page 3
+
+```{r}
+#| fig-height: 5.5
+periods(filter(national, year >= 1966), 5) |>
+  period_stacked_chart(
+    title = "Violent Crime Solved and Unsolved in the U.S., 1966–2025",
+    subtitle = "Average violent crimes reported per year, by 5-year period",
+    caption = paste0(handout_source, "<br>Figures for 1966–1978 compiled by Crime Index."),
+    description = paste(
+      "Stacked column chart of the average number of violent crimes reported per year in each",
+      "5-year period from 1966 to 2025, split into solved and unsolved, with each period's solve rate."
+    )
+  )
+```
+
+## Page 4
+
+```{r}
+#| fig-height: 6
+us_crime_rate <- pooled_crime_rate(states)
+us_solve_pct <- 100 * pooled_solve_rate(recent)
+
+states |>
+  filter(!no_data) |>
+  transmute(
+    reported_per_100k, unsolved,
+    solve_pct = 100 * pct,
+    label = paste0(state_abbr, star),
+    tooltip = paste0(
+      "<b>", state_name, "</b><br>",
+      "Violent crimes reported per 100,000 residents per year: ", comma(reported_per_100k), "<br>",
+      "Share solved: ", solved_label(pct, year_missing), "<br>",
+      "Unsolved violent crimes, 2020–2025: ", if_else(year_missing, "≥ ", ""), comma(unsolved),
+      if_else(year_missing, "<br>* Leaves out 2021, which lacks reliable data", "")
+    )
+  ) |>
+  state_solve_scatter(
+    us_crime_rate, us_solve_pct,
+    title = "Share of Violent Crimes Solved and Violent Crime Rate by State, 2020–2025",
+    subtitle = "Circle size shows unsolved violent crimes, 2020–2025",
+    caption = paste(
+      "* Solve rate excludes 2021 because of unreliable clearance data. Illinois has no reliable clearance data.",
+      handout_source, sep = "<br>"
+    ),
+    description = paste0(
+      "Bubble chart of each state's violent crime rate against its share of violent crimes solved, 2020 to 2025, ",
+      "with circles sized by unsolved violent crimes. Dashed lines mark the U.S. rate of ", comma(us_crime_rate),
+      " violent crimes per 100,000 residents and the U.S. solve rate of ", round(us_solve_pct), "%."
+    )
+  )
+```
+
+## Page 5
+
+```{r}
+#| fig-height: 5
+### the handout's national series, pooled by period as on page 3
+clearance_periods <- periods(filter(national, year >= 1971), 5) |>
+  mutate(rate = 100 * pct_solved)
+crime_index_years <- range(filter(national, year >= 1971, count_source == "Crime Index")$year)
+
+period_rate_chart(
+  clearance_periods,
+  title = "Average Violent Crime Solve Rate by Five-Year Period, 1971–2025",
+  caption = paste0(handout_source, "<br>Figures for ", crime_index_years[1], "–", crime_index_years[2], " compiled by Crime Index."),
+  description = "Column chart of the share of violent crimes solved in each 5-year period from 1971 to 2025."
+)
+```

@@ -40,7 +40,7 @@ quarto::quarto_render("index-agency-level-analysis.qmd",
 - Multi-county agencies use the county with the largest share of the agency's place or county subdivision population (PEP 2025), falling back to the largest listed county. `county_fips_all` keeps every county.
 - NYC boroughs merge into one map feature (`36NYC`) at load time in `R/local-map-data.R`. No other city is merged.
 - Highcharts maps lack AK 02063 and VA 51678, so those agencies appear in tables but not on the map.
-- Solve-rate change compares each agency with itself against base year 2019. It shows a dash unless the agency has full reporting in both years.
+- Solve-rate change compares each agency with itself against `base_year` (2020). It shows a dash unless the agency has full reporting in both years.
 
 ## Backlog chart rules
 
@@ -60,6 +60,12 @@ quarto::quarto_render("index-agency-level-analysis.qmd",
 - The clearance charts (arrest vs exceptional means) read `data/nibrs_clearance_2025.csv` from `R/download-nibrs-clearance.R`. It counts NIBRS violent incidents by outcome: any arrest, else an exceptional clearance, else not cleared. Rows are agency × offense plus a `total_label` row. Each incident counts once, under its most serious offense (`nibrs_top_offense()`, codes in `nibrs_offense_codes` in `R/page-data.R`), so the offense rows sum to the total and the script stops if they don't. The charts sit in tabs that match "Solve rates by agency". The data file covers agencies of any type nationwide serving `min_city_population` or more; the page keeps only the city departments in `city_rows`. The script downloads each state's NIBRS zip once (about 1 GB in all) and reports a state it can't read instead of stopping. Each tab keeps agencies with at least `min_rate_reported` incidents of that offense. Departments that report only summary data have no NIBRS file rows (`nibrs_missing`). The page also drops departments whose NIBRS violent incidents fall below `min_nibrs_share` of their summary-count violent crimes, a sign of partial incident data (`nibrs_partial`). The section intro names both groups.
 - Regional panels use `data/csg-regions.csv` and share axes, with other regions' agencies in gray.
 
+## Handout charts page
+
+- `handout-charts.qmd` (`HANDOUT` in 02) has interactive versions of the Crime Without Consequence handout's charts, pages 1–5, national only, with no text beyond chart titles and the table note.
+- Page 1 reuses `backlog_charts()` with handout titles. Pages 2–5 read the handout's CSVs through `analysis/crime_wo_conseq/helpers.R`, so they match the printed handout. Page 5 pools the same national series by 5-year period, as page 3 does, with the same footnote.
+- Map classes come from `solved_share_class()` and `unsolved_share_class()`. The solved map bins the rounded percent it prints. The unsolved map splits at exactly half.
+
 ## Table rules
 
 - Build tables with `reactable_template()`. Its default cell shows missing values as `na_text`, a dash that screen readers hear as "not available", and sorts them last. Use cell functions, not `colFormat()` or `na`, which can't render that HTML.
@@ -72,6 +78,7 @@ quarto::quarto_render("index-agency-level-analysis.qmd",
 
 - Never delete project files. Move retired code and outputs to `_archive/` with `git mv`. Quarto ignores `_`-prefixed folders.
 - Shared chart and table helpers go in `R/utils.R`, with tests in `tests/`.
+- Chart titles and subtitles go through `hc_chart_title()` and `hc_chart_subtitle()`. Titles are in title case, and so is a subtitle on a chart with an empty title.
 - Shared data reads, prep and page settings (base year, excluded states, palettes) go in `R/page-data.R`. Every color is named once in `site_colors` there. Source `R/page-data.R` before `R/utils.R`, whose chart themes use those colors.
 - Match the existing tidyverse style: native pipe `|>`, snake_case.
 - Keep comments short and about present behavior. Don't leave commented-out code; git history has it.

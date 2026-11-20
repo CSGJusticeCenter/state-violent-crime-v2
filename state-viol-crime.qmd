@@ -128,7 +128,7 @@ csg_region_full <- paste0("CSG ", csg_region, " Region")
 
 ### homicide case characteristics from state-level SHR data
 shr_state <- read_rds(jr_data_path("analysis", "fbi", "shr", "fbi_shr_state.rds"))
-shr_years <- paste0(shr_first_year, "–", max(shr_state$year))
+shr_years <- shr_years_text(max(shr_state$year))
 shr_region_abbr <- csg_regions$state_abbr[csg_regions$csg_region == csg_region &
                                             csg_regions$state_abbr != state_abbr_params]
 shr_region_label <- paste0("Other ", csg_region, " States")
@@ -285,7 +285,7 @@ solved_rate_latest_text <- if (show_solved) solve_rate_text(state_total$solve_ra
 ### estimates as the charts, so the tables compare agencies with the charted rates
 state_solved_rate <- state_solve_benchmark(srs_state_new, state, agency_year)
 
-### a screened offense in the agency year would print "NA percent"
+### a screened offense in the agency year would print "NA%"
 if (show_solved && anyNA(state_solved_rate)) {
   stop("The clearance screen hides ", state, "'s ", agency_year, " solve rate for ",
        paste(names(state_solved_rate)[is.na(state_solved_rate)], collapse = ", "),
@@ -360,7 +360,7 @@ offense_solve_rates |>
     ))
   ) |>
   hc_colors(unique(offense_solve_rates$color)) |>
-  hc_title(text = paste0("Violent crime solve rate in ", state_name_text, " by offense")) |>
+  hc_chart_title(paste0("Violent crime solve rate in ", state_name_text, " by offense")) |>
   hc_caption(text = "FBI UCR Program, state crime estimates and clearances") |>
   hc_setup() |>
   hc_yAxis(
@@ -450,7 +450,7 @@ hcmap_local(
     colorAxis = FALSE,
     accessibility = list(enabled = FALSE)
   ) |>
-  hc_title(text = paste("Violent crime solve rate,", agency_year)) |>
+  hc_chart_title(paste("Violent crime solve rate,", agency_year)) |>
   hc_caption(text = paste("FBI UCR Program, agency crime and clearance data,", agency_year)) |>
   hc_colorAxis(dataClasses = map_data_classes(county_map_breaks, county_map_colors, "%")) |>
   hc_legend(align = "center", verticalAlign = "bottom", layout = "horizontal",
@@ -758,7 +758,7 @@ shr_panel_chart(shr_panels$victims, shr_state_region, shr_years, series = "group
 
 Data on crime and solve rates come from the FBI's [Uniform Crime Reporting Program](https://www.fbi.gov/how-we-can-help-you/need-an-fbi-service-or-more-information/ucr){target="_parent"}. Statewide counts of reported violent crime from `r first_year` through `r latest_year` come from the Summary Reporting System (SRS) and the National Incident-Based Reporting System (NIBRS). The FBI estimates reported crime for each state from agency-level reports, accounting for agencies that did not report, and publishes these estimates on its [Crime Data Explorer](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/downloads){target="_parent"}. State solve rates are calculated by dividing crimes cleared by crimes reported among agencies that reported to the FBI. Solved crimes are estimated by multiplying the state's solve rate by the FBI's estimate of its reported crimes. The county and agency sections use agency-level data from the Crime Data Explorer for `r agency_year`, which combines NIBRS and SRS reports converted to the SRS format.
 
-The FBI stopped collecting SRS data after 2020 and required agencies to report through NIBRS. Fewer agencies reported as a result, so `r low_coverage_solve_year` estimates are less reliable. Starting with 2022 data, the FBI again accepted SRS reports from agencies that could not submit NIBRS data. [Agencies covering `r percent(state_solve_coverage, 1, suffix = " percent")` of `r state_name_text`'s population reported in `r low_coverage_solve_year`. The solve rate charts show `r low_coverage_solve_year` only where reporting agencies covered at least `r percent(min_solve_coverage, suffix = " percent")` of the population, so they `r if_else(state_solve_coverage >= min_solve_coverage, "include", "omit")` `r low_coverage_solve_year` for `r state_name_text`. The U.S. solve rate includes `r low_coverage_solve_year`, when agencies covering `r percent(us_solve_coverage, 1, suffix = " percent")` of the U.S. population reported.]{.content-visible when-meta="show-solved"}
+The FBI stopped collecting SRS data after 2020 and required agencies to report through NIBRS. Fewer agencies reported as a result, so `r low_coverage_solve_year` estimates are less reliable. Starting with 2022 data, the FBI again accepted SRS reports from agencies that could not submit NIBRS data. [Agencies covering `r percent(state_solve_coverage, 1)` of `r state_name_text`'s population reported in `r low_coverage_solve_year`. The solve rate charts show `r low_coverage_solve_year` only where reporting agencies covered at least `r percent(min_solve_coverage)` of the population, so they `r if_else(state_solve_coverage >= min_solve_coverage, "include", "omit")` `r low_coverage_solve_year` for `r state_name_text`. The U.S. solve rate includes `r low_coverage_solve_year`, when agencies covering `r percent(us_solve_coverage, 1)` of the U.S. population reported.]{.content-visible when-meta="show-solved"}
 
 State crime rates are calculated by dividing estimated reported crimes by the state's total population. Population data come from the U.S. Census Bureau [Population Estimates Program](https://www.census.gov/programs-surveys/popest.html){target="_parent"}.
 

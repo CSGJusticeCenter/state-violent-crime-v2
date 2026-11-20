@@ -1,6 +1,6 @@
 ## State violent crime interactive pages
 
-Quarto site with one page per state plus DC (`state-viol-crime.qmd`), a backlog-charts-only page per state plus DC (`state-backlog-viz-only.qmd`) , a national page (`index.qmd`) and an agency-level page comparing big-city police departments (`index-agency-level-analysis.qmd`). Pages render to `_site/`, which is uploaded to Netlify from a local machine. `_site/` is not committed.
+Quarto site with one page per state plus DC (`state-viol-crime.qmd`), a backlog-charts-only page per state plus DC (`state-backlog-viz-only.qmd`) , a national page (`index.qmd`), an agency-level page comparing big-city police departments (`index-agency-level-analysis.qmd`) and interactive versions of the Crime Without Consequence handout's charts (`handout-charts.qmd`). Pages render to `_site/`, which is uploaded to Netlify from a local machine. `_site/` is not committed.
 
 Site: https://csg-state-violent-crime.netlify.app/ (password-protected; ask the team for the password)
 
@@ -56,7 +56,7 @@ Notes:
 |---|---|
 | Agency year | `R/01-prep-agency-county-data.R` (`agency_year`) |
 | Base year for maps, tables and agency changes | `R/page-data.R` (`base_year`); rerun step 1 after changing it |
-| SHR pooling start year | `R/page-data.R` (`shr_first_year`) |
+| SHR pooling start year and skipped years | `R/page-data.R` (`shr_first_year`, `shr_skip_years`) |
 | Backlog start year | `R/page-data.R` (`backlog_first_year`) |
 | Clearance screen threshold and repaired offenses shown | `R/page-data.R` (`max_no_clearance_share`, `min_screen_reported`, `repaired_offenses_shown`). Pages stop if the screen hides a base, first or latest year; decide on a repair or exclusion before rendering. Pages also stop if the screen lacks a shown year, so raise `agency_year` in step 1 and rerun it when the SRS data adds a year |
 | 2021 solve-rate coverage bar | `R/page-data.R` (`min_solve_coverage`); coverage comes from `data/ucr_coverage_2021.csv`, built by `R/download-ucr-coverage.R` |
@@ -67,7 +67,7 @@ The latest SRS year comes from the data, so the state pages pick it up automatic
 
 ### Open questions
 
-- **Illinois 2025 solve rates.** Illinois stays excluded from solve rates because its 2019 clearances are unusable (about 2% of aggravated assaults cleared). Its 2025 clearances look plausible (about 44% for aggravated assault and homicide). Decide whether to show its 2025 solve rate and blank only the change since 2019.
+- **Illinois 2025 solve rates.** Illinois stays excluded from solve rates because its 2019 clearances are unusable (about 2% of aggravated assaults cleared). Its 2025 clearances look plausible (about 44% for aggravated assault and homicide). Decide whether to show its 2025 solve rate and blank only the change since 2020.
 - **Hardcoded claims.** Some narrative claims are typed by hand, so they won't update with new data. Recheck them each year, or generate them from the same data the charts use. All are in `index.qmd`:
   - the US solve rate trend
   - the homicide solve rate comparisons by race, gender and age

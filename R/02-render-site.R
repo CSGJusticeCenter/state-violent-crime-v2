@@ -1,6 +1,6 @@
 ## render 51 state violent crime pages, 51 state backlog pages, the US page and
-## the agency-level page to _site for netlify deploy
-## Rscript R/02-render-site.R NY IL US AGENCY BACKLOG-NY renders only those pages, for testing
+## the agency-level page and the handout charts page to _site for netlify deploy
+## Rscript R/02-render-site.R NY IL US AGENCY HANDOUT BACKLOG-NY renders only those pages, for testing
 
 source("R/site-checks.R")
 
@@ -13,9 +13,10 @@ backlog_qmd    <- "state-backlog-viz-only.qmd"
 backlog_prefix <- "state-backlog-viz-only"
 
 agency_qmd <- "index-agency-level-analysis.qmd"
+handout_qmd <- "handout-charts.qmd"
 
 state_pages <- c(state.abb, "DC")
-all_pages <- c("US", "AGENCY", state_pages, paste0("BACKLOG-", state_pages))
+all_pages <- c("US", "AGENCY", "HANDOUT", state_pages, paste0("BACKLOG-", state_pages))
 pages <- unique(toupper(commandArgs(trailingOnly = TRUE)))
 if (length(pages) == 0) {
   pages <- all_pages
@@ -61,6 +62,8 @@ start_render <- function(page, slot) {
     c("render", "index.qmd", "--output", "index.html")
   } else if (page == "AGENCY") {
     c("render", agency_qmd, "--output", sub("\\.qmd$", ".html", agency_qmd))
+  } else if (page == "HANDOUT") {
+    c("render", handout_qmd, "--output", sub("\\.qmd$", ".html", handout_qmd))
   } else if (startsWith(page, "BACKLOG-")) {
     abb <- sub("^BACKLOG-", "", page)
     c(

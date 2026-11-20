@@ -164,7 +164,7 @@ ucr_employee_data_national_clean <- read_lee_officers("US") |>
 ### import shr homicide incidents and clearances by state, year, and group
 shr_state <- read_rds(jr_data_path("analysis", "fbi", "shr", "fbi_shr_state.rds"))
 
-shr_years <- paste0(shr_first_year, "–", max(shr_state$year))
+shr_years <- shr_years_text(max(shr_state$year))
 
 ### pooled national solve rates for the shr_panels charts
 shr_us <- function(category) {
@@ -187,21 +187,25 @@ us_backlog_charts <- backlog_charts(
 )
 ```
 
-## The backlog of unsolved violent crime is adding up. {.microsite-h2}
+### Violent crime reported, solved, and unsolved in the U.S.
 
 ```{r}
 #| fig-height: 5.5
-us_backlog_charts$trend
+us_backlog_charts$trend |>
+  hc_chart_title("") |>
+  hc_chart_subtitle("")
 ```
 
-## `r backlog_headline(us_backlog_offenses)` {.microsite-h2 .microsite-h2-spaced}
+### Backlog of unsolved violent crime in the U.S.
 
 ```{r}
 #| fig-height: 5.5
-us_backlog_charts$backlog
+us_backlog_charts$backlog |>
+  hc_chart_title("") |>
+  hc_chart_subtitle("")
 ```
 
-## 50-state violent crime data
+## Violent crime has been going down in almost every state since `r base_year`.
 
 ::: {.panel-tabset}
 
@@ -213,11 +217,11 @@ us_backlog_charts$backlog
 state_map_specs <- list(
   crime_change = list(
     value = "viol_crime_rate_percent_change", tooltip = "tooltip_crime_change",
-    title = paste0("Change in violent crime, ", base_year, "–", latest_year),
-    subtitle = "Percent change in crime reported to police per 100,000 residents",
+    title = "",
+    subtitle = "% change in crime reported to police per 100,000 residents",
     caption = "FBI UCR Program, state crime estimates",
     colors = change_colors, label_format = "{value}%", legend_width = 250,
-    accessibility = "state: {point.state_name}, percent change: {point.value:.1f}",
+    accessibility = "state: {point.state_name}, % change: {point.value:.1f}",
     symmetric = TRUE
   ),
   crime_rate = list(
@@ -230,7 +234,7 @@ state_map_specs <- list(
   ),
   solve_change = list(
     value = "solved_rate_percent_point_change", tooltip = "tooltip_solve_change",
-    title = paste0("Change in percentage of violent crime solved, ", base_year, "–", latest_year),
+    title = "",
     subtitle = paste0("Percentage point change in rate of solved violent crimes from ", base_year, " to ", latest_year),
     caption = "FBI UCR Program, state crime estimates and clearances",
     colors = rev(change_colors), label_format = "{value}", legend_width = 300,
@@ -261,9 +265,20 @@ state_map_chart(srs_state_to_map, hex_gj, state_map_specs$crime_rate)
 
 :::
 
-The national violent crime rate was `r percent(abs(us_rate_change), 1, suffix = " percent")` `r if_else(us_rate_change < 0, "lower", "higher")` in `r latest_year` than in `r base_year`. In `r latest_year`, rates of `r knitr::combine_words(offenses_lower)` were lower than in `r base_year``r if (length(offenses_higher) > 0) paste0(", while the rate of ", knitr::combine_words(offenses_higher), " was higher")`.
+The national violent crime rate was `r percent(abs(us_rate_change), 1)` `r if_else(us_rate_change < 0, "lower", "higher")` in `r latest_year` than in `r base_year`. In `r latest_year`, rates of `r knitr::combine_words(offenses_lower)` were lower than in `r base_year``r if (length(offenses_higher) > 0) paste0(", while the rate of ", knitr::combine_words(offenses_higher), " was higher")`.
 
 Trends in violent crime also varied by state. Between `r base_year` and `r latest_year`, violent crime rates decreased in `r describe_states(states_rate_down)` and increased in `r describe_states(states_rate_up)`.
+
+```{r}
+### states whose solve rate fell from base_year to latest_year, as the change map shows
+n_solve_drop <- sum(states_solved_down != "DC")
+solve_drop_text <- paste0(
+  n_solve_drop, if_else(n_solve_drop == 1, " state", " states"),
+  if_else("DC" %in% states_solved_down, " and DC", "")
+)
+```
+
+## In `r solve_drop_text`, the likelihood of violent crime being solved dropped from `r base_year` to `r latest_year`.
 
 ::: {.panel-tabset}
 
@@ -289,9 +304,51 @@ Between `r base_year` and `r latest_year`, the percentage of violent crimes solv
 
 `r knitr::combine_words(states_to_exclude_from_solved_rate_viz)` did not report enough data to the FBI on whether crimes were solved to make reliable estimates.
 
-## Trends in reported violent crime
+## Homicides are least likely to be solved if the victim is Black, male, and/or under the age of 35. {.no-rule}
 
-In `r latest_year`, `r format_rate_100k(us_total$rate_100k)` violent crime incidents per 100,000 residents were reported to police in the United States.
+::: {.panel-tabset}
+
+
+### Race and ethnicity
+
+```{r}
+shr_panel_chart(shr_panels$race, shr_us, shr_years)
+```
+
+
+
+### Gender
+
+```{r}
+shr_panel_chart(shr_panels$gender, shr_us, shr_years)
+```
+
+
+
+### Age
+
+
+```{r}
+shr_panel_chart(shr_panels$age, shr_us, shr_years)
+```
+
+
+### Weapon
+
+```{r}
+shr_panel_chart(shr_panels$weapon, shr_us, shr_years)
+```
+
+
+### Number of victims
+
+```{r}
+shr_panel_chart(shr_panels$victims, shr_us, shr_years)
+```
+
+:::
+
+## Longer term trends (`r first_year`–`r latest_year`) {.teal-header}
 
 ::: {.panel-tabset}
 
@@ -379,10 +436,7 @@ offense_column_chart(
 
 :::
 
-
-## Trends in solved violent crime
-
-In `r latest_year`, `r solve_rate_text(us_total$solve_rate)` of violent crime incidents reported to police in the United States were solved. The percentage of violent crimes that law enforcement solved fell from 2019 to 2021 and rose each year from 2022 to `r max(srs_by_cat_us_solve$year)`, reaching its highest level since at least `r min(srs_by_cat_us_solve$year)`.
+In `r latest_year`, `r format_rate_100k(us_total$rate_100k)` violent crime incidents per 100,000 residents were reported to police in the United States.
 
 ::: {.panel-tabset}
 
@@ -440,7 +494,7 @@ us_offense_solve_rates |>
     ))
   ) |>
   hc_colors(unique(us_offense_solve_rates$color)) |>
-  hc_title(text = paste0("Solve rate of violent crime in ", state_name_text, " by offense")) |>
+  hc_chart_title(paste0("Solve rate of violent crime in ", state_name_text, " by offense")) |>
   hc_caption(text = "FBI UCR Program, state crime estimates and clearances") |>
   hc_setup() |>
   hc_yAxis(
@@ -455,9 +509,7 @@ us_offense_solve_rates |>
 
 :::
 
-## Violent crime and solved violent crime by state, `r latest_year`
-
-The following tables include violent crime rates and solve rates by state and offense. For more information on violent crime solve rates for each offense by state, [visit state-specific pages here](https://projects.csgjusticecenter.org/tools-for-states-to-address-crime/50-state-crime-data/).  
+In `r latest_year`, `r solve_rate_text(us_total$solve_rate)` of violent crime incidents reported to police in the United States were solved. The percentage of violent crimes that law enforcement solved fell from 2019 to 2021 and rose each year from 2022 to `r max(srs_by_cat_us_solve$year)`, reaching its highest level since at least `r min(srs_by_cat_us_solve$year)`.
 
 ::: {.panel-tabset}
 
@@ -567,10 +619,6 @@ Data regarding crime and solve rates come from the FBI's [Uniform Crime Reportin
 
 <br>
 
-## Trends in law enforcement resources
-
-State and local expenditures include spending on police, sheriffs, and highway patrols. The charts below also include staffing per 10,000 residents and per 1,000 violent crimes. These factors may show the level of policing a community receives, potentially influencing both crime and solve rates and providing insight into how law enforcement resources impact violent crime.
-
 ```{r}
 ### chart years, and percent changes since base_year for the resource text
 exp_min_year <- min(asslgf_clean_national$year)
@@ -651,57 +699,7 @@ ucr_employee_data_national_clean |>
 
 :::
 
-<br>
-
-## Homicide solve rates by victim and incident characteristics
-
-The following charts include homicide solve rates by race and ethnicity, gender, age, weapon type, and number of victims. For more information, see the [data sources and methodology](#methodology) section below.  
-
-In the United States, homicide solve rates are highest when the victim is White and are lowest when the victim is Black. Homicide solve rates are highest when the victim is a woman and lowest when the victim is a man. Homicide solve rates are higher for victims 35 years and older.
-
-::: {.panel-tabset}
-
-
-### Race and ethnicity 
-
-```{r}
-shr_panel_chart(shr_panels$race, shr_us, shr_years)
-```
-
-
-
-### Gender
-
-```{r}
-shr_panel_chart(shr_panels$gender, shr_us, shr_years)
-```
-
-
-
-### Age
-
-
-```{r}
-shr_panel_chart(shr_panels$age, shr_us, shr_years)
-```
-
-
-### Weapon 
-
-```{r}
-shr_panel_chart(shr_panels$weapon, shr_us, shr_years)
-```
-
-
-### Number of victims
-
-```{r}
-shr_panel_chart(shr_panels$victims, shr_us, shr_years)
-```
-
-:::
-
-<br>
+State and local expenditures include spending on police, sheriffs, and highway patrols. The charts above also include staffing per 10,000 residents and per 1,000 violent crimes. These factors may show the level of policing a community receives, potentially influencing both crime and solve rates and providing insight into how law enforcement resources impact violent crime.
 
 ```{r}
 ### states where agencies reporting at least one month cover less than
@@ -717,7 +715,7 @@ low_coverage_states <- state_coverage |>
 low_coverage_text <- if (length(low_coverage_states) > 0) {
   paste0(
     " Agencies that reported at least one month of data in ",
-    coverage_year, " covered less than ", percent(low_coverage_threshold, suffix = " percent"), " of the population in ",
+    coverage_year, " covered less than ", percent(low_coverage_threshold), " of the population in ",
     knitr::combine_words(low_coverage_states),
     ", so conclusions about crime trends in those states should be interpreted with additional caution."
   )
@@ -734,7 +732,7 @@ Data on crime and solve rates come from the FBI's [Uniform Crime Reporting Progr
 
 State solve rates are calculated by dividing crimes cleared by crimes reported among agencies that reported to the FBI. Solved crimes are estimated by multiplying each state's solve rate by the FBI's estimate of its reported crimes. The U.S. solve rate divides the total of these estimated solved crimes across states by the total of estimated reported crimes. Each offense has its own solve rate, so solved counts by offense may not add up to the violent crime total.
 
-The FBI stopped collecting SRS data after 2020 and required agencies to report through NIBRS. Fewer agencies reported as a result, so `r low_coverage_solve_year` estimates are less reliable. Agencies covering `r percent(us_solve_coverage, 1, suffix = " percent")` of the U.S. population reported in `r low_coverage_solve_year`. State pages show `r low_coverage_solve_year` solve rates only where reporting agencies covered at least `r percent(min_solve_coverage, suffix = " percent")` of the state's population. Starting with 2022 data, the FBI again accepted SRS reports from agencies that could not submit NIBRS data. In 2025, agencies reporting through NIBRS or SRS covered 96.2 percent of the U.S. population, and agencies reporting through NIBRS covered 89.5 percent, according to the FBI's [*Reported Crimes in the Nation, 2025*](https://cde.ucr.cjis.gov/LATEST/resources/reports/UCR_Summary_of_Reported_Crimes_in_the_Nation_2025.pdf){target="_parent"}.`r low_coverage_text`
+The FBI stopped collecting SRS data after 2020 and required agencies to report through NIBRS. Fewer agencies reported as a result, so `r low_coverage_solve_year` estimates are less reliable. Agencies covering `r percent(us_solve_coverage, 1)` of the U.S. population reported in `r low_coverage_solve_year`. State pages show `r low_coverage_solve_year` solve rates only where reporting agencies covered at least `r percent(min_solve_coverage)` of the state's population. Starting with 2022 data, the FBI again accepted SRS reports from agencies that could not submit NIBRS data. In 2025, agencies reporting through NIBRS or SRS covered 96.2% of the U.S. population, and agencies reporting through NIBRS covered 89.5%, according to the FBI's [*Reported Crimes in the Nation, 2025*](https://cde.ucr.cjis.gov/LATEST/resources/reports/UCR_Summary_of_Reported_Crimes_in_the_Nation_2025.pdf){target="_parent"}.`r low_coverage_text`
 
 Crime rates are calculated by dividing estimated reported crimes by the total population. Population data come from the U.S. Census Bureau [Population Estimates Program](https://www.census.gov/programs-surveys/popest.html){target="_parent"}.
 

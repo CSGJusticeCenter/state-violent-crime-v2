@@ -94,7 +94,7 @@ test_that("left-out notes count agencies with few incidents", {
 test_that("range text names the lowest and highest agencies", {
   expect_equal(
     agency_range_text(long, total_label),
-    "33 percent (SEA Police Department, WA) to 69 percent (NYC Police Department, NY)"
+    "33% (SEA Police Department, WA) to 69% (NYC Police Department, NY)"
   )
   expect_error(agency_range_text(filter(long, offense != "Rape"), "Rape"), "No agency")
 })
@@ -180,5 +180,5 @@ test_that("regional panels color one region over the rest", {
   regional <- mutate(long, csg_region = if_else(state_abbr == "NY", "Eastern", "Western"))
   chart <- agency_region_scatter(regional, "Eastern", 0.46, 400, 1000, 100, 2025)
   expect_equal(length(chart$x$hc_opts$series[[1]]$data), 3)
-  expect_equal(region_median_text(regional, "Eastern"), "69 percent in the Eastern region")
+  expect_equal(region_median_text(regional, "Eastern"), "69% in the Eastern region")
 })

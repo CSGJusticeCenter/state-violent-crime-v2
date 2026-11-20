@@ -42,8 +42,8 @@ test_that("signed cells show a sign, round, and show missing values as a dash", 
 })
 
 test_that("change phrases describe direction, size and units", {
-  expect_equal(change_phrase(-0.04), "4 percent lower than")
-  expect_equal(change_phrase(0.12), "12 percent higher than")
+  expect_equal(change_phrase(-0.04), "4% lower than")
+  expect_equal(change_phrase(0.12), "12% higher than")
   expect_equal(change_phrase(0.004), "nearly the same as")
   expect_equal(change_phrase(0.01, "point"), "1 percentage point higher than")
   expect_equal(change_phrase(-0.03, "point"), "3 percentage points lower than")
@@ -63,8 +63,8 @@ test_that("change direction compares numbers, not formatted text", {
 })
 
 test_that("change by gives the size, or about the same near zero", {
-  expect_equal(change_by(0.18), "increased by 18 percent")
-  expect_equal(change_by(-0.034), "decreased by 3 percent")
+  expect_equal(change_by(0.18), "increased by 18%")
+  expect_equal(change_by(-0.034), "decreased by 3%")
   expect_equal(change_by(-0.004), "stayed about the same")
 })
 
@@ -82,4 +82,27 @@ test_that("percent change runs between two named years", {
 test_that("percent change stops when a year is missing or repeated", {
   expect_error(pct_change_between(c(5, 6), c(2024, 2025), 2019, 2025), "one 2019 value")
   expect_error(pct_change_between(c(5, 6, 7), c(2019, 2019, 2025), 2019, 2025), "found 2")
+})
+
+test_that("solve rates read as whole percents with a % sign", {
+  expect_equal(solve_rate_text(0.475), "48%")
+})
+
+test_that("title_case capitalizes words but not small words or existing capitals", {
+  expect_equal(
+    title_case("Violent crime reported, solved, and unsolved in the U.S., 2020–2025"),
+    "Violent Crime Reported, Solved, and Unsolved in the U.S., 2020–2025"
+  )
+  expect_equal(title_case("the 5-year average per 100k in DC"), "The 5-Year Average per 100k in DC")
+  expect_equal(title_case("West region"), "West Region")
+  expect_equal(title_case(c("", NA)), c("", NA))
+})
+
+test_that("title_case capitalizes small words that start a sentence, and words in parentheses", {
+  expect_equal(
+    title_case("Percentage solved, 2025. the dashed line marks the U.S. rate"),
+    "Percentage Solved, 2025. The Dashed Line Marks the U.S. Rate"
+  )
+  expect_equal(title_case("rate in the U.S. by offense"), "Rate in the U.S. by Offense")
+  expect_equal(title_case("violent crimes (log scale)"), "Violent Crimes (Log Scale)")
 })

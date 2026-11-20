@@ -81,7 +81,8 @@ hc_theme_jc <- hc_theme_merge(
       itemHoverStyle = list(color = site_colors[["dark_gray"]], cursor = "default"),
       accessibility = list(enabled = FALSE)
     ),
-    caption = list(align = "right"),
+    ### HTML captions wrap in the browser; long right-aligned SVG captions clip at the left
+    caption = list(align = "right", useHTML = TRUE, style = list(textAlign = "right", whiteSpace = "normal")),
     plotOptions = list(
       series = list(states = list(inactive = list(opacity = 1))),
       line = list(marker = list(enabled = TRUE)),
@@ -113,6 +114,48 @@ lock_legend <- JS("
       Highcharts.addEvent(item, 'legendItemClick', function(e) { e.preventDefault(); });
     });
   }")
+
+### title case for chart titles and subtitles: capitalizes the first letter of
+### each word and each hyphenated part, keeps small words lowercase unless they
+### start the text or a sentence, and never lowercases a letter, so "U.S." and
+### names keep their capitals
+title_small_words <- c("a", "an", "and", "as", "at", "but", "by", "for", "from", "in",
+                       "nor", "of", "on", "or", "per", "the", "to", "vs.", "with")
+
+title_case <- function(x) {
+  vapply(x, function(text) {
+    if (is.na(text) || !nzchar(text)) return(text)
+    words <- strsplit(text, " ", fixed = TRUE)[[1]]
+    ### a word ending in . : ? or ! ends a sentence, except abbreviations like "U.S." and "vs."
+    ends_sentence <- grepl("[.:?!]$", words) & !grepl("^([A-Za-z]\\.)+$", words) & words != "vs."
+    capped <- vapply(seq_along(words), function(i) {
+      word <- words[i]
+      bare <- tolower(gsub("^[(\"'“‘]+|[,;)\"'”’]+$", "", word))
+      if (i > 1 && !ends_sentence[i - 1] && bare %in% title_small_words) return(word)
+      parts <- strsplit(word, "-", fixed = TRUE)[[1]]
+      ### capitalize the first letter after any opening parenthesis or quote
+      paste(sub("^([(\"'“‘]*)([a-z])", "\\1\\U\\2", parts, perl = TRUE), collapse = "-")
+    }, character(1))
+    paste(capped, collapse = " ")
+  }, character(1), USE.NAMES = FALSE)
+}
+
+### every chart title and subtitle goes through these; titles are in title case,
+### and so is a subtitle on a chart with an empty title, which stands in for it.
+### Either can be set first: an empty title also recases a subtitle already set
+has_empty_title <- function(hc) identical(hc$x$hc_opts$title$text, "")
+
+hc_chart_title <- function(hc, text, ...) {
+  hc <- hc_title(hc, text = if (is.null(text)) text else title_case(text), ...)
+  subtitle <- hc$x$hc_opts$subtitle$text
+  if (has_empty_title(hc) && !is.null(subtitle)) hc$x$hc_opts$subtitle$text <- title_case(subtitle)
+  hc
+}
+
+hc_chart_subtitle <- function(hc, text, ...) {
+  if (!is.null(text) && has_empty_title(hc)) text <- title_case(text)
+  hc_subtitle(hc, text = text, ...)
+}
 
 # define default setup for highcharter plots
 # add and configure exporting and accessibility modules
@@ -226,8 +269,8 @@ state_map_chart <- function(data, map, spec) {
       ),
       accessibility = list(point = list(valueDescriptionFormat = spec$accessibility))
     ) |>
-    hc_title(text = spec$title) |>
-    hc_subtitle(text = spec$subtitle) |>
+    hc_chart_title(spec$title) |>
+    hc_chart_subtitle(spec$subtitle) |>
     hc_colorAxis(
       min = if (is.null(bounds)) 0 else bounds[1],
       max = if (is.null(bounds)) NULL else bounds[2],
@@ -279,11 +322,11 @@ trend_chart <- function(data, value, title, subtitle = NULL, caption, value_labe
   }
 
   chart <- chart |>
-    hc_title(text = title) |>
+    hc_chart_title(title) |>
     hc_caption(text = caption) |>
     hc_yAxis(min = bounds[1], max = bounds[2], endOnTick = FALSE) |>
     hc_legend(enabled = FALSE)
-  if (!is.null(subtitle)) chart <- hc_subtitle(chart, text = subtitle)
+  if (!is.null(subtitle)) chart <- hc_chart_subtitle(chart, subtitle)
 
   ### label options merge into hc_setup()'s labels, so they go after it
   ### y_format replaces its format; y_formatter works alongside it because
@@ -427,8 +470,8 @@ offense_column_chart <- function(data, title, colors,
            valueDescriptionFormat = "{point.series.name}, year: {point.x:.0f}, incidents per 100,000 residents: {point.rate_label}"
          ))) |>
     hc_colors(colors) |>
-    hc_title(text = title) |>
-    hc_subtitle(text = "Crime reported to police per 100,000 residents") |>
+    hc_chart_title(title) |>
+    hc_chart_subtitle("Crime reported to police per 100,000 residents") |>
     hc_caption(text = caption) |>
     hc_legend(reversed = TRUE) |>
     hc_setup()
@@ -457,7 +500,7 @@ offense_trend_chart <- function(data, offense, place,
 hc_theme_microsite <- hc_theme_merge(
   hc_theme_jc,
   hc_theme(
-    chart = list(borderColor = site_colors[["border"]], borderWidth = 1, borderRadius = 8),
+    chart = list(borderColor = site_colors[["frame"]], borderWidth = 1, borderRadius = 0),
     title = list(style = list(fontSize = "22px", fontWeight = "700")),
     subtitle = list(style = list(fontSize = "15px")),
     caption = list(style = list(color = site_colors[["muted"]], fontSize = "13px")),
@@ -486,10 +529,10 @@ compact_number_js <- "var fmt = function(v, trim, dm) {
     return String(Math.round(v));
   };"
 
-### y-axis labels in compact numbers; plus labels read +1M, +2M, with a blue
+### y-axis labels in compact numbers; plus labels read +1M, +2M, with a black
 ### "?" at the baseline because the backlog from earlier years is unknown
 compact_axis_labels <- function(plus = FALSE) {
-  zero <- if (plus) paste0("'<span style=\"color:", site_colors[["blue"]], ";font-weight:900\">?</span>'") else "'0'"
+  zero <- if (plus) paste0("'<span style=\"color:", site_colors[["text"]], ";font-weight:900\">?</span>'") else "'0'"
   value <- if (plus) "'+' + fmt(v, true)" else "fmt(v, true)"
   JS(paste0("function() { ", compact_number_js, "
     var v = this.value;
@@ -518,7 +561,7 @@ backlog_end_label <- JS(paste0("function() { ", compact_number_js, "
 ### the note's box is saved so backlog_tooltip_position() can steer around it
 backlog_note <- function(first_year, note_frac = 0.45, max_width = 170, end_frac = 0.09) {
   JS(paste0("function() {
-  var chart = this, accent = '", site_colors[["blue"]], "', axis = chart.yAxis[0];
+  var chart = this, accent = '", site_colors[["text"]], "', axis = chart.yAxis[0];
   if (chart.noteGroup) chart.noteGroup.destroy();
   var g = chart.renderer.g('not-starting-at-zero-note').attr({ zIndex: 7 }).add();
   chart.noteGroup = g;
@@ -557,12 +600,6 @@ backlog_tooltip_position <- JS("function(labelWidth, labelHeight, point) {
   return { x: x, y: y };
 }")
 
-### plural offense names for backlog text
-backlog_offense_plurals <- c(
-  "Aggravated assault" = "Aggravated assaults", "Robbery" = "Robberies",
-  "Rape" = "Rapes", "Homicide" = "Homicides"
-)
-
 ### each offense's share of the latest year's backlog, largest first
 ### offenses is add_backlog() output by offense
 backlog_shares <- function(offenses) {
@@ -571,14 +608,6 @@ backlog_shares <- function(offenses) {
     dplyr::mutate(group = as.character(group), share = backlog / sum(backlog)) |>
     dplyr::arrange(dplyr::desc(share)) |>
     dplyr::select(group, share)
-}
-
-### heading naming the offense with the largest share of the backlog, e.g.,
-### "Aggravated assaults make up 65% of the backlog."
-backlog_headline <- function(offenses) {
-  top <- dplyr::filter(backlog_shares(offenses), group %in% names(backlog_offense_plurals))[1, ]
-  if (!is.finite(top$share)) stop("The backlog has no unsolved crime to divide by offense", call. = FALSE)
-  paste0(backlog_offense_plurals[[top$group]], " make up ", percent(top$share), " of the backlog.")
 }
 
 ### tooltip counts, with "not available" for years without a solve rate
@@ -626,10 +655,12 @@ backlog_missing_note <- function(offenses, totals) {
 ### a reported, solved and unsolved trend and a backlog stacked by offense
 ### totals and offenses are add_backlog() output; place reads in titles, e.g.,
 ### "Ohio"; y_expansion is headroom above the largest value and x_pad the space
-### in years beside the first and last year
+### in years beside the first and last year; trend_colors sets the trend chart's
+### reported and solved lines and labels and its unsolved fill
 backlog_charts <- function(totals, offenses, place,
                            caption = "FBI UCR Program, state crime estimates and clearances",
-                           y_expansion = 0.2, x_pad = 0.4) {
+                           y_expansion = 0.2, x_pad = 0.4,
+                           trend_colors = backlog_colors[c("reported", "solved", "unsolved")]) {
   years <- totals$year
   first_year <- min(years)
   last_year <- max(years)
@@ -730,7 +761,7 @@ backlog_charts <- function(totals, offenses, place,
     ". The backlog of unsolved violent crimes added since ", first_year, " reaches ",
     comma(dplyr::last(totals$backlog)), " by the end of ", last_year,
     ". The area is divided by offense. By the end of ", last_year, ", the backlog is ",
-    knitr::combine_words(paste(sub(", not broken out$", " combined", tolower(shares$group)), percent(shares$share, suffix = " percent"))),
+    knitr::combine_words(paste(sub(", not broken out$", " combined", tolower(shares$group)), percent(shares$share))),
     ". The chart does not start from zero in real terms: these crimes are added on top of ",
     "an unknown number of unsolved crimes from before ", first_year, ".",
     if (missing_note != "") paste0(" ", missing_note)
@@ -761,7 +792,7 @@ backlog_charts <- function(totals, offenses, place,
   ) |>
     hc_add_series(
       trend_data, "area", hcaes(year, incidents_unsolved),
-      name = "Unsolved", color = backlog_colors[["unsolved"]], fillOpacity = 1, lineWidth = 0,
+      name = "Unsolved", color = trend_colors[["unsolved"]], fillOpacity = 1, lineWidth = 0,
       stacking = "normal", marker = list(enabled = FALSE), enableMouseTracking = FALSE, zIndex = 0,
       accessibility = list(description = "Shaded area showing violent crimes left unsolved each year.",
                            point = point_format("violent crimes unsolved"))
@@ -778,22 +809,22 @@ backlog_charts <- function(totals, offenses, place,
     ) |>
     hc_add_series(
       trend_data, "line", hcaes(year, incidents_reported),
-      name = "Reported", color = backlog_colors[["reported"]], lineWidth = 3, zIndex = 2,
+      name = "Reported", color = trend_colors[["reported"]], lineWidth = 3, zIndex = 2,
       marker = list(symbol = "circle", radius = 4, lineColor = "#FFFFFF", lineWidth = 1.5),
-      dataLabels = line_labels(backlog_colors[["reported"]], above = TRUE),
+      dataLabels = line_labels(trend_colors[["reported"]], above = TRUE),
       accessibility = list(description = "Violent crimes reported each year.",
                            point = point_format("violent crimes reported"))
     ) |>
     ### dashes and diamonds set solved apart by more than color
     hc_add_series(
       trend_data, "line", hcaes(year, incidents_solved),
-      name = "Solved", color = backlog_colors[["solved"]], lineWidth = 3, dashStyle = "ShortDash", zIndex = 2,
+      name = "Solved", color = trend_colors[["solved"]], lineWidth = 3, dashStyle = "ShortDash", zIndex = 2,
       marker = list(symbol = "diamond", radius = 5, lineColor = "#FFFFFF", lineWidth = 1.5),
-      dataLabels = line_labels(backlog_colors[["solved"]], above = FALSE),
+      dataLabels = line_labels(trend_colors[["solved"]], above = FALSE),
       accessibility = list(description = "Violent crimes solved each year.",
                            point = point_format("violent crimes solved"))
     ) |>
-    hc_title(text = paste("Violent crime reported, solved, and unsolved in", place)) |>
+    hc_chart_title(paste("Violent crime reported, solved, and unsolved in", place)) |>
     hc_caption(text = caption) |>
     hc_legend(enabled = FALSE) |>
     hc_setup() |>
@@ -843,8 +874,8 @@ backlog_charts <- function(totals, offenses, place,
         point = point_format(paste("total unsolved violent crimes added since", first_year))
       )
     ) |>
-    hc_title(text = paste("Backlog of unsolved violent crime in", place)) |>
-    hc_subtitle(text = paste0("Unsolved violent crimes added since ", first_year, ", by offense")) |>
+    hc_chart_title(paste("Backlog of unsolved violent crime in", place)) |>
+    hc_chart_subtitle(paste0("Unsolved violent crimes added since ", first_year, ", by offense")) |>
     hc_caption(text = caption) |>
     hc_legend(enabled = TRUE, reversed = FALSE) |>
     hc_setup() |>
@@ -913,8 +944,8 @@ shr_rate_chart <- function(data, title, years, caption, categories = NULL, serie
   }
 
   chart <- chart |>
-    hc_title(text = title) |>
-    hc_subtitle(text = years) |>
+    hc_chart_title(title) |>
+    hc_chart_subtitle(years) |>
     hc_caption(text = caption) |>
     hc_yAxis(min = 0, max = 100, endOnTick = FALSE) |>
     hc_legend(enabled = !is.null(series)) |>
@@ -1056,10 +1087,10 @@ format_solve_rate <- function(x) {
   if (is.na(x)) na_text else paste0(solve_rate_percent(x), "%")
 }
 
-### solve rate as page text, e.g., "63 percent", rounded as in tables
+### solve rate as page text, e.g., "63%", rounded as in tables
 solve_rate_text <- function(x) {
   check_change(x)
-  paste(solve_rate_percent(x), "percent")
+  paste0(solve_rate_percent(x), "%")
 }
 
 ### "above" or "below" for a solve rate against a comparison rate, or NA
@@ -1238,7 +1269,7 @@ check_change <- function(x) {
 ### changes within half a percent or point read as about the same
 is_about_same <- function(x) abs(x) <= 0.005
 
-### compare a change for text, e.g., "4 percent lower than"
+### compare a change for text, e.g., "4% lower than"
 ### x is a proportion; unit "point" reads x as a percentage point change
 change_phrase <- function(x, unit = c("percent", "point")) {
   check_change(x)
@@ -1246,14 +1277,14 @@ change_phrase <- function(x, unit = c("percent", "point")) {
   if (is_about_same(x)) return("nearly the same as")
 
   amount <- comma(abs(x) * 100, 1)
-  word <- if (unit == "percent") {
-    "percent"
+  size <- if (unit == "percent") {
+    paste0(amount, "%")
   } else if (amount == "1") {
-    "percentage point"
+    paste(amount, "percentage point")
   } else {
-    "percentage points"
+    paste(amount, "percentage points")
   }
-  paste(amount, word, if (x > 0) "higher than" else "lower than")
+  paste(size, if (x > 0) "higher than" else "lower than")
 }
 
 ### "increased" or "decreased" for a numeric change; zero reads as "increased"
@@ -1262,18 +1293,18 @@ change_direction <- function(x, increase = "increased", decrease = "decreased") 
   if (x >= 0) increase else decrease
 }
 
-### describe a percent change, e.g., "increased by 18 percent" or "stayed about the same"
+### describe a percent change, e.g., "increased by 18%" or "stayed about the same"
 change_by <- function(x) {
   check_change(x)
   if (is_about_same(x)) return("stayed about the same")
-  paste(change_direction(x), "by", comma(abs(x) * 100, 1), "percent")
+  paste0(change_direction(x), " by ", comma(abs(x) * 100, 1), "%")
 }
 
 ### create function to clean up and visualize SHR data
 ### this function will prepare a df for plotting -- grouping by
 ### varying incident or demographic characteristics
 ### df is fbi_shr_state.rds from Public_Data_Library; cat is a group_cat value
-### pools years from first_year on and excludes unknown values
+### pools years from first_year on, leaving out shr_skip_years, and excludes unknown values
 function_shr_grouping_for_national_plot <- function(df, cat, first_year){
 
   df |>
@@ -1281,7 +1312,8 @@ function_shr_grouping_for_national_plot <- function(df, cat, first_year){
       geo_abbr == "US",
       group_cat == cat,
       group != "Unknown",
-      year >= first_year
+      year >= first_year,
+      !year %in% shr_skip_years
     ) |>
     summarize(n = sum(n), .by = c(group, indicator)) |>
     pivot_wider(names_from = indicator, values_from = n) |>
@@ -1317,7 +1349,8 @@ function_shr_grouping_for_state_plot <- function(df, cat, state_abbr,
       geo_abbr %in% c(state_abbr, region_abbr),
       group_cat == cat,
       !group %in% c("Unknown", "Missing"),
-      year >= first_year
+      year >= first_year,
+      !year %in% shr_skip_years
     ) |>
     mutate(group_for_plot = if_else(geo_abbr == state_abbr, state_label, region_label)) |>
     summarize(n = sum(n, na.rm = TRUE), .by = c(group_for_plot, group, indicator)) |>
@@ -1475,8 +1508,8 @@ agency_solve_bar_chart <- function(long, offense, us_rate, title, year) {
     c(agency_side_series(points, rows$side, "bar"), states), rows$agency_label,
     "{point.category}, solve rate: {point.y}%"
   ) |>
-    hc_title(text = title) |>
-    hc_subtitle(text = paste0("Percentage of incidents solved, ", year, ". Diamonds mark each agency's state rate.",
+    hc_chart_title(title) |>
+    hc_chart_subtitle(paste0("Percentage of incidents solved, ", year, ". Diamonds mark each agency's state rate.",
                               agency_left_out_note(long, offense))) |>
     hc_caption(text = paste(agency_chart_caption, year)) |>
     hc_yAxis(
@@ -1504,8 +1537,8 @@ agency_solve_scatter <- function(long, offense, us_rate, us_crime_rate, title, y
 
   highchart() |>
     hc_add_series_list(agency_side_series(points, rows$side, "bubble", marker = marker)) |>
-    hc_title(text = title) |>
-    hc_subtitle(text = paste0(x_label, " per 100,000 residents and percentage solved, ", year,
+    hc_chart_title(title) |>
+    hc_chart_subtitle(paste0(x_label, " per 100,000 residents and percentage solved, ", year,
                               ". Circle size shows population served.", agency_left_out_note(long, offense))) |>
     hc_caption(text = paste(agency_chart_caption, year)) |>
     hc_setup() |>
@@ -1567,8 +1600,8 @@ agency_solve_change_chart <- function(rows, us_change, title, base_year, year) {
     c(agency_side_series(points, changes$side, "bar", names = agency_change_names), states),
     changes$agency_label, "{point.category}, change: {point.change_label} points"
   ) |>
-    hc_title(text = title) |>
-    hc_subtitle(text = paste0(
+    hc_chart_title(title) |>
+    hc_chart_subtitle(paste0(
       "Percentage point change in violent crime solve rate, ", base_year, "–", year, ".",
       " Diamonds mark each agency's state change.",
       if (left_out > 0) paste0(" Leaves out ", left_out, if (left_out == 1) " agency" else " agencies", " without full reporting or with fewer than ",
@@ -1669,8 +1702,8 @@ agency_state_dumbbell <- function(long, offense, us_rate, title, year) {
   us_pct <- solve_rate_percent(us_rate)
 
   thin_bar_chart(c(links, dots, states), rows$agency_label, "{point.category}, solve rate: {point.y}%") |>
-    hc_title(text = title) |>
-    hc_subtitle(text = paste0(
+    hc_chart_title(title) |>
+    hc_chart_subtitle(paste0(
       "Percentage of incidents solved by the agency (dot) and its state (diamond), ", year,
       ". Sorted by the difference.", agency_left_out_note(long, offense)
     )) |>
@@ -1770,8 +1803,8 @@ clearance_chart <- function(df, offense, sort_by, title, year) {
     hc_add_series_list(series) |>
     hc_setup() |>
     hc_widget_height((nrow(rows) + 1) * 13 + 200) |>
-    hc_title(text = title) |>
-    hc_subtitle(text = paste0("Percentage of ", clearance_noun(offense), " incidents by outcome, ", year,
+    hc_chart_title(title) |>
+    hc_chart_subtitle(paste0("Percentage of ", clearance_noun(offense), " incidents by outcome, ", year,
                               ". Agencies with at least ", min_rate_reported, " incidents.")) |>
     hc_caption(text = paste("FBI NIBRS incident data,", year)) |>
     hc_xAxis(
@@ -1808,8 +1841,8 @@ agency_region_scatter <- function(long, region, us_rate, us_crime_rate, x_max, y
 
   highchart() |>
     hc_add_series_list(c(background, front)) |>
-    hc_title(text = paste(region, "region"), style = list(fontSize = "18px")) |>
-    hc_subtitle(text = paste0(sum(in_region), " departments")) |>
+    hc_chart_title(paste(region, "region"), style = list(fontSize = "18px")) |>
+    hc_chart_subtitle(paste0(sum(in_region), " departments")) |>
     hc_caption(text = paste(agency_chart_caption, year)) |>
     hc_setup() |>
     hc_xAxis(
@@ -1835,4 +1868,192 @@ region_median_text <- function(long, regions) {
   purrr::map_chr(regions, \(r) {
     paste(solve_rate_text(stats::median(rows$solved_rate[rows$csg_region == r])), "in the", r, "region")
   })
+}
+
+### Handout charts -------------------------------------------------------------
+
+### state label on a class map: bold abbreviation over its value in regular
+### weight, white on dark classes
+class_map_label <- JS("function() {
+  var color = this.point.dark ? '#FFFFFF' : '#000000';
+  return '<span style=\"color:' + color + '\">' + '<b>' + this.point.state_abbr + '</b><br>' + this.point.label + '</span>';
+}")
+
+### hex map with one legend class per state group
+### data has state_abbr, state_name, class (a name of colors), label (printed
+### under the abbreviation) and tooltip; colors are the class fills in legend
+### order, and dark_classes get white labels
+state_class_map <- function(data, map, colors, title, caption, description, dark_classes = character()) {
+  if (!all(data$class %in% names(colors))) stop("Every state needs a class in colors", call. = FALSE)
+  data <- dplyr::mutate(data, value = match(class, names(colors)), dark = class %in% dark_classes)
+  classes <- purrr::map(seq_along(colors), \(i) list(from = i, to = i, color = unname(colors[i]), name = names(colors)[i]))
+
+  highchart() |>
+    hc_add_series_map(
+      map = map, df = data, joinBy = c("state_abb", "state_abbr"), value = "value",
+      name = title, borderColor = site_colors[["baseline"]], borderWidth = 1,
+      dataLabels = list(
+        enabled = TRUE, formatter = class_map_label,
+        style = list(fontSize = "12px", fontFamily = default_fonts, fontWeight = 400, textOutline = "none")
+      ),
+      accessibility = list(point = list(valueDescriptionFormat = "{point.state_name}: {point.class}, {point.label}"))
+    ) |>
+    hc_chart_title(title) |>
+    hc_caption(text = caption) |>
+    hc_colorAxis(dataClasses = classes) |>
+    hc_legend(align = "center", verticalAlign = "bottom", layout = "horizontal",
+              symbolRadius = 0, symbolHeight = 14, symbolWidth = 14) |>
+    hc_setup() |>
+    hc_add_theme(hc_theme_microsite) |>
+    hc_plotOptions(series = list(cursor = "default")) |>
+    hc_chart(events = list(render = outline_legend_symbols)) |>
+    hc_describe(description)
+}
+
+### stacked columns of solved and unsolved per period, solved at the bottom,
+### with the solve rate inside each solved column; solved is black and unsolved
+### white, both with black borders
+### df has label, incidents_reported, incidents_solved, incidents_unsolved and pct_solved
+period_stacked_chart <- function(df, title, subtitle, caption, description) {
+  df <- dplyr::mutate(df, tooltip = paste0(
+    "<b>", label, "</b><br>",
+    "Violent crimes reported per year: ", comma(incidents_reported), "<br>",
+    "Solved per year: ", comma(incidents_solved), "<br>",
+    "Unsolved per year: ", comma(incidents_unsolved), "<br>",
+    "Solve rate: ", percent(pct_solved)
+  ))
+  points <- function(y) {
+    purrr::pmap(list(y, df$tooltip, percent(df$pct_solved)), \(y, tooltip, rate) list(y = y, tooltip = tooltip, rate = rate))
+  }
+
+  highchart() |>
+    hc_chart(type = "column") |>
+    hc_xAxis(categories = as.character(df$label)) |>
+    hc_add_series(
+      name = "Solved (solve rate labeled)", data = points(df$incidents_solved), color = site_colors[["text"]],
+      dataLabels = list(enabled = TRUE, format = "{point.rate}", inside = TRUE, verticalAlign = "middle",
+                        style = list(color = "#FFFFFF", fontSize = "12px", fontWeight = "700", textOutline = "none")),
+      accessibility = list(point = list(valueDescriptionFormat = "{xDescription}, solved per year: {point.y:,.0f}, solve rate: {point.rate}"))
+    ) |>
+    hc_add_series(
+      name = "Unsolved", data = points(df$incidents_unsolved), color = site_colors[["white"]],
+      accessibility = list(point = list(valueDescriptionFormat = "{xDescription}, unsolved per year: {point.y:,.0f}"))
+    ) |>
+    hc_plotOptions(column = list(stacking = "normal", borderWidth = 1, borderColor = site_colors[["text"]], groupPadding = 0.08, pointPadding = 0.04)) |>
+    hc_chart_title(title) |>
+    hc_chart_subtitle(subtitle) |>
+    hc_caption(text = caption) |>
+    hc_legend(enabled = TRUE, align = "left", verticalAlign = "top") |>
+    hc_setup() |>
+    hc_add_theme(hc_theme_microsite) |>
+    ### reversedStacks = FALSE puts the first series, solved, at the bottom
+    hc_yAxis(min = 0, reversedStacks = FALSE, labels = list(formatter = compact_axis_labels())) |>
+    hc_chart(events = list(render = outline_legend_symbols)) |>
+    hc_describe(description)
+}
+
+### corner labels for a scatter split at the U.S. values, as clear x-axis plot
+### bands across the whole axis, so Highcharts keeps them inside the plot
+### labels run top left, top right, bottom left, bottom right
+quadrant_bands <- function(labels, from, to, color = site_colors[["text"]]) {
+  corners <- list(c("left", "top"), c("right", "top"), c("left", "bottom"), c("right", "bottom"))
+  purrr::map2(labels, corners, \(text, corner) list(
+    from = from, to = to, color = "transparent",
+    label = list(
+      text = text, align = corner[1], verticalAlign = corner[2],
+      x = if (corner[1] == "left") 16 else -16, y = if (corner[2] == "top") 18 else -16,
+      style = list(color = color, fontSize = "15px", fontWeight = "700")
+    )
+  ))
+}
+
+### bubble radius in pixels as Highcharts draws it when sized by area, from
+### zMin 0 and diameters min_size to max_size, so labels can sit outside it
+bubble_radius <- function(z, min_size, max_size) {
+  ceiling(min_size + sqrt(z / max(z)) * (max_size - min_size)) / 2
+}
+
+### bubbles of each state's crime rate (x) and share solved (y, in percent),
+### sized by area to its unsolved count, with dashed lines at the U.S. averages
+### each state's label sits just right of its bubble
+### df has reported_per_100k, solve_pct, unsolved, label and tooltip
+state_solve_scatter <- function(df, us_rate, us_solve_pct, title, subtitle, caption, description,
+                                min_size = 8, max_size = 48) {
+  label_x <- bubble_radius(df$unsolved, min_size, max_size) + 1
+  points <- purrr::pmap(
+    list(df$reported_per_100k, df$solve_pct, df$unsolved, df$label, df$tooltip, label_x),
+    \(x, y, z, name, tooltip, label_x) list(x = x, y = y, z = z, name = name, tooltip = tooltip,
+                                            dataLabels = list(x = label_x))
+  )
+  ### 5 points of headroom above the top gridline keep the top corner labels off the data
+  y_range <- c(floor(min(df$solve_pct, us_solve_pct) / 10) * 10, ceiling(max(df$solve_pct, us_solve_pct) / 10) * 10 + 5)
+  x_max <- ceiling(max(df$reported_per_100k) / 250) * 250
+
+  highchart() |>
+    hc_add_series(
+      type = "bubble", name = "States", data = points, color = site_colors[["blue"]],
+      marker = list(fillOpacity = 0.3, lineColor = site_colors[["blue"]], lineWidth = 1),
+      minSize = min_size, maxSize = max_size, sizeBy = "area", zMin = 0,
+      dataLabels = list(enabled = TRUE, format = "{point.name}", align = "left", verticalAlign = "middle",
+                        style = list(color = site_colors[["navy"]], fontSize = "11px", fontWeight = "700",
+                                     textOutline = "2px #FFFFFF")),
+      accessibility = list(point = list(valueDescriptionFormat = paste(
+        "{point.name}, violent crimes per 100,000 residents: {point.x:,.0f},",
+        "share solved: {point.y:.0f}%, unsolved: {point.z:,.0f}"
+      )))
+    ) |>
+    hc_chart_title(title) |>
+    hc_chart_subtitle(subtitle) |>
+    hc_caption(text = caption) |>
+    hc_legend(enabled = FALSE) |>
+    hc_setup() |>
+    hc_add_theme(hc_theme_microsite) |>
+    hc_xAxis(
+      min = 0, max = x_max, tickInterval = 250, gridLineWidth = 1,
+      title = list(text = "Violent crimes reported per 100,000 residents per year"),
+      labels = list(format = "{value:,.0f}", y = NULL),
+      plotLines = us_plot_line(us_rate, "Average U.S. Violent Crime Rate", x = 4, y = 14),
+      plotBands = quadrant_bands(
+        c("Less Crime, More Solved", "More Crime, More Solved", "Less Crime, Less Solved", "More Crime, Less Solved"),
+        0, x_max
+      )
+    ) |>
+    hc_yAxis(
+      min = y_range[1], max = y_range[2], tickInterval = 10, startOnTick = FALSE, endOnTick = FALSE,
+      title = list(text = "Share of violent crimes solved"), labels = list(format = "{value}%"),
+      plotLines = us_plot_line(us_solve_pct, "Average U.S. Solve Rate", align = "right", x = -4, y = -6)
+    ) |>
+    hc_describe(description)
+}
+
+### columns of a rate per period, labeled with one decimal: white with black
+### borders, and the last period black
+### df has label and rate, in percent
+period_rate_chart <- function(df, title, caption, description) {
+  n <- nrow(df)
+  points <- purrr::map(seq_len(n), \(i) list(
+    y = df$rate[i],
+    color = if (i == n) site_colors[["text"]] else site_colors[["white"]],
+    tooltip = paste0("<b>", df$label[i], "</b><br>Average solve rate: ", sprintf("%.1f%%", df$rate[i]))
+  ))
+
+  highchart() |>
+    hc_chart(type = "column") |>
+    hc_xAxis(categories = as.character(df$label),
+             labels = list(autoRotation = FALSE, style = list(fontSize = "12px"))) |>
+    hc_add_series(
+      name = "Average solve rate", data = points, borderWidth = 1, borderColor = site_colors[["text"]],
+      dataLabels = list(enabled = TRUE, format = "{point.y:.1f}%",
+                        style = list(color = site_colors[["text"]], fontSize = "12px", fontWeight = "700", textOutline = "none")),
+      accessibility = list(point = list(valueDescriptionFormat = "{xDescription}, average solve rate: {point.y:.1f}%"))
+    ) |>
+    hc_chart_title(title) |>
+    hc_caption(text = caption) |>
+    hc_legend(enabled = FALSE) |>
+    hc_setup() |>
+    hc_add_theme(hc_theme_microsite) |>
+    ### headroom above the top tick keeps the value labels clear of the bars
+    hc_yAxis(min = 0, max = ceiling(max(df$rate) / 10) * 10 + 5, tickInterval = 10, endOnTick = FALSE,
+             labels = list(format = "{value}%")) |>
+    hc_describe(description)
 }
