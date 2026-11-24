@@ -1,0 +1,1113 @@
+---
+title: "Marshall NCSL presentation charts"
+format:
+  html:
+    embed-resources: true
+    toc: true
+    toc-depth: 2
+execute:
+  echo: false
+  warning: false
+  message: false
+fig-width: 10
+fig-height: 5.6
+---
+
+<!--
+how to use this file
+
+- render from the project root:
+  quarto::quarto_render("analysis/marshall_requests/marshall-ncsl-main-presentation.qmd")
+- each chart is also saved to analysis/marshall_requests/png/ as a png for the slides
+- each slide section has the chart code, then the numbers worth quoting
+- the "key numbers" chunk under each chart holds every number the text uses, so the
+  bullets below it only name variables
+-->
+
+These charts are drafts for the slide deck. Each slide section shows the chart and the
+numbers worth quoting. The same chart is saved as a PNG in
+`analysis/marshall_requests/png/`.
+
+## Data files
+
+**From the data library** (`Public_Data_Library`):
+
+- **Crime (slides 3 and 16):**
+  `analysis/fbi/srs/fbi_srs_estimated_crimes_state.rds`
+- **Population (slides 5, 8, 10 and 16):**
+  `analysis/census/pep/census_pep_state.rds`
+- **Prison admissions and population (slides 6, 8, 13, 14 and 22):**
+  BJS National Prisoner Statistics, 1978–2022 (ICPSR 38871), in `raw/bjs/nps/`,
+  and `analysis/bjs/prisoners_series/prisoners_by_jurisdiction.csv` for 2023
+- **Probation (slide 10):**
+  `analysis/bjs/ppus/adults_on_probation_by_jurisdiction.csv`
+- **Correctional officers (slide 13):**
+  `analysis/bls/oews/bls_oews_state.rds`
+- **Corrections spending (slide 14):**
+  `raw/nasbo/se/1991-2022 State Expenditure Report Data.xlsm`
+
+**From elsewhere:**
+
+- **Arrests (slides 4, 5 and 7):**
+  the FBI Crime Data Explorer API, saved in `data/cde-arrests-national.csv`.
+  Renders read that file. Delete it to pull again, which needs `DATA_GOV_API_KEY`.
+- **Recidivism (slides 9 and 16):**
+  CSG's 50 States, 1 Goal file, `2026_50_state_1_goal_long_update.csv`, in SharePoint under
+  `z_ARCHIVE/50 State Revocations Project/State Recidivism Compendium/data for analysis/`
+- **National recidivism studies (slide 9 alternatives):**
+  `data/recidivism-national-studies.csv`, typed in from the published BJS and Pew reports.
+  It has one row per study, with the report name and a link.
+- **Missouri (slide 22):**
+  `data/missouri-jr.csv`, typed in from the Missouri Department of Corrections'
+  *Profile of the Institutional and Supervised Offender Population, FY2025*
+  (tables 1.4 and 4.2), fiscal 2016–2025. Without this file the slide falls back to BJS counts.
+- **Prison health care (slide 13d):**
+  `data/health-care-costs.csv`, typed in from Pew and Vera's *Prison Health Care: Costs and
+  Quality* (2017), appendix C tables C.1 and C.3, fiscal 2010–2015. The report PDF is saved in
+  the project's `data/` folder.
+- **Inflation (slides 13 and 14):**
+  the CPI-U index file vendored in the project's `data/` folder
+
+```{r}
+#| label: setup
+### quarto runs chunks from this file's folder, so point them at the project root
+knitr::opts_knit$set(root.dir = normalizePath("../.."))
+```
+
+```{r}
+#| label: shared-data
+library(tidyverse)
+library(scales)
+
+source("R/page-data.R")
+source("R/cde-api.R")
+source("analysis/marshall_requests/helpers.R")
+
+### inputs that several slides share
+pop <- read_us_population()
+nps <- read_nps()
+prisoners_2023 <- read_prisoners_2023()
+prison_rate <- us_prison_rate(nps, prisoners_2023, pop)
+recid <- read_recidivism()
+
+### cde arrests come from the cache in data/, or the api when the cache is
+### missing a year (needs DATA_GOV_API_KEY)
+arrests <- read_cde_arrests(1985:2025)
+latest_arrest_year <- max(arrests$year)
+
+### 2021 is the fbi's switch to nibrs, when a quarter of the country didn't
+### report arrests, so arrest trends skip it and the line runs straight from 2020 to 2022
+arrest_gap_year <- 2021
+
+fmt_n <- function(x) comma(round(x))
+```
+
+## Slide 3: Crime is down
+
+```{r}
+#| label: slide-03
+crime <- us_crime_rates() |>
+  filter(series != "Property crime")
+crime_latest <- max(crime$year)
+crime_change <- crime |>
+  group_by(series) |>
+  summarise(first = value[year == first_year], last = value[year == crime_latest], .groups = "drop") |>
+  mutate(change = pct_change(first, last))
+
+### panel names carry the % change, so the slide doesn't need a callout
+crime_panels <- crime |>
+  left_join(crime_change, by = "series") |>
+  mutate(panel = paste0(series, " (", pct_label(change), ")"))
+crime_colors <- setNames(site_colors[c("navy", "blue")], unique(crime_panels$panel))
+
+crime_chart <- trend_panels(crime_panels, crime_colors) +
+  labs(
+    title = paste0("Crimes Reported per 100,000 Residents, ", first_year, "–", crime_latest),
+    caption = slide_caption(
+      "All crime is violent crime (homicide, rape, robbery, aggravated assault)",
+      "plus property crime (burglary, larceny, motor vehicle theft).",
+      source = "FBI Uniform Crime Reporting Program, state crime estimates."
+    )
+  )
+save_slide(crime_chart, "slide-03-crime-rates")
+crime_chart
+```
+
+```{r}
+#| label: slide-03-key-numbers
+all_crime <- filter(crime_change, series == "All crime")
+violent_crime <- filter(crime_change, series == "Violent crime")
+```
+
+- **All crime:** `r fmt_n(all_crime$first)` per 100,000 in `r first_year`,
+  and `r fmt_n(all_crime$last)` in `r crime_latest`.
+  That is `r pct_label(all_crime$change)`.
+- **Violent crime:** `r fmt_n(violent_crime$first)` per 100,000 in `r first_year`,
+  and `r fmt_n(violent_crime$last)` in `r crime_latest`.
+  That is `r pct_label(violent_crime$change)`.
+
+## Slide 4: Arrests are down
+
+```{r}
+#| label: slide-04
+arrest_counts <- us_arrests(arrests) |>
+  filter(year >= first_year) |>
+  select(year, `All arrests`, `Drug arrests`) |>
+  pivot_longer(-year, names_to = "series", values_to = "value") |>
+  filter(year != arrest_gap_year)
+arrest_change <- arrest_counts |>
+  group_by(series) |>
+  summarise(first = value[year == first_year], last = value[year == latest_arrest_year], .groups = "drop") |>
+  mutate(change = pct_change(first, last))
+
+arrest_panels <- arrest_counts |>
+  left_join(arrest_change, by = "series") |>
+  mutate(panel = paste0(series, " (", pct_label(change), ")"))
+arrest_colors <- setNames(site_colors[c("navy", "blue")], unique(arrest_panels$panel))
+
+arrest_chart <- trend_panels(arrest_panels, arrest_colors) +
+  labs(
+    title = paste0("Estimated Arrests in the U.S., ", first_year, "–", latest_arrest_year),
+    caption = slide_caption(
+      "Arrests reported to the FBI, scaled up to the full U.S. population",
+      "by the share of residents covered by reporting agencies each year.",
+      paste0(arrest_gap_year, " is missing: it was the FBI's switch to incident-based reporting (NIBRS),"),
+      "and agencies covering about a quarter of residents didn't report arrests.",
+      paste0("The line connects ", arrest_gap_year - 1, " and ", arrest_gap_year + 1, "."),
+      "Drug arrests include possession and sale.",
+      source = "FBI Crime Data Explorer, arrest data."
+    )
+  )
+save_slide(arrest_chart, "slide-04-arrests")
+arrest_chart
+```
+
+```{r}
+#| label: slide-04-key-numbers
+all_arrests <- filter(arrest_change, series == "All arrests")
+drug_arrests <- filter(arrest_change, series == "Drug arrests")
+```
+
+- **All arrests:** an estimated `r compact_label(all_arrests$first)` in `r first_year`,
+  and `r compact_label(all_arrests$last)` in `r latest_arrest_year`.
+  That is `r pct_label(all_arrests$change)`.
+- **Drug arrests:** an estimated `r compact_label(drug_arrests$first)` in `r first_year`,
+  and `r compact_label(drug_arrests$last)` in `r latest_arrest_year`.
+  That is `r pct_label(drug_arrests$change)`.
+- **Caveat:** these estimates run lower than the FBI's own national estimates,
+  which also adjust for agencies that report only part of the year.
+  For example, the FBI estimated about 14.1 million arrests in 2005.
+  The trend is what the slide should show, not the exact level.
+- **Possible break in the series:** drug arrests before and after `r arrest_gap_year`
+  come from two reporting systems. Some of the change across that line may come from
+  the switch, not from policing.
+
+## Slide 5: Racial disparities in arrests narrowed
+
+```{r}
+#| label: slide-05
+rri <- arrest_rate_ratio(arrests, pop) |>
+  filter(year >= first_year, year != arrest_gap_year) |>
+  mutate(panel = "Black-to-White arrest rate ratio")
+
+rri_chart <- trend_panels(rri, c(`Black-to-White arrest rate ratio` = site_colors[["navy"]]),
+                          label_fn = \(x) number(x, accuracy = 0.1)) +
+  geom_hline(yintercept = 1, color = site_colors[["baseline"]], linetype = "22") +
+  annotate("text", x = first_year, y = 1, label = "Equal rates", vjust = -0.6, hjust = 0,
+           family = chart_font, size = 3.2, color = site_colors[["muted"]]) +
+  theme(strip.text = element_blank()) +
+  labs(
+    title = paste0("Black-to-White Arrest Rate Ratio, ", first_year, "–", latest_arrest_year),
+    subtitle = "Black residents' arrest rate divided by White residents' arrest rate, all offenses",
+    caption = slide_caption(
+      "Rates use Census population estimates for Black and White residents.",
+      "Race categories include people of any ethnicity, and many Latino people may be counted as White.",
+      "Not enough law enforcement agencies collect ethnicity data to make reliable estimates for the Latino population.",
+      paste0(arrest_gap_year, " is missing (NIBRS transition); the line connects ", arrest_gap_year - 1, " and ", arrest_gap_year + 1, "."),
+      source = "FBI Crime Data Explorer, arrest data; U.S. Census Bureau, population estimates.",
+      width = 155
+    )
+  )
+save_slide(rri_chart, "slide-05-arrest-rate-ratio")
+rri_chart
+```
+
+```{r}
+#| label: slide-05-key-numbers
+rri_first <- number(rri$value[rri$year == first_year], accuracy = 0.1)
+rri_last <- number(rri$value[rri$year == latest_arrest_year], accuracy = 0.1)
+```
+
+- **The ratio:** Black residents were arrested at `r rri_first` times the rate of White
+  residents in `r first_year`, and `r rri_last` times in `r latest_arrest_year`.
+- **Comparison with the data snapshot:** the snapshot's 2023 figure (2.7, all arrests)
+  used a different population base, which appears to be non-Hispanic Black and White
+  residents. These values won't match it exactly, but they use one method for every year.
+
+## Slide 6: Fewer prison admissions
+
+```{r}
+#| label: slide-06
+admissions <- nps |>
+  filter(state_abbr == "ST", year >= first_year) |>
+  transmute(year, `New court commitments` = new_court, `Supervision violations` = violations,
+            technical = violation_technical) |>
+  pivot_longer(c(`New court commitments`, `Supervision violations`), names_to = "series", values_to = "value")
+admissions_latest <- max(admissions$year)
+admission_colors <- c(`New court commitments` = site_colors[["navy"]],
+                      `Supervision violations` = site_colors[["orange"]])
+
+admissions_chart <- ggplot(admissions) +
+  labeled_lines(admissions, admission_colors) +
+  end_value_labels(admissions) +
+  scale_x_continuous(breaks = seq(first_year, admissions_latest, 5), expand = expansion(add = 0.6)) +
+  scale_y_continuous(labels = compact_label, limits = c(0, NA), expand = expansion(mult = c(0, 0.12))) +
+  coord_cartesian(clip = "off") +
+  labs(
+    title = paste0("Admissions to State Prisons, ", first_year, "–", admissions_latest),
+    x = NULL, y = NULL,
+    caption = slide_caption(
+      "Supervision violations are admissions of people returned from parole or other",
+      "conditional release, with or without a new sentence.",
+      "The 2020 drop reflects COVID-19 court and admission slowdowns.",
+      source = "Bureau of Justice Statistics, National Prisoner Statistics, 1978–2022 (ICPSR 38871)."
+    )
+  ) +
+  theme_slide() +
+  theme(plot.margin = margin(14, 150, 10, 14))
+save_slide(admissions_chart, "slide-06-prison-admissions")
+admissions_chart
+```
+
+```{r}
+#| label: slide-06-key-numbers
+adm_ends <- admissions |>
+  filter(year %in% c(first_year, admissions_latest)) |>
+  group_by(series) |>
+  summarise(first = first(value), last = last(value),
+            tech_first = first(technical), tech_last = last(technical), .groups = "drop") |>
+  mutate(change = pct_change(first, last))
+new_court <- filter(adm_ends, series == "New court commitments")
+violations <- filter(adm_ends, series == "Supervision violations")
+```
+
+- **New court commitments:** `r fmt_n(new_court$first)` in `r first_year`,
+  and `r fmt_n(new_court$last)` in `r admissions_latest`.
+  That is `r pct_label(new_court$change)`.
+- **Supervision violations:** `r fmt_n(violations$first)` in `r first_year`,
+  and `r fmt_n(violations$last)` in `r admissions_latest`.
+  That is `r pct_label(violations$change)`.
+- **Technical violations alone** (returns with no new sentence):
+  `r fmt_n(violations$tech_first)` in `r first_year`,
+  and `r fmt_n(violations$tech_last)` in `r admissions_latest`.
+- **Latest year:** BJS's file ends in `r admissions_latest`. The Prisoners 2023 report
+  gives totals for 2023, but not by type of admission.
+
+## Slide 7: Decline driven by youth violence
+
+```{r}
+#| label: slide-07
+### all years, for the counts since 1995 in the bullets
+youth_all_years <- youth_adult_violent(arrests, pop, read_us_youth_population())
+youth <- youth_all_years |>
+  filter(year >= first_year, year != arrest_gap_year)
+youth_colors <- setNames(site_colors[c("orange", "navy")], c(youth_series, adult_series))
+
+### each line's end label carries its change since the first year; no rate labels
+youth_names <- youth |>
+  group_by(series) |>
+  summarise(name = paste0(
+    first(series), ": ", pct_label(pct_change(value[year == first_year], value[year == latest_arrest_year]))
+  ))
+youth_lines <- youth |>
+  left_join(youth_names, by = "series") |>
+  mutate(series = name)
+youth_line_colors <- setNames(youth_colors[youth_names$series], youth_names$name)
+
+youth_chart <- ggplot(youth_lines) +
+  labeled_lines(youth_lines, youth_line_colors) +
+  scale_x_continuous(breaks = seq(first_year, latest_arrest_year, 5), expand = expansion(add = 0.6)) +
+  scale_y_continuous(labels = comma, limits = c(0, NA), expand = expansion(mult = c(0, 0.12))) +
+  coord_cartesian(clip = "off") +
+  labs(
+    title = paste0("Violent Crime Arrest Rates for Youth and Adults, ", first_year, "–", latest_arrest_year),
+    subtitle = "Arrests per 100,000 residents in each age group",
+    x = NULL, y = NULL,
+    caption = slide_caption(
+      "Violent crime arrests are for homicide, rape, robbery, and aggravated assault.",
+      "Youth rates use residents ages 10–17; youth arrests include the few children under 10.",
+      "Counts are scaled to the full population by reporting coverage.",
+      paste0(arrest_gap_year, " is missing (NIBRS transition); the line connects ", arrest_gap_year - 1, " and ", arrest_gap_year + 1, "."),
+      source = "FBI Crime Data Explorer, arrest data; U.S. Census Bureau, population estimates."
+    )
+  ) +
+  theme_slide() +
+  theme(plot.margin = margin(14, 200, 10, 14))
+save_slide(youth_chart, "slide-07-youth-adult-violent-arrests")
+youth_chart
+```
+
+```{r}
+#| label: slide-07-key-numbers
+youth_ends <- youth_all_years |>
+  group_by(series) |>
+  summarise(
+    rate_first = value[year == first_year], rate_last = value[year == latest_arrest_year],
+    count_1995 = estimated[year == 1995], count_last = estimated[year == latest_arrest_year]
+  ) |>
+  mutate(rate_change = pct_change(rate_first, rate_last), count_change = pct_change(count_1995, count_last))
+youth_row <- filter(youth_ends, series == youth_series)
+adult_row <- filter(youth_ends, series == adult_series)
+youth_faster <- youth_row$rate_change < adult_row$rate_change
+```
+
+- **Youth (ages 10–17):** `r fmt_n(youth_row$rate_first)` violent arrests per 100,000 in `r first_year`,
+  and `r fmt_n(youth_row$rate_last)` in `r latest_arrest_year`.
+  That is `r pct_label(youth_row$rate_change)`.
+- **Adults (18 and older):** `r fmt_n(adult_row$rate_first)` per 100,000 in `r first_year`,
+  and `r fmt_n(adult_row$rate_last)` in `r latest_arrest_year`.
+  That is `r pct_label(adult_row$rate_change)`.
+- **Which fell faster:** the youth rate fell `r if (youth_faster) "faster" else "more slowly"` than the adult rate.
+  By `r latest_arrest_year`, youth were arrested for violent crime at
+  `r if (youth_row$rate_last < adult_row$rate_last) "a lower" else "a higher"` rate than adults.
+- **Since the 1995 peak:** the library has no population by age for the 1990s, so the chart starts in `r first_year`.
+  Estimated violent arrest counts show the longer decline: youth arrests changed
+  `r pct_label(youth_row$count_change)` from 1995 to `r latest_arrest_year`, and adult arrests
+  `r pct_label(adult_row$count_change)`.
+
+## Slide 8: State incarceration rates are down
+
+```{r}
+#| label: slide-08
+peak <- slice_max(prison_rate, value, n = 1)
+prison_latest <- slice_max(prison_rate, year, n = 1)
+prison_change <- pct_change(peak$value, prison_latest$value)
+
+prison_chart <- trend_panels(mutate(prison_rate, panel = "State prison rate"),
+                             c(`State prison rate` = site_colors[["navy"]])) +
+  slide_text(data = mutate(peak, panel = "State prison rate"),
+             aes(year, value, label = paste0("Peak, ", year)),
+             vjust = -1.3, size = 3.2, color = site_colors[["muted"]]) +
+  annotate("text", x = prison_latest$year, y = prison_latest$value, vjust = 2.2, hjust = 0.8,
+           label = paste0(pct_label(prison_change), " from peak"), family = chart_font,
+           fontface = "bold", size = 3.6, color = site_colors[["navy"]]) +
+  theme(strip.text = element_blank()) +
+  labs(
+    title = paste0("People in State Prison per 100,000 Residents, ", first_year, "–", prison_latest$year),
+    caption = slide_caption(
+      "Everyone under state prison jurisdiction at year end, per 100,000 U.S. residents,",
+      "matching the CSG Justice Center data snapshots.",
+      source = paste(
+        "Bureau of Justice Statistics, National Prisoner Statistics (through 2022) and Prisoners in 2023;",
+        "U.S. Census Bureau, population estimates."
+      )
+    )
+  )
+save_slide(prison_chart, "slide-08-state-prison-rate")
+prison_chart
+```
+
+- **Rate:** `r round(peak$value)` per 100,000 residents at its `r peak$year` peak,
+  and `r round(prison_latest$value)` in `r prison_latest$year`.
+  That is `r pct_label(prison_change)`.
+- **People in state prison:** `r fmt_n(peak$prison_pop)` at the peak,
+  and `r fmt_n(prison_latest$prison_pop)` in `r prison_latest$year`.
+
+## Slide 9: Fewer people going back to prison
+
+Three versions of this slide follow:
+
+- **9a** uses CSG's 50 States, 1 Goal data, 2010 onward.
+- **9b** uses only BJS's national recidivism studies, which share one definition.
+- **9c** puts the BJS and Pew studies on one timeline with the 50 States, 1 Goal trend.
+
+The three sources count returns in similar but not identical ways, and each covers a
+different set of states:
+
+- **BJS** follows a sample of people released in one year from the states that sent
+  records (15 to 23 states). It counts a return to prison for a new sentence or a
+  supervision violation.
+- **Pew** asked state corrections departments for the share of people released in 1999
+  and 2004 who returned to prison, for a new crime or a technical violation, within three
+  years.
+- **50 States, 1 Goal** compiles each state's own published three-year reincarceration
+  rate, so definitions vary somewhat by state.
+
+### 9a: 50 States, 1 Goal
+
+```{r}
+#| label: slide-09a
+recid_trend <- recidivism_trend(recid)
+panel_label <- unique(recid_trend$series[recid_trend$series != "All reporting states"])
+recid_colors <- setNames(site_colors[c("navy", "blue")], c("All reporting states", panel_label))
+recid_types <- setNames(c("solid", "22"), names(recid_colors))
+recid_last <- max(recid_trend$year)
+all_states_line <- filter(recid_trend, series == "All reporting states")
+panel_line <- filter(recid_trend, series == panel_label)
+thin <- filter(all_states_line, states < 30)
+
+recid_chart <- ggplot(recid_trend) +
+  labeled_lines(recid_trend, recid_colors, linetypes = recid_types) +
+  ### the two lines start at the same point, so the dashed line only labels its end, below the line
+  end_value_labels(all_states_line, label_fn = \(x) paste0(round(x), "%")) +
+  slide_text(data = slice_max(panel_line, year, n = 1),
+             aes(year, value, label = paste0(round(value), "%"), color = series), vjust = 2, size = 3.4) +
+  ### how many states report each cohort, along the bottom
+  slide_text(data = all_states_line, aes(year, 0, label = states),
+             vjust = -0.8, size = 2.9, color = site_colors[["muted"]]) +
+  annotate("text", x = min(recid_trend$year) - 0.6, y = 0, label = "States:", hjust = 1, vjust = -0.8,
+           family = chart_font, size = 2.9, color = site_colors[["muted"]]) +
+  scale_x_continuous(breaks = seq(2010, recid_last, 2), expand = expansion(add = 0.8)) +
+  scale_y_continuous(labels = \(x) paste0(x, "%"), limits = c(0, NA), expand = expansion(mult = c(0, 0.15))) +
+  coord_cartesian(clip = "off") +
+  labs(
+    title = paste0("Three-Year Reincarceration Rate by Release Year, 2010–", recid_last),
+    subtitle = "Share of people released from state prison who returned within three years",
+    x = "Year released", y = NULL,
+    caption = slide_caption(
+      "Rates are weighted by the number of people released in each state.",
+      paste0("Fewer states have reported the latest cohorts (",
+             paste0(thin$states, " for ", thin$year, collapse = ", "), "),"),
+      "so the dashed line follows only the states with a rate for every cohort from 2010 to 2020.",
+      "These cohorts end earlier than most other data in this presentation.",
+      source = "CSG Justice Center, 50 States, 1 Goal state recidivism data."
+    )
+  ) +
+  theme_slide() +
+  theme(plot.margin = margin(14, 190, 10, 14),
+        axis.title.x = element_text(color = site_colors[["muted"]], size = 9.5))
+save_slide(recid_chart, "slide-09-reincarceration")
+recid_chart
+```
+
+```{r}
+#| label: slide-09a-key-numbers
+all_states_first <- slice_min(all_states_line, year, n = 1)
+all_states_last <- slice_max(all_states_line, year, n = 1)
+panel_first <- slice_min(panel_line, year, n = 1)
+panel_last <- slice_max(panel_line, year, n = 1)
+```
+
+- **All reporting states:** `r round(all_states_first$value)`% for the
+  `r all_states_first$year` cohort, and `r round(all_states_last$value)`% for the
+  `r all_states_last$year` cohort. Only `r all_states_last$states` states reported
+  `r all_states_last$year`.
+- **`r panel_label`:** `r round(panel_first$value)`% for the `r panel_first$year` cohort,
+  and `r round(panel_last$value)`% for the `r panel_last$year` cohort.
+
+### 9b: BJS national studies
+
+```{r}
+#| label: slide-09b
+studies <- read_csv(file.path(marshall_data_dir, "recidivism-national-studies.csv"), show_col_types = FALSE)
+bjs <- studies |>
+  filter(source == "BJS") |>
+  mutate(cohort = paste0(cohort_year, "\n", states, " states"))
+
+bjs_chart <- ggplot(bjs, aes(cohort, rate)) +
+  geom_col(fill = site_colors[["navy"]], width = 0.62) +
+  slide_text(aes(label = paste0(round(rate), "%")), vjust = -0.6, size = 4.2, fontface = "bold",
+             color = site_colors[["navy"]]) +
+  scale_y_continuous(labels = \(x) paste0(x, "%"), limits = c(0, 60), expand = expansion(0)) +
+  labs(
+    title = "Share of People Released from State Prison Who Returned within Three Years",
+    subtitle = "Bureau of Justice Statistics recidivism studies, by year released",
+    x = NULL, y = NULL,
+    caption = slide_caption(
+      "Returns are to prison for a new sentence or a parole or probation violation, within three years of release.",
+      "Each study covers the states that could provide return-to-prison records, so the states differ between",
+      "years and the studies are not strictly comparable.",
+      source = paste(
+        "Bureau of Justice Statistics, Recidivism of Prisoners Released in 1994 (2002); in 30 States in 2005 (2014);",
+        "in 24 States in 2008 (2021, table 8); and in 34 States in 2012 (2021, table 8)."
+      )
+    )
+  ) +
+  theme_slide() +
+  theme(axis.text.x = element_text(color = site_colors[["text"]], size = 10.5, lineheight = 1.1),
+        plot.margin = margin(14, 14, 10, 14))
+save_slide(bjs_chart, "slide-09b-bjs-studies")
+bjs_chart
+```
+
+```{r}
+#| label: slide-09b-key-numbers
+bjs_first <- slice_min(bjs, cohort_year, n = 1)
+bjs_last <- slice_max(bjs, cohort_year, n = 1)
+```
+
+- **BJS studies:** `r bjs_first$rate`% of people released in `r bjs_first$cohort_year`
+  returned to prison within three years, and `r bjs_last$rate`% of those released in
+  `r bjs_last$cohort_year`.
+- **Most of the drop comes after 2008:** the 1994, 2005 and 2008 studies are all near 50%.
+
+### 9c: All sources on one timeline
+
+```{r}
+#| label: slide-09c
+### legend names for each source, in legend order
+source_names <- c(
+  BJS = "BJS national studies",
+  Pew = "Pew state survey",
+  panel = paste0("50 States, 1 Goal (", str_to_lower(panel_label), ")")
+)
+timeline_points <- studies |>
+  transmute(series = unname(source_names[source]), year = cohort_year, value = rate)
+timeline_line <- transmute(panel_line, series = source_names[["panel"]], year, value)
+timeline_colors <- setNames(site_colors[c("navy", "orange", "blue")], unname(source_names))
+timeline_first <- min(timeline_points$year)
+
+timeline_chart <- ggplot() +
+  geom_line(data = timeline_line, aes(year, value, color = series), linewidth = 1.1) +
+  geom_point(data = timeline_line, aes(year, value, color = series), size = 1.8) +
+  geom_point(data = timeline_points, aes(year, value, color = series, shape = series), size = 3.6) +
+  slide_text(data = timeline_points, aes(year, value, label = paste0(round(value), "%"), color = series),
+             vjust = -1.2, size = 3.4, fontface = "bold", show.legend = FALSE) +
+  slide_text(data = slice_max(timeline_line, year, n = 1),
+             aes(year, value, label = paste0(round(value), "%"), color = series),
+             hjust = 0, nudge_x = 0.5, size = 3.4, fontface = "bold", show.legend = FALSE) +
+  ### legend keys use the same marker shapes as the chart
+  scale_color_manual(values = timeline_colors, breaks = unname(source_names), name = NULL,
+                     guide = guide_legend(override.aes = list(shape = c(16, 18, 16)))) +
+  scale_shape_manual(values = c(`BJS national studies` = 16, `Pew state survey` = 18), guide = "none") +
+  scale_x_continuous(breaks = seq(1995, 2020, 5), limits = c(1993, 2021)) +
+  scale_y_continuous(labels = \(x) paste0(x, "%"), limits = c(0, 60), expand = expansion(0)) +
+  coord_cartesian(clip = "off") +
+  labs(
+    title = paste0("Three-Year Return-to-Prison Rates, Prisoners Released ", timeline_first, "–", panel_last$year),
+    subtitle = "Share of people released from state prison who returned within three years, by year released",
+    x = NULL, y = NULL,
+    caption = slide_caption(
+      "Each source covers a different set of states and counts returns in a slightly different way, so compare",
+      "the overall direction rather than single points. BJS studies cover 15 to 23 states. The 50 States, 1 Goal",
+      paste0("line follows the ", str_extract(panel_label, "\\d+"), " states with a rate for every cohort from 2010 to 2020."),
+      source = paste(
+        "Bureau of Justice Statistics recidivism studies (1994, 2005, 2008, 2012 releases);",
+        "Pew Center on the States, State of Recidivism (2011); CSG Justice Center, 50 States, 1 Goal."
+      )
+    )
+  ) +
+  theme_slide() +
+  theme(legend.position = "top", legend.justification = "left",
+        legend.text = element_text(color = site_colors[["text"]], size = 10),
+        plot.margin = margin(14, 40, 10, 14))
+save_slide(timeline_chart, "slide-09c-recidivism-timeline")
+timeline_chart
+```
+
+- **Long view:** the national studies put three-year returns near 45% to 52% for people
+  released from 1994 to 2008. The 50 States, 1 Goal states fell from
+  `r round(panel_first$value)`% (`r panel_first$year`) to `r round(panel_last$value)`%
+  (`r panel_last$year`), and BJS's 2012 study (`r bjs_last$rate`%) falls in line with that drop.
+- **Pew's state counts:** the Pew report's national rates aren't tied to a state count in
+  the CSV, because the report page couldn't be checked. Confirm before citing them.
+
+## Slide 10: Probation population is down
+
+```{r}
+#| label: slide-10
+probation <- us_probation(pop)
+prob_latest <- max(probation$year)
+prob_change <- probation |>
+  summarise(pop_change = pct_change(first(probation), last(probation)),
+            rate_change = pct_change(first(rate), last(rate)))
+prob_panels <- probation |>
+  transmute(year, `People on probation` = probation, `Per 100,000 adults` = rate) |>
+  pivot_longer(-year, names_to = "series", values_to = "value") |>
+  mutate(panel = if_else(
+    series == "People on probation",
+    paste0("People on probation (", pct_label(prob_change$pop_change), ")"),
+    paste0("Per 100,000 adults (", pct_label(prob_change$rate_change), ")")
+  ))
+prob_colors <- setNames(site_colors[c("navy", "blue")], unique(prob_panels$panel))
+
+prob_chart <- trend_panels(prob_panels, prob_colors) +
+  labs(
+    title = paste0("Adults on Probation, ", first_year, "–", prob_latest),
+    caption = slide_caption(
+      "People on probation at year end. Rates use Census estimates of U.S. residents 18 and older.",
+      source = paste(
+        "Bureau of Justice Statistics, Probation and Parole in the United States (2010 on;",
+        "earlier years via the Council on Criminal Justice's compilation of the same series)."
+      )
+    )
+  )
+save_slide(prob_chart, "slide-10-probation")
+prob_chart
+```
+
+```{r}
+#| label: slide-10-key-numbers
+prob_first <- slice_min(probation, year, n = 1)
+prob_last <- slice_max(probation, year, n = 1)
+```
+
+- **People on probation:** `r fmt_n(prob_first$probation)` in `r prob_first$year`,
+  and `r fmt_n(prob_last$probation)` in `r prob_last$year`.
+  That is `r pct_label(prob_change$pop_change)`.
+- **Rate per 100,000 adults:** `r fmt_n(prob_first$rate)` in `r prob_first$year`,
+  and `r fmt_n(prob_last$rate)` in `r prob_last$year`.
+  That is `r pct_label(prob_change$rate_change)`.
+
+## Slide 13: Labor and health care drive costs
+
+```{r}
+#| label: slide-13
+officers <- us_correctional_officers(nps, prisoners_2023)
+wage_year <- max(officers$year)
+staffing <- officers |>
+  left_join(inflation_multiplier(wage_year), by = "year") |>
+  mutate(wage_real = mean_wage * multiplier)
+staff_change <- staffing |>
+  summarise(wage_change = pct_change(first(wage_real), last(wage_real)),
+            per_officer_first = first(per_officer),
+            per_officer_last = last(na.omit(per_officer)),
+            per_officer_last_year = max(year[!is.na(per_officer)]))
+
+wage_panel <- paste0("Average pay, in ", wage_year, " dollars (", pct_label(staff_change$wage_change), ")")
+officer_panel <- "People in state prison per correctional officer"
+staff_panels <- staffing |>
+  transmute(year, wage = wage_real, per_officer) |>
+  pivot_longer(-year, names_to = "series", values_to = "value") |>
+  filter(!is.na(value)) |>
+  mutate(panel = if_else(series == "wage", wage_panel, officer_panel))
+staff_colors <- setNames(site_colors[c("navy", "blue")], c(wage_panel, officer_panel))
+
+### dollars for pay, one decimal for people per officer
+staff_label <- \(x) if_else(x >= 1000, dollar(x, accuracy = 100), number(x, accuracy = 0.1, drop0trailing = TRUE))
+
+staff_chart <- trend_panels(staff_panels, staff_colors, label_fn = staff_label,
+                            years = range(staff_panels$year)) +
+  scale_x_continuous(breaks = seq(2010, wage_year, 2), expand = expansion(add = 0.8)) +
+  labs(
+    title = paste0("Correctional Officers and Jailers: Pay and Workload, 2010–", wage_year),
+    caption = slide_caption(
+      "Pay is the average annual wage of correctional officers and jailers, weighted by jobs in each state",
+      "and adjusted for inflation (CPI-U). Officer counts include local jails,",
+      "so people per officer understates the prison workload.",
+      source = "Bureau of Labor Statistics, Occupational Employment and Wage Statistics; BJS prison counts."
+    )
+  )
+save_slide(staff_chart, "slide-13-correctional-officers")
+staff_chart
+```
+
+- **Average correctional officer pay, adjusted for inflation:**
+  `r pct_label(staff_change$wage_change)` from 2010 to `r wage_year`.
+- **People in state prison per correctional officer:**
+  `r number(staff_change$per_officer_first, accuracy = 0.1)` in 2010,
+  and `r number(staff_change$per_officer_last, accuracy = 0.1)` in `r staff_change$per_officer_last_year`.
+
+### 13b: Correctional officer pay over time
+
+```{r}
+#| label: slide-13b
+pay_names <- c(
+  `Correctional Officers and Jailers` = "Correctional officers and jailers",
+  `First-Line Supervisors of Correctional Officers` = "Their supervisors",
+  Total = "All workers"
+)
+pay <- us_oews_pay(names(pay_names)) |>
+  left_join(inflation_multiplier(wage_year), by = "year") |>
+  mutate(occupation = pay_names[group], value = mean_wage * multiplier)
+pay_change <- pay |>
+  group_by(occupation) |>
+  summarise(first = first(value), last = last(value), nominal_last = last(mean_wage), .groups = "drop") |>
+  mutate(change = pct_change(first, last))
+
+### line names carry the latest pay and the change since 2010, since value
+### labels on lines this close would pile up
+pay_lines <- pay |>
+  left_join(select(pay_change, occupation, last, change), by = "occupation") |>
+  mutate(series = paste0(occupation, ": ", dollar(last, accuracy = 100), " (", pct_label(change), ")"))
+pay_series <- unique(pay_lines$series[order(match(pay_lines$occupation, pay_names))])
+pay_colors <- setNames(site_colors[c("navy", "blue", "slate")], pay_series)
+
+pay_chart <- ggplot(pay_lines) +
+  labeled_lines(pay_lines, pay_colors) +
+  scale_x_continuous(breaks = seq(2010, wage_year, 2), expand = expansion(add = 0.6)) +
+  scale_y_continuous(labels = dollar, limits = c(0, NA), expand = expansion(mult = c(0, 0.12))) +
+  coord_cartesian(clip = "off") +
+  labs(
+    title = paste0("Average Pay of Correctional Officers, 2010–", wage_year),
+    subtitle = paste0("Average yearly pay, in ", wage_year, " dollars"),
+    x = NULL, y = NULL,
+    caption = slide_caption(
+      "Average annual wage across states, weighted by jobs in each state, adjusted for inflation (CPI-U).",
+      "Correctional officers and jailers include local jail staff. Supervisors are first-line supervisors",
+      "of correctional officers. All workers covers every occupation.",
+      source = "Bureau of Labor Statistics, Occupational Employment and Wage Statistics, May 2010–May 2024 state files."
+    )
+  ) +
+  theme_slide() +
+  theme(plot.margin = margin(14, 330, 10, 14))
+save_slide(pay_chart, "slide-13b-officer-pay")
+pay_chart
+```
+
+```{r}
+#| label: slide-13b-key-numbers
+officer_pay <- filter(pay_change, occupation == "Correctional officers and jailers")
+all_pay <- filter(pay_change, occupation == "All workers")
+```
+
+- **Correctional officers and jailers:** average pay changed `r pct_label(officer_pay$change)`
+  from 2010 to `r wage_year` after inflation, to `r dollar(officer_pay$nominal_last, accuracy = 100)`
+  in `r wage_year`.
+- **All workers:** `r pct_label(all_pay$change)` over the same years, to
+  `r dollar(all_pay$nominal_last, accuracy = 100)` in `r wage_year`.
+
+### 13c: CLA report Figure 14, rebuilt from BLS
+
+*Workforce Trends in State Departments of Corrections: A 50-State Analysis* (February 2026),
+by Michael Thompson, Katharine Teleki and Angela Gunter with the Correctional Leaders
+Association, Figure 14 on page 27, shows average pay for state
+corrections officers from 2017 to 2024 and reports a 33% increase. It cites the same BLS wage
+tables. Its values are drawn as shapes in the PDF and can't be read as numbers, so this chart
+rebuilds the figure from the BLS data above, in dollars of each year (not adjusted for inflation),
+to match the report.
+
+```{r}
+#| label: slide-13c
+cla_years <- 2017:wage_year
+cla_pay <- pay |>
+  filter(group == "Correctional Officers and Jailers", year %in% cla_years) |>
+  select(year, mean_wage, states)
+cla_change <- pct_change(first(cla_pay$mean_wage), last(cla_pay$mean_wage))
+
+cla_chart <- ggplot(cla_pay, aes(factor(year), mean_wage)) +
+  geom_col(fill = site_colors[["navy"]], width = 0.62) +
+  slide_text(aes(label = dollar(mean_wage, accuracy = 100)), vjust = -0.6, size = 3.8, fontface = "bold",
+             color = site_colors[["navy"]]) +
+  scale_y_continuous(labels = dollar, limits = c(0, NA), expand = expansion(mult = c(0, 0.1))) +
+  labs(
+    title = paste0("Average Pay for Correctional Officers, 2017–", wage_year),
+    subtitle = paste0(pct_label(cla_change), " since 2017, not adjusted for inflation"),
+    x = NULL, y = NULL,
+    caption = slide_caption(
+      "Average annual wage of correctional officers and jailers across states, weighted by jobs in each state.",
+      "BLS state figures cover all employers, including local jails, so they differ a little from figures for",
+      "state government alone. Thompson et al. (2026) found a 33% increase for state corrections officers",
+      "over the same years.",
+      source = paste(
+        "Bureau of Labor Statistics, Occupational Employment and Wage Statistics; Thompson et al., Workforce Trends",
+        "in State Departments of Corrections (2026, with the Correctional Leaders Association), figure 14."
+      )
+    )
+  ) +
+  theme_slide() +
+  theme(axis.text.x = element_text(color = site_colors[["text"]], size = 10.5),
+        plot.margin = margin(14, 14, 10, 14))
+save_slide(cla_chart, "slide-13c-officer-pay-cla")
+cla_chart
+```
+
+```{r}
+#| label: slide-13c-key-numbers
+officer_real <- filter(pay, group == "Correctional Officers and Jailers", year %in% range(cla_years))
+cla_real_change <- pct_change(first(officer_real$value), last(officer_real$value))
+```
+
+- **Before inflation:** average pay rose from `r dollar(first(cla_pay$mean_wage), accuracy = 100)`
+  in 2017 to `r dollar(last(cla_pay$mean_wage), accuracy = 100)` in `r wage_year`,
+  `r pct_label(cla_change)`, close to the report's 33%.
+- **After inflation:** pay rose only `r pct_label(cla_real_change)` over the same years.
+  Most of the 2017–`r wage_year` raise kept pace with prices.
+
+### 13d: Prison health care spending
+
+```{r}
+#| label: slide-13d
+### pew's national figures, typed in from the report's appendix c
+health <- read_drop_in("health-care-costs.csv", c("series", "year", "value"))
+health_change <- health |>
+  group_by(series) |>
+  summarise(first = first(value), last = last(value), .groups = "drop") |>
+  mutate(change = pct_change(first, last))
+
+health_panels <- health |>
+  left_join(health_change, by = "series") |>
+  mutate(panel = paste0(series, " (", pct_label(change), ")"))
+health_colors <- setNames(site_colors[c("navy", "blue")], unique(health_panels$panel))
+
+### billions for the total, dollars for per person
+health_label <- \(x) if_else(x >= 1e9, paste0("$", number(x / 1e9, accuracy = 0.01), "B"), dollar(x))
+
+health_chart <- trend_panels(health_panels, health_colors, label_fn = health_label) +
+  scale_x_continuous(breaks = 2010:2015, expand = expansion(add = c(0.4, 1.6))) +
+  labs(
+    title = "State Prison Health Care Spending, Fiscal 2010–2015",
+    subtitle = "In 2015 dollars",
+    caption = slide_caption(
+      "Health care for people under corrections department jurisdiction: on-site and off-site care, prescription drugs,",
+      "long-term care, and mental health and substance use treatment. Totals and medians cover the same 48 states each",
+      "year (no New Hampshire or North Dakota data). Pew adjusted for inflation with the GDP price deflator.",
+      "Pew's data ends in fiscal 2015.",
+      source = "The Pew Charitable Trusts and Vera Institute of Justice, Prison Health Care: Costs and Quality (2017), tables C.1 and C.3."
+    )
+  )
+save_slide(health_chart, "slide-13d-health-care-costs")
+health_chart
+```
+
+```{r}
+#| label: slide-13d-key-numbers
+health_total <- filter(health_change, series == "Total health care spending")
+health_median <- filter(health_change, series == "Median spending per person")
+```
+
+- **Total spending:** `r health_label(health_total$first)` in fiscal 2010 and
+  `r health_label(health_total$last)` in fiscal 2015, in 2015 dollars.
+  That is `r pct_label(health_total$change)`. Across 49 states, fiscal 2015 spending was $8.1 billion.
+- **Median spending per person:** `r dollar(health_median$first)` in fiscal 2010 and
+  `r dollar(health_median$last)` in fiscal 2015. That is `r pct_label(health_median$change)`.
+- **For the slide:** total spending held about flat while prison populations fell, so spending
+  per person rose slightly. The data is now 10 years old.
+
+## Slide 14: Fewer people, higher cost per person
+
+```{r}
+#| label: slide-14
+nasbo <- read_nasbo_corrections()
+spend_year <- max(nasbo$year)
+dollars_year <- max(suppressWarnings(read_inflation_index())$year)
+
+spending <- nasbo |>
+  group_by(year) |>
+  summarise(spending = sum(corrections, na.rm = TRUE), states = sum(!is.na(corrections)), .groups = "drop") |>
+  filter(year >= first_year) |>
+  left_join(inflation_multiplier(dollars_year), by = "year") |>
+  left_join(select(prison_rate, year, prison_pop), by = "year") |>
+  mutate(spending_real = spending * multiplier, per_person = spending_real / prison_pop)
+spend_change <- spending |>
+  summarise(total = pct_change(first(spending_real), last(spending_real)),
+            per_person = pct_change(first(per_person), last(per_person)),
+            pop = pct_change(first(prison_pop), last(prison_pop)))
+
+spend_panels <- spending |>
+  transmute(year, total = spending_real, per_person) |>
+  pivot_longer(-year, names_to = "series", values_to = "value") |>
+  mutate(panel = if_else(
+    series == "total",
+    paste0("Total state corrections spending (", pct_label(spend_change$total), ")"),
+    paste0("Spending per person in state prison (", pct_label(spend_change$per_person), ")")
+  ))
+spend_colors <- setNames(site_colors[c("navy", "blue")], unique(spend_panels$panel))
+
+### billions for the total, dollars for per person
+spend_label <- \(x) if_else(x >= 1e9, paste0("$", number(x / 1e9, accuracy = 0.1), "B"), dollar(x, accuracy = 100))
+
+spend_chart <- trend_panels(spend_panels, spend_colors, label_fn = spend_label) +
+  labs(
+    title = paste0("State Corrections Spending, Total and per Person in Prison, ", first_year, "–", spend_year),
+    subtitle = paste0("In ", dollars_year, " dollars"),
+    caption = slide_caption(
+      "Spending is state operating spending on corrections from all fund sources, by state fiscal year,",
+      "adjusted for inflation (CPI-U). Per-person spending divides it by everyone under state prison",
+      "jurisdiction at year end. Corrections spending also covers probation, parole, and other programs,",
+      "so per-person figures are an upper bound.",
+      source = "NASBO State Expenditure Report; BJS National Prisoner Statistics."
+    )
+  )
+save_slide(spend_chart, "slide-14-corrections-spending")
+spend_chart
+```
+
+```{r}
+#| label: slide-14-key-numbers
+per_person_last <- dollar(last(spending$per_person), accuracy = 100)
+```
+
+- **Total state corrections spending, adjusted for inflation:**
+  `r pct_label(spend_change$total)` from `r first_year` to `r spend_year`.
+- **People in state prison:** `r pct_label(spend_change$pop)` over the same years.
+- **Spending per person in state prison:** `r pct_label(spend_change$per_person)`,
+  to `r per_person_last` in `r spend_year`, in `r dollars_year` dollars.
+- **Latest year:** NASBO's file ends in fiscal `r spend_year`.
+
+## Slide 16: Find your state on the map
+
+```{r}
+#| label: slide-16
+#| fig-height: 4.6
+hex <- read_hex_states()
+
+### crime: latest violent crime rate per 100k
+state_crime <- read_rds(jr_data_path("analysis", "fbi", "srs", "fbi_srs_estimated_crimes_state.rds")) |>
+  filter(indicator == "Incidents reported", group %in% violent_offenses, year == max(year)) |>
+  group_by(state_abbr = as.character(state_abbr)) |>
+  summarise(value = 1e5 * sum(n) / first(pop_total), .groups = "drop") |>
+  mutate(measure = paste0("Violent crime rate, ", crime_latest))
+
+### incarceration: people in state prison per 100k residents, 2023
+state_pop_2023 <- read_rds(jr_data_path("analysis", "census", "pep", "census_pep_state.rds")) |>
+  filter(group == "Total", year == 2023) |>
+  transmute(state_abbr = as.character(state_abbr), pop_total)
+state_prison <- prisoners_2023 |>
+  filter(!is.na(state_abbr)) |>
+  left_join(state_pop_2023, by = "state_abbr") |>
+  transmute(state_abbr, value = 1e5 * prison_pop / pop_total, measure = "State prison rate, 2023")
+
+### recidivism: each state's latest three-year reincarceration rate
+state_recid <- recid |>
+  group_by(state_name) |>
+  slice_max(year, n = 1) |>
+  ungroup() |>
+  transmute(state_abbr = state.abb[match(state_name, state.name)], value = recid_rate,
+            cohort = year, measure = "Reincarceration rate, latest cohort")
+
+measures <- bind_rows(state_crime, state_prison, state_recid) |>
+  group_by(measure) |>
+  mutate(status = tercile_status(value)) |>
+  ungroup() |>
+  mutate(measure = factor(measure, levels = unique(measure)))
+
+map_data <- hex |>
+  cross_join(tibble(measure = levels(measures$measure))) |>
+  left_join(mutate(measures, measure = as.character(measure)), by = c("state_abbr", "measure")) |>
+  mutate(status = factor(coalesce(as.character(status), "No data"), levels = names(status_colors)),
+         measure = factor(measure, levels = levels(measures$measure)))
+label_points <- map_data |>
+  mutate(geometry = sf::st_centroid(geometry)) |>
+  mutate(x = sf::st_coordinates(geometry)[, 1], y = sf::st_coordinates(geometry)[, 2])
+
+map_chart <- ggplot(map_data) +
+  geom_sf(aes(fill = status), color = "white", linewidth = 0.4) +
+  geom_sf(data = filter(map_data, status == "No data"), fill = NA, color = site_colors[["border"]], linewidth = 0.4) +
+  geom_text(data = label_points, aes(x, y, label = state_abbr, color = status %in% c("Leading", "Lagging")),
+            family = chart_font, fontface = "bold", size = 2) +
+  facet_wrap(~measure, ncol = 3) +
+  ### outline the legend keys so the white "no data" key shows
+  scale_fill_manual(values = status_colors, drop = FALSE, name = NULL,
+                    guide = guide_legend(override.aes = list(color = site_colors[["border"]]))) +
+  scale_color_manual(values = c(`TRUE` = "white", `FALSE` = site_colors[["text"]]), guide = "none") +
+  coord_sf(datum = NA) +
+  labs(
+    title = "Where States Stand on Crime, Incarceration, and Recidivism",
+    subtitle = "Each measure splits states into thirds: lowest third leading, highest third lagging",
+    x = NULL, y = NULL,
+    caption = slide_caption(
+      "Recidivism uses each state's latest reported three-year reincarceration rate",
+      "(most are the 2020 or 2021 release cohort). States without a rate are white.",
+      source = paste(
+        "FBI Uniform Crime Reporting Program, state crime estimates; Bureau of Justice Statistics,",
+        "Prisoners in 2023; CSG Justice Center, 50 States, 1 Goal."
+      )
+    )
+  ) +
+  theme_slide() +
+  theme(
+    panel.grid.major.y = element_blank(), axis.line.x = element_blank(), axis.ticks.x = element_blank(),
+    axis.text = element_blank(), legend.position = "top", legend.justification = "left",
+    legend.text = element_text(color = site_colors[["text"]], size = 10),
+    plot.margin = margin(14, 14, 10, 14)
+  )
+save_slide(map_chart, "slide-16-state-map", height = 4.6)
+map_chart
+```
+
+```{r}
+#| label: slide-16-key-numbers
+### states leading or lagging on all three measures, a starting point for the
+### composite label
+status_wide <- measures |>
+  select(state_abbr, measure, status) |>
+  pivot_wider(names_from = measure, values_from = status)
+state_list <- function(status) {
+  states <- status_wide |>
+    filter(if_all(-state_abbr, \(x) x %in% status)) |>
+    pull(state_abbr)
+  if (length(states)) paste(sort(states), collapse = ", ") else "none"
+}
+all_leading <- state_list("Leading")
+all_lagging <- state_list("Lagging")
+```
+
+- **Leading on all three:** `r all_leading`
+- **Lagging on all three:** `r all_lagging`
+
+## Slide 22: Missouri case study
+
+```{r}
+#| label: slide-22
+missouri_jr <- read_drop_in("missouri-jr.csv", c("series", "year", "value"))
+mo_2023 <- filter(prisoners_2023, state_abbr == "MO")
+
+### missouri's justice reinvestment numbers win when that file is there;
+### otherwise bjs counts stand in
+missouri <- if (!is.null(missouri_jr)) {
+  mutate(missouri_jr, panel = series)
+} else {
+  nps |>
+    filter(state_abbr == "MO", year >= first_year) |>
+    select(year, prison_pop, violations) |>
+    bind_rows(tibble(year = 2023, prison_pop = mo_2023$prison_pop)) |>
+    pivot_longer(-year, names_to = "series", values_to = "value") |>
+    filter(!is.na(value)) |>
+    mutate(panel = if_else(series == "prison_pop", "People in prison", "Admissions for supervision violations"))
+}
+mo_palette <- site_colors[c("navy", "orange", "blue", "slate")]
+mo_colors <- setNames(mo_palette[seq_len(n_distinct(missouri$panel))], unique(missouri$panel))
+
+mo_caption <- if (is.null(missouri_jr)) {
+  slide_caption(
+    "Supervision violation admissions are people returned to prison from parole or other conditional release,",
+    "with or without a new sentence. People in prison is everyone under Missouri's prison jurisdiction at year end.",
+    source = paste(
+      "Bureau of Justice Statistics, National Prisoner Statistics (through 2022)",
+      "and Prisoners in 2023 (2023 population only)."
+    )
+  )
+} else {
+  slide_caption(
+    "Years are state fiscal years, ending June 30. People in prison is the June 30 count.",
+    "Supervision violation admissions are probation revocations (including 120-day program returns)",
+    "plus parole returns, for new offenses or technical violations.",
+    "Missouri's Justice Reinvestment law (HB 1355) passed in 2018.",
+    source = "Missouri Department of Corrections, Profile of the Institutional and Supervised Offender Population, FY2025 (tables 1.4 and 4.2)."
+  )
+}
+mo_years <- range(missouri$year)
+
+mo_chart <- trend_panels(missouri, mo_colors, years = mo_years) +
+  ### mark the 2018 justice reinvestment law
+  geom_vline(xintercept = 2018, color = site_colors[["baseline"]], linetype = "22") +
+  annotate("text", x = 2018, y = 0, label = "JR law, 2018", angle = 90, hjust = -0.1, vjust = -0.5,
+           family = chart_font, size = 3, color = site_colors[["muted"]]) +
+  ### a short series needs a tick every couple of years, not every five
+  scale_x_continuous(breaks = seq(mo_years[1], mo_years[2], if (diff(mo_years) < 12) 3 else 5),
+                     expand = expansion(add = c(1, 0.12 * diff(mo_years) + 1))) +
+  labs(
+    title = paste0("Missouri: Prison Population and Supervision Violation Admissions, ",
+                   min(missouri$year), "–", max(missouri$year)),
+    caption = mo_caption
+  )
+save_slide(mo_chart, "slide-22-missouri")
+mo_chart
+```
+
+```{r}
+#| label: slide-22-key-numbers
+#| results: asis
+mo_change <- missouri |>
+  group_by(panel) |>
+  summarise(first_year = min(year), first = first(value), last_year = max(year), last = last(value),
+            peak_year = year[which.max(value)], peak = max(value), .groups = "drop")
+
+### one bullet per panel, since the panels change when the missouri file is added
+for (i in seq_len(nrow(mo_change))) {
+  r <- mo_change[i, ]
+  cat("- **", r$panel, ":** ",
+      fmt_n(r$first), " in ", r$first_year, ", a peak of ", fmt_n(r$peak), " in ", r$peak_year,
+      ", and ", fmt_n(r$last), " in ", r$last_year, ". ",
+      "That is ", pct_label(pct_change(r$peak, r$last)), " from the peak.\n", sep = "")
+}
+if (is.null(missouri_jr)) {
+  cat("- **Stand-in data:** this uses BJS figures until Missouri's Justice Reinvestment numbers",
+      "are added as data/missouri-jr.csv.\n")
+} else {
+  cat("- **Why these differ from BJS:** Missouri DOC counts probation revocations, including 120-day",
+      "program returns, as supervision violations, and uses fiscal years. BJS's National Prisoner",
+      "Statistics counts fewer violation admissions and uses calendar years.\n")
+}
+```

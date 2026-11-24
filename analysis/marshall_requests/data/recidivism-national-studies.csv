@@ -1,0 +1,7 @@
+source,cohort_year,rate,states,report,link
+BJS,1994,51.8,15,Recidivism of Prisoners Released in 1994 (2002),https://bjs.ojp.gov/content/pub/ascii/rpr94.txt
+BJS,2005,49.7,23,Recidivism of Prisoners Released in 30 States in 2005 (2014),https://bjs.ojp.gov/content/pub/ascii/rprts05p0510.txt
+BJS,2008,48.6,18,"Recidivism of Prisoners Released in 24 States in 2008, table 8 (2021)",https://bjs.ojp.gov/library/publications/recidivism-prisoners-released-24-states-2008-10-year-follow-period-2008-2018
+BJS,2012,38.6,21,"Recidivism of Prisoners Released in 34 States in 2012, table 8 (2021)",https://bjs.ojp.gov/library/publications/recidivism-prisoners-released-34-states-2012-5-year-follow-period-2012-2017
+Pew,1999,45.4,,State of Recidivism (2011),https://www.pewtrusts.org/en/research-and-analysis/reports/0001/01/01/state-of-recidivism
+Pew,2004,43.3,,State of Recidivism (2011),https://www.pewtrusts.org/en/research-and-analysis/reports/0001/01/01/state-of-recidivism

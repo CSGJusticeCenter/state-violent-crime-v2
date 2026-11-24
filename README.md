@@ -88,6 +88,19 @@ The latest SRS year comes from the data, so the state pages pick it up automatic
 
 `helpers.R` holds the shared paths and calculations. Earlier versions of these scripts and their outputs are in `_archive/crime_wo_conseq/`.
 
+### Marshall NCSL presentation
+
+`analysis/marshall_requests/marshall-ncsl-main-presentation.qmd` builds static charts for Marshall's NCSL slide deck: crime, arrests, arrest disparities, prison admissions and population, recidivism, probation, corrections staffing and spending, a state map, and Missouri. `helpers.R` in the same folder holds its theme, which matches `R/05-export-backlog-pngs.R`, and its data reads. Render it on its own from the project root:
+
+```r
+quarto::quarto_render("analysis/marshall_requests/marshall-ncsl-main-presentation.qmd")
+```
+
+- **Outputs:** each chart is saved as two PNGs with transparent backgrounds in `analysis/marshall_requests/png/`, one with its caption and one without (`-no-caption.png`).
+- **Arrest data:** arrests come from the FBI Crime Data Explorer API and are cached in `data/cde-arrests-national.csv`. Renders read the cache. Delete it, or call `read_cde_arrests(..., refresh = TRUE)`, to pull again; that needs `DATA_GOV_API_KEY`.
+- **Data outside the data library:** recidivism comes from the 50 States, 1 Goal file in the SharePoint `z_ARCHIVE` folder. The slide 9 alternatives also read `data/recidivism-national-studies.csv`, three-year return-to-prison rates typed in from published BJS and Pew reports, with a link to each. Slide 22 reads `data/missouri-jr.csv`, fiscal 2016–2025 figures typed in from the Missouri Department of Corrections' FY2025 offender profile. Slide 13d reads `data/health-care-costs.csv`, fiscal 2010–2015 figures typed in from appendix C of Pew and Vera's *Prison Health Care: Costs and Quality* (2017).
+- **Missing sources:** slides whose sources aren't in the library read CSVs dropped into `data/`. The QMD lists each file and its columns, and skips a chart until its file is there.
+
 ### Layout
 
 | Path | Contents |
