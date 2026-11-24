@@ -254,16 +254,39 @@ admissions_latest <- max(admissions$year)
 admission_colors <- c(`New court commitments` = site_colors[["navy"]],
                       `Supervision violations` = site_colors[["orange"]])
 
-### end labels carry each line's change since the first year, as on slide 7
-admission_names <- change_names(admissions)
-admission_lines <- mutate(admissions, series = admission_names[series])
-admission_line_colors <- setNames(admission_colors, admission_names[names(admission_colors)])
+### stacked, so the top edge is total admissions; band labels say what each
+### series includes and carry its change since the first year, as on slide 7
+admission_notes <- c(`New court commitments` = "(incl. probation revocations)",
+                     `Supervision violations` = "(parole and other conditional release)")
+admission_changes <- change_names(admissions)
+admission_bands <- admissions |>
+  mutate(series = factor(series, levels = rev(names(admission_colors))))
+admission_band_labels <- admissions |>
+  filter(year == admissions_latest) |>
+  mutate(series = factor(series, levels = names(admission_colors))) |>
+  arrange(series) |>
+  mutate(top = cumsum(value), mid = top - value / 2,
+         label = paste0(admission_changes[as.character(series)], "\n", admission_notes[as.character(series)]))
+admission_total <- admissions |>
+  group_by(year) |>
+  summarise(value = sum(value), .groups = "drop")
+total_ends <- filter(admission_total, year %in% range(year))
+total_change <- pct_change(first(total_ends$value), last(total_ends$value))
 
-admissions_chart <- ggplot(admission_lines) +
-  labeled_lines(admission_lines, admission_line_colors) +
-  end_value_labels(admission_lines) +
-  scale_x_continuous(breaks = seq(first_year, admissions_latest, 5), expand = expansion(add = 0.6)) +
-  scale_y_continuous(labels = compact_label, limits = c(0, NA), expand = expansion(mult = c(0, 0.12))) +
+admissions_chart <- ggplot(admission_bands, aes(year, value)) +
+  geom_area(aes(fill = series), position = "stack", color = "white", linewidth = 0.4) +
+  geom_text(data = admission_band_labels, aes(year, mid, label = label, color = series),
+            hjust = 0, nudge_x = 0.5, lineheight = 0.95, family = chart_font, fontface = "bold", size = 3.6) +
+  slide_text(data = slice_min(total_ends, year, n = 1), aes(year, value, label = compact_label(value)),
+             vjust = -0.8, size = 3.6, fontface = "bold", color = site_colors[["text"]]) +
+  ### the latest total sits right of the stack's top edge, above the band labels
+  annotate("text", x = admissions_latest + 0.5, y = last(total_ends$value), vjust = -0.6,
+           label = paste0("Total: ", compact_label(last(total_ends$value)), " (", pct_label(total_change), ")"),
+           hjust = 0, family = chart_font, fontface = "bold", size = 3.6, color = site_colors[["text"]]) +
+  scale_fill_manual(values = admission_colors, guide = "none") +
+  scale_color_manual(values = admission_colors, guide = "none") +
+  scale_x_continuous(breaks = seq(first_year, admissions_latest, 5), expand = expansion(add = c(0.6, 0))) +
+  scale_y_continuous(labels = compact_label, limits = c(0, NA), expand = expansion(mult = c(0, 0.1))) +
   coord_cartesian(clip = "off") +
   labs(
     title = paste0("Admissions to State Prisons, ", first_year, "–", admissions_latest),
@@ -276,7 +299,7 @@ admissions_chart <- ggplot(admission_lines) +
     )
   ) +
   theme_slide() +
-  theme(plot.margin = margin(14, 230, 10, 14))
+  theme(plot.margin = margin(14, 270, 10, 14))
 save_slide(admissions_chart, "slide-06-prison-admissions")
 admissions_chart
 ```
@@ -505,36 +528,29 @@ different set of states:
 #| label: slide-09a
 recid_trend <- recidivism_trend(recid)
 panel_label <- unique(recid_trend$series[recid_trend$series != "All reporting states"])
-recid_colors <- setNames(site_colors[c("navy", "blue")], c("All reporting states", panel_label))
-recid_types <- setNames(c("solid", "22"), names(recid_colors))
-recid_last <- max(recid_trend$year)
-all_states_line <- filter(recid_trend, series == "All reporting states")
+### only the states with a rate for every cohort, so changes in which states
+### report don't move the line
 panel_line <- filter(recid_trend, series == panel_label)
-thin <- filter(all_states_line, states < 30)
+panel_states <- unique(panel_line$states)
+recid_first <- min(panel_line$year)
+recid_last <- max(panel_line$year)
+recid_colors <- setNames(site_colors[["navy"]], panel_label)
 
-recid_chart <- ggplot(recid_trend) +
-  labeled_lines(recid_trend, recid_colors, linetypes = recid_types) +
-  ### the two lines start at the same point, so the dashed line only labels its end, below the line
-  end_value_labels(all_states_line, label_fn = \(x) paste0(round(x), "%")) +
-  slide_text(data = slice_max(panel_line, year, n = 1),
-             aes(year, value, label = paste0(round(value), "%"), color = series), vjust = 2, size = 3.4) +
-  ### how many states report each cohort, along the bottom
-  slide_text(data = all_states_line, aes(year, 0, label = states),
-             vjust = -0.8, size = 2.9, color = site_colors[["muted"]]) +
-  annotate("text", x = min(recid_trend$year) - 0.6, y = 0, label = "States:", hjust = 1, vjust = -0.8,
-           family = chart_font, size = 2.9, color = site_colors[["muted"]]) +
-  scale_x_continuous(breaks = seq(2010, recid_last, 2), expand = expansion(add = 0.8)) +
+recid_chart <- ggplot(panel_line) +
+  labeled_lines(panel_line, recid_colors) +
+  end_value_labels(panel_line, label_fn = \(x) paste0(round(x), "%")) +
+  scale_x_continuous(breaks = seq(recid_first, recid_last, 2), expand = expansion(add = 0.8)) +
   scale_y_continuous(labels = \(x) paste0(x, "%"), limits = c(0, NA), expand = expansion(mult = c(0, 0.15))) +
   coord_cartesian(clip = "off") +
   labs(
-    title = paste0("Three-Year Reincarceration Rate by Release Year, 2010–", recid_last),
-    subtitle = "Share of people released from state prison who returned within three years",
+    title = paste0("Three-Year Reincarceration Rate by Release Year, ", recid_first, "–", recid_last),
+    subtitle = paste0("Share of people released from state prison who returned within three years, ",
+                      panel_states, " states"),
     x = "Year released", y = NULL,
     caption = slide_caption(
       "Rates are weighted by the number of people released in each state.",
-      paste0("Fewer states have reported the latest cohorts (",
-             paste0(thin$states, " for ", thin$year, collapse = ", "), "),"),
-      "so the dashed line follows only the states with a rate for every cohort from 2010 to 2020.",
+      paste0("Covers the ", panel_states, " states with a rate for every cohort from ", recid_first, " to ",
+             recid_last, ", so the same states are compared each year."),
       "These cohorts end earlier than most other data in this presentation.",
       source = "CSG Justice Center, 50 States, 1 Goal state recidivism data."
     )
@@ -548,18 +564,54 @@ recid_chart
 
 ```{r}
 #| label: slide-09a-key-numbers
-all_states_first <- slice_min(all_states_line, year, n = 1)
-all_states_last <- slice_max(all_states_line, year, n = 1)
 panel_first <- slice_min(panel_line, year, n = 1)
 panel_last <- slice_max(panel_line, year, n = 1)
 ```
 
-- **All reporting states:** `r round(all_states_first$value)`% for the
-  `r all_states_first$year` cohort, and `r round(all_states_last$value)`% for the
-  `r all_states_last$year` cohort. Only `r all_states_last$states` states reported
-  `r all_states_last$year`.
 - **`r panel_label`:** `r round(panel_first$value)`% for the `r panel_first$year` cohort,
   and `r round(panel_last$value)`% for the `r panel_last$year` cohort.
+  That is `r pct_label(pct_change(panel_first$value, panel_last$value))`.
+- **Why one line:** later cohorts come from fewer states (as few as
+  `r min(recid_trend$states)`), so a line pooling every reporting state would change with
+  the states, not just the rates.
+
+### 9a-alt: 50 States, 1 Goal comparison
+
+```{r}
+#| label: slide-09a-alt
+s1g <- recidivism_baseline_change(recid)
+s1g_bars <- s1g$pooled |>
+  mutate(label = if_else(period == "baseline", "Baseline\n(2016, or 2017 if missing)", "2021"),
+         label = factor(label, levels = c("Baseline\n(2016, or 2017 if missing)", "2021")))
+s1g_states <- unique(s1g$pooled$states)
+s1g_change <- pct_change(s1g_bars$value[s1g_bars$period == "baseline"], s1g_bars$value[s1g_bars$period == "end"])
+
+s1g_chart <- ggplot(s1g_bars, aes(label, value)) +
+  geom_col(fill = site_colors[["navy"]], width = 0.5) +
+  slide_text(aes(label = paste0(round(value), "%")), vjust = -0.6, size = 4.6, fontface = "bold",
+             color = site_colors[["navy"]]) +
+  scale_y_continuous(labels = \(x) paste0(x, "%"), limits = c(0, 60), expand = expansion(0)) +
+  labs(
+    title = "Three-Year Reincarceration Rate, Baseline vs. 2021 Releases",
+    subtitle = paste0(s1g_states, " states with both years (", pct_label(s1g_change), ")"),
+    x = NULL, y = NULL,
+    caption = slide_caption(
+      "Share of people released from state prison who returned within three years, weighted by the number released",
+      "in each state. Follows 50 States, 1 Goal: each state's 2016 cohort, or 2017 where 2016 is missing, against its",
+      "2021 cohort, for states with both.",
+      source = "CSG Justice Center, 50 States, 1 Goal state recidivism data."
+    )
+  ) +
+  theme_slide() +
+  theme(axis.text.x = element_text(color = site_colors[["text"]], size = 10.5, lineheight = 1.1),
+        plot.margin = margin(14, 14, 10, 14))
+save_slide(s1g_chart, "slide-09a-alt-reincarceration-50s1g")
+s1g_chart
+```
+
+- **`r s1g_states` states with both years:** `r round(s1g_bars$value[1])`% at baseline and
+  `r round(s1g_bars$value[2])`% for 2021 releases. That is `r pct_label(s1g_change)`.
+- **By state:** the rate fell in `r s1g$fell` states and rose in `r s1g$rose`.
 
 ### 9b: BJS national studies
 
@@ -757,7 +809,7 @@ staff_colors <- setNames(site_colors[c("navy", "blue")], c(wage_panel, officer_p
 staff_label <- \(x) if_else(x >= 1000, dollar(x, accuracy = 100), number(x, accuracy = 0.1, drop0trailing = TRUE))
 
 staff_chart <- trend_panels(staff_panels, staff_colors, label_fn = staff_label,
-                            years = range(staff_panels$year)) +
+                            years = range(staff_panels$year), from_zero = officer_panel) +
   scale_x_continuous(breaks = seq(2010, wage_year, 2), expand = expansion(add = 0.8)) +
   labs(
     title = paste0("Correctional Officers and Jailers: Pay and Workload, 2010–", wage_year),
@@ -806,7 +858,7 @@ pay_colors <- setNames(site_colors[c("navy", "blue", "slate")], pay_series)
 pay_chart <- ggplot(pay_lines) +
   labeled_lines(pay_lines, pay_colors) +
   scale_x_continuous(breaks = seq(2010, wage_year, 2), expand = expansion(add = 0.6)) +
-  scale_y_continuous(labels = dollar, limits = c(0, NA), expand = expansion(mult = c(0, 0.12))) +
+  scale_y_continuous(labels = dollar, expand = expansion(mult = c(0.8, 0.3))) +
   coord_cartesian(clip = "off") +
   labs(
     title = paste0("Average Pay of Correctional Officers, 2010–", wage_year),
@@ -918,7 +970,7 @@ health_colors <- setNames(site_colors[c("navy", "blue")], unique(health_panels$p
 ### billions for the total, dollars for per person
 health_label <- \(x) if_else(x >= 1e9, paste0("$", number(x / 1e9, accuracy = 0.01), "B"), dollar(x))
 
-health_chart <- trend_panels(health_panels, health_colors, label_fn = health_label) +
+health_chart <- trend_panels(health_panels, health_colors, label_fn = health_label, from_zero = FALSE) +
   scale_x_continuous(breaks = 2010:2015, expand = expansion(add = c(0.4, 1.6))) +
   labs(
     title = "State Prison Health Care Spending, Fiscal 2010–2015",
@@ -981,7 +1033,7 @@ spend_colors <- setNames(site_colors[c("navy", "blue")], unique(spend_panels$pan
 ### billions for the total, dollars for per person
 spend_label <- \(x) if_else(x >= 1e9, paste0("$", number(x / 1e9, accuracy = 0.1), "B"), dollar(x, accuracy = 100))
 
-spend_chart <- trend_panels(spend_panels, spend_colors, label_fn = spend_label) +
+spend_chart <- trend_panels(spend_panels, spend_colors, label_fn = spend_label, from_zero = FALSE) +
   labs(
     title = paste0("State Corrections Spending, Total and per Person in Prison, ", first_year, "–", spend_year),
     subtitle = paste0("In ", spend_year, " dollars"),

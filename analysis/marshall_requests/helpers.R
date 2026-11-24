@@ -144,17 +144,38 @@ end_value_labels <- function(df, label_fn = compact_label, size = 3.4) {
 ### y axis from zero, with the first and last values labeled. df needs year,
 ### panel and value; colors is a named vector by panel. an NA value (like 2021)
 ### leaves a gap in the line
-trend_panels <- function(df, colors, label_fn = count_or_rate, ncol = NULL, years = range(df$year)) {
+### from_zero is TRUE (every panel starts at zero), FALSE (each panel's y axis
+### fits its own range, to show change) or the names of the panels that start at zero
+trend_panels <- function(df, colors, label_fn = count_or_rate, ncol = NULL, years = range(df$year),
+                         from_zero = TRUE) {
+  zero_panels <- if (isTRUE(from_zero)) names(colors) else if (isFALSE(from_zero)) character() else from_zero
   df <- mutate(df, panel = factor(panel, levels = names(colors)))
   points <- filter(df, !is.na(value))
+  ### invisible points set each panel's y range: zero, or the line's full range
+  ### below its lowest value (never below zero), so change shows without exaggerating it
+  y_floor <- points |>
+    group_by(panel) |>
+    summarise(value = if_else(first(panel) %in% zero_panels, 0,
+                              max(0, min(value) - 1 * (max(value) - min(value)))),
+              year = years[1], .groups = "drop")
   ### first value sits above its point, last value to the right of its point,
-  ### so neither lands on the line
-  firsts <- points |> group_by(panel) |> slice_min(year, n = 1) |> ungroup()
+  ### so neither lands on the line. on a tight axis, a first value goes below
+  ### its point when the line rises from it
+  firsts <- points |>
+    group_by(panel) |>
+    arrange(year, .by_group = TRUE) |>
+    mutate(below = !panel %in% zero_panels & lead(value) > value,
+           vjust = if_else(below, 2, -1.2),
+           ### shifted right when below, clear of the y axis labels
+           hjust = if_else(below, 0.2, 0.5)) |>
+    slice_min(year, n = 1) |>
+    ungroup()
   lasts <- points |> group_by(panel) |> slice_max(year, n = 1) |> ungroup()
   ggplot(df, aes(year, value, color = panel)) +
     geom_line(linewidth = 1.1, na.rm = TRUE) +
     geom_point(aes(fill = panel), shape = 21, size = 2, stroke = 0.6, color = "white", na.rm = TRUE) +
-    geom_text(data = firsts, aes(label = label_fn(value)), vjust = -1.2, family = chart_font, size = 3.4,
+    geom_blank(data = y_floor) +
+    geom_text(data = firsts, aes(label = label_fn(value), vjust = vjust, hjust = hjust), family = chart_font, size = 3.4,
               fontface = "bold") +
     geom_text(data = lasts, aes(label = label_fn(value)), hjust = 0, nudge_x = 0.5, family = chart_font,
               size = 3.4, fontface = "bold") +
@@ -163,8 +184,7 @@ trend_panels <- function(df, colors, label_fn = count_or_rate, ncol = NULL, year
     scale_fill_manual(values = colors) +
     scale_x_continuous(breaks = seq(5 * ceiling(years[1] / 5), years[2], 5),
                        expand = expansion(add = c(1, 0.12 * diff(years) + 1))) +
-    scale_y_continuous(labels = label_fn, expand = expansion(mult = c(0, 0.18))) +
-    expand_limits(y = 0) +
+    scale_y_continuous(labels = label_fn, expand = expansion(mult = c(0, 0.3))) +
     coord_cartesian(clip = "off") +
     labs(x = NULL, y = NULL) +
     theme_slide() +
@@ -474,6 +494,26 @@ recidivism_trend <- function(recid, panel_years = 2010:2020) {
     pooled(filter(recid, state_name %in% panel_states, year %in% panel_years),
            paste0("Same ", length(panel_states), " states each year"))
   )
+}
+
+### the 50 states, 1 goal comparison: each state's 2016 rate (2017 when 2016 is
+### missing) against its end_year rate, for states with both, release-weighted
+recidivism_baseline_change <- function(recid, end_year = 2021) {
+  states <- recid |>
+    filter(year %in% c(2016, 2017, end_year)) |>
+    group_by(state_name) |>
+    filter(any(year == end_year), any(year %in% c(2016, 2017))) |>
+    filter(year == end_year | year == min(year)) |>
+    mutate(period = if_else(year == end_year, "end", "baseline")) |>
+    ungroup()
+  by_state <- states |>
+    select(state_name, period, recid_rate) |>
+    pivot_wider(names_from = period, values_from = recid_rate)
+  pooled <- states |>
+    group_by(period) |>
+    summarise(value = 100 * sum(recid) / sum(releases), states = n(), .groups = "drop")
+  list(pooled = pooled, fell = sum(by_state$end < by_state$baseline),
+       rose = sum(by_state$end > by_state$baseline))
 }
 
 ### slide 10: probation ----------------------------------------------------------
