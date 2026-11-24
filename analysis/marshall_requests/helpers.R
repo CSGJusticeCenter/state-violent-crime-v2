@@ -101,7 +101,8 @@ slide_caption <- function(..., source, width = 170) {
 
 ### line + points + a bold name at the right end, the site's way of skipping legends
 ### df needs year, value and series; colors is a named vector by series
-labeled_lines <- function(df, colors, label_df = NULL, digits_fn = compact_label, linetypes = NULL) {
+labeled_lines <- function(df, colors, label_df = NULL, digits_fn = compact_label, linetypes = NULL,
+                          nudge_x = 0.5) {
   ends <- df |>
     filter(!is.na(value)) |>
     group_by(series) |>
@@ -110,12 +111,22 @@ labeled_lines <- function(df, colors, label_df = NULL, digits_fn = compact_label
   list(
     geom_line(aes(year, value, color = series, linetype = series), linewidth = 1.1, na.rm = TRUE),
     geom_point(aes(year, value, fill = series), shape = 21, size = 2.2, stroke = 0.7, color = "white", na.rm = TRUE),
-    geom_text(data = ends, aes(year, value, label = series, color = series), hjust = 0, nudge_x = 0.5,
+    geom_text(data = ends, aes(year, value, label = series, color = series), hjust = 0, nudge_x = nudge_x,
               family = chart_font, fontface = "bold", size = 3.9),
     scale_color_manual(values = colors),
     scale_fill_manual(values = colors),
     scale_linetype_manual(values = linetypes %||% setNames(rep("solid", length(colors)), names(colors)))
   )
+}
+
+### series names with each line's change from its first to last year appended
+### ("Parole violations: -25%"), named by the original series, for end labels
+change_names <- function(df) {
+  ends <- df |>
+    filter(!is.na(value)) |>
+    group_by(series) |>
+    summarise(change = pct_change(value[which.min(year)], value[which.max(year)]))
+  setNames(paste0(ends$series, ": ", pct_label(ends$change)), ends$series)
 }
 
 ### value labels on the first and last points of each series
@@ -175,20 +186,39 @@ save_slide <- function(plot, name, width = 10, height = 5.6) {
 
 ### population ------------------------------------------------------------------
 
-### u.s. population by year: total, adults, and black and white residents (race
-### alone, hispanic included, to match how the fbi codes arrestee race)
+### u.s. population by year: total and adults
 read_us_population <- function() {
-  pep <- read_rds(jr_data_path("analysis", "census", "pep", "census_pep_state.rds"))
-  totals <- pep |>
+  read_rds(jr_data_path("analysis", "census", "pep", "census_pep_state.rds")) |>
     filter(group == "Total") |>
     group_by(year) |>
     summarise(pop_total = sum(pop_total), pop_adult = sum(pop_adult), .groups = "drop")
-  race <- pep |>
-    filter(group_cat == "race_alone", group %in% c("Black", "White")) |>
-    group_by(year, group) |>
-    summarise(pop = sum(pop_total), .groups = "drop") |>
-    pivot_wider(names_from = group, values_from = pop, names_prefix = "pop_")
-  left_join(totals, race, by = "year")
+}
+
+### non-hispanic white and black residents (race alone), u.s., from acs 5-year
+### table b03002, one row per ending year, as in the data snapshot. cached in
+### data/, since the census api is only needed when a new vintage comes out.
+### a pull needs CENSUS_API_KEY in .Renviron
+acs_cache_path <- file.path(marshall_data_dir, "acs-race-national.csv")
+
+read_acs_race <- function(years = 2009:2024, refresh = FALSE) {
+  if (file.exists(acs_cache_path) && !refresh) {
+    cached <- read_csv(acs_cache_path, show_col_types = FALSE)
+    if (all(years %in% cached$acs_year)) return(filter(cached, acs_year %in% years))
+  }
+  key <- Sys.getenv("CENSUS_API_KEY")
+  if (!nzchar(key)) {
+    stop("data/acs-race-national.csv is missing years, and pulling them needs CENSUS_API_KEY in .Renviron ",
+         "(free key: https://api.census.gov/data/key_signup.html)", call. = FALSE)
+  }
+  rows <- map(years, \(y) {
+    url <- sprintf("https://api.census.gov/data/%d/acs/acs5?get=B03002_003E,B03002_004E&for=us:1&key=%s", y, key)
+    x <- jsonlite::fromJSON(url)
+    tibble(acs_year = y, pop_white_nh = as.numeric(x[2, 1]), pop_black_nh = as.numeric(x[2, 2]))
+  }) |>
+    list_rbind()
+  dir.create(marshall_data_dir, showWarnings = FALSE)
+  write_csv(rows, acs_cache_path)
+  rows
 }
 
 ### slide 3: crime ---------------------------------------------------------------
@@ -285,45 +315,30 @@ cde_arrest_call <- function(offense, year, type, tries = 6) {
        gsub(cde_api_key(), "<key>", problem, fixed = TRUE), call. = FALSE)
 }
 
-### before 2021 (summary reporting), the offense list counts drug possession and
-### sale on top of the drug total, so the offense names add up to more than all
-### arrestees. there, drug arrests = all arrestees minus every non-drug offense.
-### from 2021 (nibrs), the drug lines don't overlap, so they just add up
-drug_offenses <- c("Drug Possession", "Drug Abuse Violations", "Drug Sale/Manufacturing")
-
-### national arrests per year, scaled from reporting agencies up to the whole
-### population with the api's coverage share
-us_arrests <- function(arrests) {
-  all <- filter(arrests, offense == "all")
-  all |>
-    group_by(year) |>
-    summarise(
-      reported_total = sum(value[field == "Arrestee Sex"]),
-      offense_sum = sum(value[field == "Offense Name"]),
-      drug_listed = sum(value[field == "Offense Name" & category %in% drug_offenses]),
-      coverage = value[field == "Coverage"],
-      .groups = "drop"
-    ) |>
-    mutate(
-      overlapping = offense_sum > reported_total * 1.05,
-      reported_drug = if_else(overlapping, reported_total - (offense_sum - drug_listed), drug_listed),
-      `All arrests` = reported_total / coverage,
-      `Drug arrests` = reported_drug / coverage
-    )
+### the fbi's official national arrest estimates (cius table 29, table 18 in
+### 2016), typed in from each year's release. 2021 is blank: the fbi published no
+### national estimate that year
+read_fbi_arrest_estimates <- function() {
+  read_csv(jr_data_path("raw", "fbi", "cius", "fbi_drug_arrests_2005_2025.csv"), show_col_types = FALSE) |>
+    filter(!is.na(total_arrests_est)) |>
+    transmute(year, `All arrests` = total_arrests_est, `Drug arrests` = drug_abuse_violation_arrests_est)
 }
 
-### black-to-white arrest rate ratio: (black arrests / black residents) over
-### (white arrests / white residents). coverage hits both groups alike, so the
-### ratio uses reported counts as they are
-arrest_rate_ratio <- function(arrests, pop) {
+### black-to-white relative rate index: (black arrests / non-hispanic black
+### residents) over (white arrests / non-hispanic white residents), with the acs
+### 5-year estimates ending in each year, as in the data snapshot. years before
+### the first 5-year release use the first one, and years past the latest use the
+### latest. coverage hits both groups alike, so it uses reported counts as they are
+arrest_rate_ratio <- function(arrests, acs) {
   arrests |>
     filter(offense == "all", field == "Arrestee Race", category %in% c("Black or African American", "White")) |>
     select(year, category, value) |>
     pivot_wider(names_from = category, values_from = value) |>
-    left_join(pop, by = "year") |>
+    mutate(acs_year = pmin(pmax(year, min(acs$acs_year)), max(acs$acs_year))) |>
+    left_join(acs, by = "acs_year") |>
     mutate(
-      black_rate = 1e5 * `Black or African American` / pop_Black,
-      white_rate = 1e5 * White / pop_White,
+      black_rate = 1e5 * `Black or African American` / pop_black_nh,
+      white_rate = 1e5 * White / pop_white_nh,
       value = black_rate / white_rate
     )
 }
@@ -392,6 +407,23 @@ read_nps <- function() {
       violation_new_sentence = PARNEWM + PARNEWF + coalesce(ADCRNEWM, 0) + coalesce(ADCRNEWF, 0),
       violations = violation_technical + violation_new_sentence
     )
+}
+
+### prison admissions for probation and parole violations, by state, 2018-2023,
+### from csg's more community, less confinement survey (in z_ARCHIVE). keeps the
+### states that report both every year, so changes in who reports don't drive the trend
+read_mclc_violations <- function() {
+  agg <- read_rds(file.path(
+    csgjcr::csg_sp_path(), "z_ARCHIVE", "50 State Revocations Project", "MCLC Shiny App",
+    "data", "analysis", "svii_agg.rds"
+  ))
+  agg |>
+    filter(type == "Admissions", violation_type == "Both", supervision_type %in% c("Probation", "Parole")) |>
+    transmute(state_abbr = as.character(state_abbr), year,
+              series = paste(supervision_type, "violations"), value = n) |>
+    group_by(state_abbr) |>
+    filter(sum(!is.na(value)) == n_distinct(agg$year) * 2) |>
+    ungroup()
 }
 
 ### 2023 prison counts under state jurisdiction from the prisoners series, which
